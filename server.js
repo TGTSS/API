@@ -16,7 +16,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
-  "http://nexustecnologia.modernaedificacoes.com.br"
+  "https://nexustecnologia.modernaedificacoes.com.br" // Corrigir para https
 ];
 app.use(
   cors({
