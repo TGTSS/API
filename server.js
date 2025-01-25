@@ -47,6 +47,12 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(cors({
+  origin: 'https://nexustecnologia.modernaedificacoes.com.br',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Conexão ao MongoDB
 mongoose
   .connect(
