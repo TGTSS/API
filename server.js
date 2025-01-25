@@ -70,6 +70,19 @@ app.post("/api/beneficiarios/exemplo", async (req, res) => {
   }
 });
 
+// Rota para cadastrar um novo beneficiário
+app.post("/api/beneficiarios", async (req, res) => {
+  try {
+    console.log("Rota POST /api/beneficiarios chamada"); // Log para depuração
+    const beneficiario = new Beneficiario(req.body);
+    const savedBeneficiario = await beneficiario.save();
+    res.status(201).json(savedBeneficiario);
+  } catch (error) {
+    console.error("Erro ao cadastrar beneficiário:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para criar um registro
 app.post("/records", async (req, res) => {
   try {
