@@ -12,7 +12,12 @@ import axios from "axios";
 const app = express();
 
 // Middlewares
-const allowedOrigins = ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"];
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://nexustecnologia.modernaedificacoes.com.br"
+];
 app.use(
   cors({
     origin: function (origin, callback) {
