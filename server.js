@@ -173,12 +173,9 @@ app.put("/records/:id/location", async (req, res) => {
   try {
     console.log(`Rota PUT /records/${req.params.id}/location chamada`); // Log para depuração
     const { id } = req.params;
-    const { location, locationDetails, ipAddress, macAddress } = req.body; // Adicione macAddress ao corpo da requisição
+    const { location } = req.body; // Receber o objeto location diretamente
     console.log("Atualizando localização para o registro:", id); // Log para depuração
     console.log("Nova localização:", location); // Log para depuração
-    console.log("Detalhes da localização:", locationDetails); // Log para depuração
-    console.log("Endereço IP:", ipAddress); // Log para depuração
-    console.log("Endereço MAC:", macAddress); // Log para depuração
 
     // Verifique se os dados de localização estão presentes
     if (!location || !location.latitude || !location.longitude) {
@@ -189,9 +186,9 @@ app.put("/records/:id/location", async (req, res) => {
 
     const updatedRecord = await Record.findByIdAndUpdate(
       id,
-      { location, locationDetails, ipAddress, macAddress },
+      { location },
       { new: true }
-    ); // Adicione macAddress
+    );
     if (!updatedRecord) {
       return res.status(404).json({ message: "Registro não encontrado" });
     }
@@ -401,15 +398,7 @@ app.post("/records/sign", async (req, res) => {
     record.ipAddress = ip;
     record.macAddress = mac;
     record.status = "assinado";
-    record.location = {
-      latitude: location.lat,
-      longitude: location.lon,
-      rua: location.road,
-      bairro: location.suburb,
-      cidade: location.city,
-      estado: location.state,
-      pais: location.country
-    };
+    record.location = location; // Atualizar a localização diretamente
     const updatedRecord = await record.save();
     res.json(updatedRecord);
   } catch (error) {

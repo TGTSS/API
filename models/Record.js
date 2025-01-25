@@ -8,6 +8,8 @@ const RecordSchema = new mongoose.Schema({
     name: { type: String, required: true },
     document: { type: String, required: true },
     phone: { type: String, default: "" },
+    latitude: { type: Number }, // Adicionar campo latitude
+    longitude: { type: Number } // Adicionar campo longitude
   },
   fornecedor: {
     name: { type: String, required: true, default: "MODERNA EDIFICAÇÕES & EMPREENDIMENTOS" },
@@ -43,6 +45,7 @@ const RecordSchema = new mongoose.Schema({
     latitude: { type: Number },
     longitude: { type: Number },
     rua: { type: String },
+    bairro: { type: String },
     cidade: { type: String },
     estado: { type: String },
     pais: { type: String }
