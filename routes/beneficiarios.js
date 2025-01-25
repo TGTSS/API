@@ -74,6 +74,7 @@ router.delete("/:id", async (req, res) => {
     if (!beneficiario) {
       return res.status(404).json({ message: "Beneficiário não encontrado" });
     }
+    res.setHeader("Content-Type", "application/json"); // Adicionar cabeçalho Content-Type
     res.json({ message: "Beneficiário excluído com sucesso" });
   } catch (error) {
     res.status(500).json({ message: error.message });

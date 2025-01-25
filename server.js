@@ -20,7 +20,7 @@ const allowedOrigins = [
 ];
 app.use(
   cors({
-    origin: "*", // Permitir qualquer origem
+    origin: allowedOrigins, // Usar allowedOrigins
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
   })
@@ -42,12 +42,6 @@ app.use((req, res, next) => {
   req.clientIp = ip;
   next();
 });
-
-app.use(cors({
-  origin: 'https://nexustecnologia.modernaedificacoes.com.br',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
 
 // Conexão ao MongoDB
 mongoose
@@ -273,9 +267,9 @@ app.delete("/records", async (req, res) => {
 });
 
 // Rota para excluir todos os beneficiários
-app.delete("/beneficiarios", async (req, res) => {
+app.delete("/api/beneficiarios", async (req, res) => {
   try {
-    console.log("Rota DELETE /beneficiarios chamada"); // Log para depuração
+    console.log("Rota DELETE /api/beneficiarios chamada"); // Log para depuração
     await Beneficiario.deleteMany({});
     res
       .status(200)
