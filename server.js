@@ -453,4 +453,7 @@ app.get("/server/info", async (req, res) => {
 app.use("/api/beneficiarios", beneficiariosRouter);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Allowed Origins: ${allowedOrigins.join(", ")}`);
+});
