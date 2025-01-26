@@ -433,6 +433,36 @@ app.post("/records/sign", async (req, res) => {
   }
 });
 
+// Rota para receber dados do site e salvar no banco de dados
+app.post("/api/recibos", async (req, res) => {
+  try {
+    console.log("Rota POST /api/recibos chamada"); // Log para depuração
+    const { formData } = req.body;
+
+    // Verifique se todos os campos necessários estão presentes
+    if (!formData || !formData.fornecedor || !formData.beneficiario || !formData.services) {
+      return res.status(400).json({ message: "Dados incompletos" });
+    }
+
+    const record = new Record({
+      ...formData,
+      date: formData.date?.date ? new Date(formData.date.date).toISOString() : null,
+      ipAddress: req.clientIp,
+      beneficiario: {
+        ...formData.beneficiario,
+        endereco: formData.beneficiario.endereco,
+      },
+      status: "pendente"
+    });
+
+    const savedRecord = await record.save();
+    res.status(201).json({ _id: savedRecord._id });
+  } catch (error) {
+    console.error("Erro ao salvar o recibo:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Função para obter o endereço MAC do servidor
 const getServerMacAddress = () => {
   const networkInterfaces = os.networkInterfaces();
