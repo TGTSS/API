@@ -225,6 +225,25 @@ app.put("/records/:id/status", async (req, res) => {
   }
 });
 
+// Rota para atualizar o status de um registro
+app.patch("/records/:id/status", async (req, res) => {
+  try {
+    console.log(`Rota PATCH /records/${req.params.id}/status chamada`); // Log para depuração
+    const { id } = req.params;
+    const { status } = req.body;
+    const record = await Record.findById(id);
+    if (!record) {
+      return res.status(404).json({ message: "Registro não encontrado" });
+    }
+    record.status = status;
+    const updatedRecord = await record.save();
+    res.json(updatedRecord);
+  } catch (error) {
+    console.error("Erro ao atualizar o status do registro:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para listar registros por localização
 app.get("/records/location/:location", async (req, res) => {
   try {
