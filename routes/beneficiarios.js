@@ -6,7 +6,7 @@ const router = express.Router();
 // Rota para listar todos os beneficiários
 router.get("/", async (req, res) => {
   try {
-    const beneficiarios = await Beneficiario.find().populate("endereco");
+    const beneficiarios = await Beneficiario.find();
     console.log("Beneficiários carregados:", beneficiarios); // Alterar log para "Beneficiários carregados:"
     res.setHeader("Content-Type", "application/json"); // Adicionar cabeçalho Content-Type
     res.json(beneficiarios);
