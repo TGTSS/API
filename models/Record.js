@@ -8,8 +8,16 @@ const RecordSchema = new mongoose.Schema({
     name: { type: String, required: true },
     document: { type: String, required: true },
     phone: { type: String, default: "" },
-    latitude: { type: Number }, // Adicionar campo latitude
-    longitude: { type: Number } // Adicionar campo longitude
+    endereco: { // Adicionar o campo endereco ao beneficiário
+      rua: { type: String, default: "" },
+      numero: { type: String, default: "" },
+      bairro: { type: String, default: "" },
+      cidade: { type: String, default: "" },
+      cep: { type: String, default: "" },
+      complemento: { type: String, default: "" }
+    },
+    latitude: { type: Number },
+    longitude: { type: Number }
   },
   fornecedor: {
     name: { type: String, required: true, default: "MODERNA EDIFICAÇÕES & EMPREENDIMENTOS" },
