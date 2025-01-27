@@ -150,8 +150,13 @@ app.get("/records/:id", async (req, res) => {
   try {
     console.log(`Rota GET /records/${req.params.id} chamada`); // Log para depuração
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log(`ID inválido: ${id}`); // Log para depuração
+      return res.status(400).json({ message: "ID inválido" });
+    }
     const record = await Record.findById(id); // Buscar pelo campo _id
     if (!record) {
+      console.log(`Registro não encontrado: ${id}`); // Log para depuração
       return res.status(404).json({ message: "Registro não encontrado" });
     }
     res.json(record);
@@ -510,6 +515,7 @@ const safeReplace = (str, searchValue, replaceValue) => {
   if (typeof str === "string") {
     return str.replace(searchValue, replaceValue);
   }
+  console.warn(`safeReplace: esperado string, mas recebeu ${typeof str}`);
   return str;
 };
 
