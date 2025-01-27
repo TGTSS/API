@@ -487,6 +487,10 @@ app.get("/server/info", async (req, res) => {
     const locationResponse = await axios.get(`https://ipapi.co/${ipResponse.data.ip}/json/`);
     const macAddress = getServerMacAddress();
 
+    if (!macAddress) {
+      throw new Error("Endereço MAC não encontrado");
+    }
+
     console.log("IP do servidor:", ipResponse.data.ip); // Log do IP
     console.log("Localização do servidor:", locationResponse.data); // Log da localização
     console.log("Endereço MAC do servidor:", macAddress); // Log do endereço MAC
