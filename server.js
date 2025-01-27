@@ -436,6 +436,13 @@ app.post("/records/sign", async (req, res) => {
     res.json(updatedRecord);
   } catch (error) {
     console.error("Erro ao assinar o registro:", error);
+    if (error.response) {
+      console.error("Erro no servidor:", error.response.data);
+    } else if (error.request) {
+      console.error("Nenhuma resposta recebida:", error.request);
+    } else {
+      console.error("Erro ao configurar a requisição:", error.message);
+    }
     res.status(500).json({ message: error.message });
   }
 });
