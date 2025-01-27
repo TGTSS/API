@@ -116,6 +116,10 @@ app.post("/records", async (req, res) => {
 
     const record = new Record({
       ...req.body,
+      beneficiario: {
+        ...beneficiario,
+        endereco: beneficiario.endereco // Garantir que o campo endereco seja salvo
+      },
       status: req.body.status || "pendente", // Adicionar o campo status
       ipAddress: req.clientIp // Adicionar o endereço IP do cliente
     });
