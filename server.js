@@ -498,7 +498,7 @@ app.get("/server/info", async (req, res) => {
     });
   } catch (error) {
     console.error("Erro ao obter informações do servidor:", error);
-    res.status(500).json({ message: "Erro ao obter informações do servidor" });
+    res.status(500).json({ message: "Erro ao obter informações do servidor", error: error.message });
   }
 });
 
