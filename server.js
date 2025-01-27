@@ -81,7 +81,10 @@ app.post("/api/beneficiarios/exemplo", async (req, res) => {
 app.post("/api/beneficiarios", async (req, res) => {
   try {
     console.log("Rota POST /api/beneficiarios chamada"); // Log para depuração
-    const beneficiario = new Beneficiario(req.body);
+    const beneficiario = new Beneficiario({
+      ...req.body,
+      endereco: req.body.endereco // Adicionar o campo endereco
+    });
     const savedBeneficiario = await beneficiario.save();
     res.status(201).json(savedBeneficiario);
   } catch (error) {

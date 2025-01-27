@@ -18,7 +18,10 @@ router.get("/", async (req, res) => {
 
 // Rota para adicionar um novo beneficiário
 router.post("/", async (req, res) => {
-  const beneficiario = new Beneficiario(req.body);
+  const beneficiario = new Beneficiario({
+    ...req.body,
+    endereco: req.body.endereco // Adicionar o campo endereco
+  });
   try {
     const novoBeneficiario = await beneficiario.save();
     res.status(201).json(novoBeneficiario);
