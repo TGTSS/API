@@ -16,13 +16,13 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
-  "https://nexustecnologia.modernaedificacoes.com.br" // Corrigir para https
+  "https://nexustecnologia.modernaedificacoes.com.br", // Corrigir para https
 ];
 app.use(
   cors({
     origin: allowedOrigins, // Usar allowedOrigins
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Adicionar PATCH
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"], // Adicionar PATCH
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(bodyParser.json());
@@ -35,9 +35,9 @@ app.use((req, res, next) => {
 
 // Middleware para obter o endereço IP do cliente
 app.use((req, res, next) => {
-  let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  if (ip === '::1') {
-    ip = '127.0.0.1'; // Tratar o caso de localhost IPv6
+  let ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  if (ip === "::1") {
+    ip = "127.0.0.1"; // Tratar o caso de localhost IPv6
   }
   req.clientIp = ip;
   next();
@@ -45,7 +45,10 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH"); // Adicionar PATCH
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, PATCH"
+  ); // Adicionar PATCH
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   next();
 });
@@ -83,7 +86,7 @@ app.post("/api/beneficiarios", async (req, res) => {
     console.log("Rota POST /api/beneficiarios chamada"); // Log para depuração
     const beneficiario = new Beneficiario({
       ...req.body,
-      endereco: req.body.endereco // Adicionar o campo endereco
+      endereco: req.body.endereco, // Adicionar o campo endereco
     });
     const savedBeneficiario = await beneficiario.save();
     res.status(201).json(savedBeneficiario);
@@ -118,10 +121,10 @@ app.post("/records", async (req, res) => {
       ...req.body,
       beneficiario: {
         ...beneficiario,
-        endereco: beneficiario.endereco // Garantir que o campo endereco seja salvo
+        endereco: beneficiario.endereco, // Garantir que o campo endereco seja salvo
       },
       status: req.body.status || "pendente", // Adicionar o campo status
-      ipAddress: req.clientIp // Adicionar o endereço IP do cliente
+      ipAddress: req.clientIp, // Adicionar o endereço IP do cliente
     });
     const savedRecord = await record.save();
     res.status(201).json({ _id: savedRecord._id }); // Retornar o _id gerado
@@ -318,7 +321,10 @@ app.get("/api/beneficiarios", async (req, res) => {
   try {
     console.log("Rota GET /api/beneficiarios chamada"); // Log para depuração
     const beneficiarios = await Beneficiario.find();
-    console.log("Beneficiários carregados:", JSON.stringify(beneficiarios, null, 2)); // Modificar log para exibir beneficiários no formato solicitado
+    console.log(
+      "Beneficiários carregados:",
+      JSON.stringify(beneficiarios, null, 2)
+    ); // Modificar log para exibir beneficiários no formato solicitado
     res.setHeader("Content-Type", "application/json"); // Adicionar cabeçalho Content-Type
     res.json(beneficiarios);
   } catch (error) {
@@ -402,7 +408,9 @@ app.get("/db/location", async (req, res) => {
     res.json({ dbLocation: locationResponse.data });
   } catch (error) {
     console.error("Erro ao obter a localização do banco de dados:", error);
-    res.status(500).json({ message: "Erro ao obter a localização do banco de dados" });
+    res
+      .status(500)
+      .json({ message: "Erro ao obter a localização do banco de dados" });
   }
 });
 
@@ -410,9 +418,15 @@ app.get("/db/location", async (req, res) => {
 app.get("/api/recibos", async (req, res) => {
   try {
     console.log("Rota GET /api/recibos chamada"); // Log para depuração
-    const recusados = await Record.find({ status: "recusado" }).sort({ _id: -1 }).limit(0);
-    const pendentes = await Record.find({ status: "pendente" }).sort({ _id: -1 }).limit(0);
-    const aprovados = await Record.find({ status: "aprovado" }).sort({ _id: -1 }).limit(0);
+    const recusados = await Record.find({ status: "recusado" })
+      .sort({ _id: -1 })
+      .limit(0);
+    const pendentes = await Record.find({ status: "pendente" })
+      .sort({ _id: -1 })
+      .limit(0);
+    const aprovados = await Record.find({ status: "aprovado" })
+      .sort({ _id: -1 })
+      .limit(0);
     res.json({ recusados, pendentes, aprovados });
   } catch (error) {
     console.error("Erro ao buscar recibos:", error); // Log para depuração
@@ -436,13 +450,6 @@ app.post("/records/sign", async (req, res) => {
     res.json(updatedRecord);
   } catch (error) {
     console.error("Erro ao assinar o registro:", error);
-    if (error.response) {
-      console.error("Erro no servidor:", error.response.data);
-    } else if (error.request) {
-      console.error("Nenhuma resposta recebida:", error.request);
-    } else {
-      console.error("Erro ao configurar a requisição:", error.message);
-    }
     res.status(500).json({ message: error.message });
   }
 });
@@ -454,19 +461,26 @@ app.post("/api/recibos", async (req, res) => {
     const { formData } = req.body;
 
     // Verifique se todos os campos necessários estão presentes
-    if (!formData || !formData.fornecedor || !formData.beneficiario || !formData.services) {
+    if (
+      !formData ||
+      !formData.fornecedor ||
+      !formData.beneficiario ||
+      !formData.services
+    ) {
       return res.status(400).json({ message: "Dados incompletos" });
     }
 
     const record = new Record({
       ...formData,
-      date: formData.date?.date ? new Date(formData.date.date).toISOString() : null,
+      date: formData.date?.date
+        ? new Date(formData.date.date).toISOString()
+        : null,
       ipAddress: req.clientIp,
       beneficiario: {
         ...formData.beneficiario,
         endereco: formData.beneficiario.endereco,
       },
-      status: "pendente"
+      status: "pendente",
     });
 
     const savedRecord = await record.save();
@@ -491,11 +505,26 @@ const getServerMacAddress = () => {
   return null;
 };
 
+// Função para substituir valores em uma string
+const safeReplace = (str, searchValue, replaceValue) => {
+  if (typeof str === "string") {
+    return str.replace(searchValue, replaceValue);
+  }
+  return str;
+};
+
+// Exemplo de uso da função safeReplace
+const exampleString = "Hello, World!";
+const replacedString = safeReplace(exampleString, "World", "JavaScript");
+console.log(replacedString); // Output: Hello, JavaScript!
+
 // Rota para obter a localização e o endereço MAC do servidor
 app.get("/server/info", async (req, res) => {
   try {
     const ipResponse = await axios.get("https://api.ipify.org?format=json");
-    const locationResponse = await axios.get(`https://ipapi.co/${ipResponse.data.ip}/json/`);
+    const locationResponse = await axios.get(
+      `https://ipapi.co/${ipResponse.data.ip}/json/`
+    );
     const macAddress = getServerMacAddress();
 
     if (!macAddress) {
@@ -513,7 +542,12 @@ app.get("/server/info", async (req, res) => {
     });
   } catch (error) {
     console.error("Erro ao obter informações do servidor:", error);
-    res.status(500).json({ message: "Erro ao obter informações do servidor", error: error.message });
+    res
+      .status(500)
+      .json({
+        message: "Erro ao obter informações do servidor",
+        error: error.message,
+      });
   }
 });
 
