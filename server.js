@@ -8,6 +8,7 @@ import Beneficiario from "./models/Beneficiario.js";
 import Counter from "./models/Counter.js";
 import os from "os";
 import axios from "axios";
+import fornecedoresRouter from "./routes/fornecedores.js";
 
 const app = express();
 
@@ -565,6 +566,7 @@ app.get("/server/info", async (req, res) => {
 });
 
 app.use("/api/beneficiarios", beneficiariosRouter);
+app.use("/api/fornecedores", fornecedoresRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
