@@ -3,15 +3,15 @@ import Fornecedor from "../models/Fornecedor.js";
 
 const router = express.Router();
 
-// Rota para cadastrar um novo fornecedor
+// Rota para criar um novo fornecedor
 router.post("/", async (req, res) => {
   try {
-    const fornecedor = new Fornecedor(req.body);
-    const savedFornecedor = await fornecedor.save();
-    res.status(201).json(savedFornecedor);
+    const fornecedores = req.body;
+    const savedFornecedores = await Fornecedor.insertMany(fornecedores);
+    res.status(201).json(savedFornecedores);
   } catch (error) {
-    console.error("Erro ao cadastrar fornecedor:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Erro ao criar fornecedores:", error);
+    res.status(400).json({ message: error.message });
   }
 });
 
