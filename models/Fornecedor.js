@@ -1,23 +1,23 @@
 import mongoose from "mongoose";
 
 const FornecedorSchema = new mongoose.Schema({
-  tipo: { type: String, required: true },
-  tambemCliente: { type: Boolean, required: true },
-  status: { type: String, required: true },
-  nomeFantasia: { type: String },
+  tipo: { type: String },
+  tambemCliente: { type: Boolean },
+  status: { type: String },
+  nomeFantasia: { type: String, required: true },
   razaoSocial: { type: String },
-  cnpj: { type: String },
+  cnpj: { type: String, required: true },
   inscricaoEstadual: { type: String },
   inscricaoMunicipal: { type: String },
-  telefone1: { type: String, required: true },
-  email: { type: String, required: true },
-  logradouro: { type: String, required: true },
-  numero: { type: String, required: true },
+  telefone1: { type: String },
+  email: { type: String },
+  logradouro: { type: String },
+  numero: { type: String },
   complemento: { type: String },
-  bairro: { type: String, required: true },
-  cidade: { type: String, required: true },
-  estado: { type: String, required: true },
-  cep: { type: String, required: true },
+  bairro: { type: String },
+  cidade: { type: String },
+  estado: { type: String },
+  cep: { type: String },
   contatos: [
     {
       nome: { type: String },
@@ -27,7 +27,7 @@ const FornecedorSchema = new mongoose.Schema({
     },
   ],
   informacoesComplementares: { type: String },
-  documentos: { type: Array },
+  documentos: [{ type: String }],
 });
 
 const Fornecedor = mongoose.model("Fornecedor", FornecedorSchema);
