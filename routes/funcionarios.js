@@ -81,7 +81,7 @@ router.post("/api/funcionarios/import", async (req, res) => {
 
     const funcionariosToSave = funcionarios.map(funcionario => ({
       ...funcionario,
-      dataNascimento: new Date(funcionario.dataNascimento) // Garantir que a data de nascimento seja um objeto Date
+      dataNascimento: funcionario.dataNascimento ? new Date(funcionario.dataNascimento) : null // Garantir que a data de nascimento seja um objeto Date ou null
     }));
 
     const savedFuncionarios = await Funcionario.insertMany(funcionariosToSave);
