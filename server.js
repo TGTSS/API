@@ -567,6 +567,18 @@ app.get("/server/info", async (req, res) => {
   }
 });
 
+// Rota para listar todos os fornecedores
+app.get("/api/fornecedores", async (req, res) => {
+  try {
+    console.log("Rota GET /api/fornecedores chamada"); // Log para depuração
+    const fornecedores = await Fornecedor.find().lean(); // Usar lean() para melhorar o desempenho
+    res.json(fornecedores);
+  } catch (error) {
+    console.error("Erro ao buscar fornecedores:", error); // Log para depuração
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.use("/api/beneficiarios", beneficiariosRouter);
 app.use("/api/fornecedores", fornecedoresRouter);
 app.use("/api/clientes", clientesRouter);
