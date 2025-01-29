@@ -571,6 +571,23 @@ app.get("/api/fornecedores", async (req, res) => {
   }
 });
 
+// Rota para atualizar um fornecedor
+app.put("/api/fornecedores/:id", async (req, res) => {
+  try {
+    console.log(`Rota PUT /api/fornecedores/${req.params.id} chamada`);
+    const { id } = req.params;
+    const fornecedor = req.body;
+    const updatedFornecedor = await Fornecedor.findByIdAndUpdate(id, fornecedor, { new: true });
+    if (!updatedFornecedor) {
+      return res.status(404).json({ message: "Fornecedor não encontrado" });
+    }
+    res.json(updatedFornecedor);
+  } catch (error) {
+    console.error("Erro ao atualizar fornecedor:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para consultar CNPJ
 app.get("/consulta/:cnpj", async (req, res) => {
   try {
