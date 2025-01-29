@@ -9,7 +9,33 @@ router.post("/", async (req, res) => {
     console.log("Rota POST /api/clientes chamada"); // Log para depuração
     console.log("Dados recebidos:", req.body); // Log para verificar os dados recebidos
 
-    const cliente = new Cliente(req.body);
+    const cliente = new Cliente({
+      tipo: req.body.tipo,
+      tambemFornecedor: req.body.tambemFornecedor,
+      status: req.body.status,
+      nomeFantasia: req.body.nomeFantasia,
+      razaoSocial: req.body.razaoSocial,
+      cnpj: req.body.cnpj,
+      inscricaoEstadual: req.body.inscricaoEstadual,
+      inscricaoMunicipal: req.body.inscricaoMunicipal,
+      cpf: req.body.cpf,
+      nome: req.body.nome,
+      telefone1: req.body.telefone1,
+      email: req.body.email,
+      logradouro: req.body.logradouro,
+      numero: req.body.numero,
+      complemento: req.body.complemento,
+      bairro: req.body.bairro,
+      cidade: req.body.cidade,
+      estado: req.body.estado,
+      cep: req.body.cep,
+      contatos: req.body.contatos,
+      selectedPhone: req.body.selectedPhone,
+      informacoesComplementares: req.body.informacoesComplementares,
+      documentos: req.body.documentos,
+      segmento: req.body.segmento,
+    });
+
     const savedCliente = await cliente.save();
     console.log("Cliente salvo:", savedCliente); // Log para verificar o cliente salvo
 
