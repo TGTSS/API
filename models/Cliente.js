@@ -18,6 +18,10 @@ const clienteSchema = new mongoose.Schema({
   cidade: { type: String },
   estado: { type: String },
   cep: { type: String },
+  cpf: { type: String },
+  nome: { type: String },
+  selectedPhone: { type: String },
+  segmento: { type: String },
   contatos: [
     {
       nome: { type: String },
