@@ -142,7 +142,7 @@ app.post("/records", async (req, res) => {
 app.get("/records", async (req, res) => {
   try {
     console.log("Rota GET /records chamada"); // Log para depuração
-    const records = await Record.find();
+    const records = await Record.find().lean(); // Usar lean() para melhorar o desempenho
     res.json(records);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -329,7 +329,7 @@ app.delete("/api/beneficiarios", async (req, res) => {
 app.get("/api/beneficiarios", async (req, res) => {
   try {
     console.log("Rota GET /api/beneficiarios chamada"); // Log para depuração
-    const beneficiarios = await Beneficiario.find();
+    const beneficiarios = await Beneficiario.find().lean(); // Usar lean() para melhorar o desempenho
     console.log(
       "Beneficiários carregados:",
       JSON.stringify(beneficiarios, null, 2)
@@ -346,7 +346,7 @@ app.get("/api/beneficiarios", async (req, res) => {
 app.get("/records/recusados", async (req, res) => {
   try {
     console.log("Rota GET /records/recusados chamada"); // Log para depuração
-    const records = await Record.find({ status: "recusado" });
+    const records = await Record.find({ status: "recusado" }).lean(); // Usar lean() para melhorar o desempenho
     console.log("Recibos recusados encontrados:", records); // Log para depuração
     res.json(records);
   } catch (error) {
@@ -362,7 +362,7 @@ app.get("/records/recusados", async (req, res) => {
 app.get("/records/pendentes", async (req, res) => {
   try {
     console.log("Rota GET /records/pendentes chamada"); // Log para depuração
-    const records = await Record.find({ status: "pendente" });
+    const records = await Record.find({ status: "pendente" }).lean(); // Usar lean() para melhorar o desempenho
     console.log("Recibos pendentes encontrados:", records); // Log para depuração
     res.json(records);
   } catch (error) {
@@ -378,7 +378,7 @@ app.get("/records/pendentes", async (req, res) => {
 app.get("/records/aprovados", async (req, res) => {
   try {
     console.log("Rota GET /records/aprovados chamada"); // Log para depuração
-    const records = await Record.find({ status: "aprovado" });
+    const records = await Record.find({ status: "aprovado" }).lean(); // Usar lean() para melhorar o desempenho
     console.log("Recibos aprovados encontrados:", records); // Log para depuração
     res.json(records);
   } catch (error) {
