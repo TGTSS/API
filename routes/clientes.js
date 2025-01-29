@@ -8,14 +8,12 @@ router.post("/", async (req, res) => {
   try {
     const clientes = req.body;
 
-    // Remover validação de campos obrigatórios
-    // clientes.forEach(cliente => {
-    //   if (!cliente.tipo || !cliente.status || !cliente.razaoSocial || !cliente.cnpj) {
-    //     throw new Error("Campos obrigatórios não preenchidos");
-    //   }
-    // });
+    console.log("Dados recebidos:", clientes);
 
     const savedClientes = await Cliente.insertMany(clientes);
+
+    console.log("Clientes salvos:", savedClientes);
+
     res.status(201).json(savedClientes);
   } catch (error) {
     console.error("Erro ao criar clientes:", error);
