@@ -493,6 +493,29 @@ app.post("/api/recibos", async (req, res) => {
   }
 });
 
+// Rota para importar funcionários a partir de um arquivo JSON
+app.post("/api/funcionarios/import", async (req, res) => {
+  try {
+    console.log("Rota POST /api/funcionarios/import chamada");
+    const funcionarios = req.body;
+    if (!Array.isArray(funcionarios)) {
+      return res.status(400).json({ message: "Dados inválidos" });
+    }
+
+    const funcionariosToSave = funcionarios.map(funcionario => ({
+      ...funcionario,
+      dataNascimento: funcionario.dataNascimento ? new Date(funcionario.dataNascimento) : null // Garantir que a data de nascimento seja um objeto Date ou null
+    }));
+
+    const savedFuncionarios = await Funcionario.insertMany(funcionariosToSave);
+    console.log("Funcionários salvos:", JSON.stringify(savedFuncionarios, null, 2));
+    res.status(201).json(savedFuncionarios);
+  } catch (error) {
+    console.error("Erro ao importar funcionários:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Função para obter o endereço MAC do servidor
 const getServerMacAddress = () => {
   const networkInterfaces = os.networkInterfaces();

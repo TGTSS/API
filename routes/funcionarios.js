@@ -3,6 +3,9 @@ import Funcionario from "../models/Funcionario.js";
 
 const router = express.Router();
 
+// Middleware para analisar o corpo da solicitação como JSON
+router.use(express.json());
+
 // Rota para cadastrar um novo funcionário
 router.post("/", async (req, res) => {
   try {
