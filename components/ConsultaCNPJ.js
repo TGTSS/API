@@ -1,6 +1,7 @@
 import express from "express";
 import axios from "axios";
 import cors from "cors";
+import mongoose from "mongoose";
 import Fornecedor from "../models/Fornecedor.js"; // Importar o modelo Fornecedor
 
 const app = express();
