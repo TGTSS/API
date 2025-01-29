@@ -571,6 +571,18 @@ app.get("/api/fornecedores", async (req, res) => {
   }
 });
 
+// Rota para consultar CNPJ
+app.get("/consulta/:cnpj", async (req, res) => {
+  try {
+    const { cnpj } = req.params;
+    const response = await axios.get(`https://api-urh2.onrender.com/consulta/${cnpj}`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`Erro ao consultar CNPJ ${req.params.cnpj}:`, error);
+    res.status(500).json({ message: "Erro ao consultar CNPJ", error: error.message });
+  }
+});
+
 app.use("/api/beneficiarios", beneficiariosRouter);
 app.use("/api/fornecedores", fornecedoresRouter);
 app.use("/api/clientes", clientesRouter);
