@@ -13,6 +13,7 @@ import clientesRouter from "./routes/clientes.js";
 import Fornecedor from "./models/Fornecedor.js";
 import Cliente from "./models/Cliente.js";
 import funcionariosRouter from "./routes/funcionarios.js";
+import Funcionario from "./models/Funcionario.js"; // Adicionei esta linha
 
 const app = express();
 
