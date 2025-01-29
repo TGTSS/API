@@ -136,6 +136,7 @@ app.post("/api/clientes", async (req, res) => {
     });
 
     const savedCliente = await cliente.save();
+    console.log("Cliente salvo:", savedCliente); // Log para verificar o cliente salvo
     res.status(201).json(savedCliente);
   } catch (error) {
     console.error("Erro ao cadastrar cliente:", error);

@@ -6,13 +6,12 @@ const router = express.Router();
 // Rota para criar um novo cliente
 router.post("/", async (req, res) => {
   try {
+    console.log("Rota POST /api/clientes chamada"); // Log para depuração
+    console.log("Dados recebidos:", req.body); // Log para verificar os dados recebidos
+
     const cliente = new Cliente(req.body);
-
-    console.log("Dados recebidos:", req.body);
-
     const savedCliente = await cliente.save();
-
-    console.log("Cliente salvo:", savedCliente);
+    console.log("Cliente salvo:", savedCliente); // Log para verificar o cliente salvo
 
     res.status(201).json(savedCliente);
   } catch (error) {
