@@ -179,7 +179,10 @@ app.post("/api/clientes/import", async (req, res) => {
       segmento: cliente.segmento,
     }));
 
+    console.log("Clientes a serem salvos:", JSON.stringify(clientesToSave, null, 2)); // Log para depuração
+
     const savedClientes = await Cliente.insertMany(clientesToSave);
+    console.log("Clientes salvos:", JSON.stringify(savedClientes, null, 2)); // Log para depuração
     res.status(201).json(savedClientes);
   } catch (error) {
     console.error("Erro ao importar clientes:", error);
