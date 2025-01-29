@@ -72,7 +72,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Rota para importar funcionários a partir de um arquivo JSON
-router.post("/import", async (req, res) => {
+router.post("/api/funcionarios/import", async (req, res) => {
   try {
     const funcionarios = req.body;
     if (!Array.isArray(funcionarios)) {
@@ -81,6 +81,7 @@ router.post("/import", async (req, res) => {
 
     const funcionariosToSave = funcionarios.map(funcionario => ({
       ...funcionario,
+      dataNascimento: new Date(funcionario.dataNascimento) // Garantir que a data de nascimento seja um objeto Date
     }));
 
     const savedFuncionarios = await Funcionario.insertMany(funcionariosToSave);
