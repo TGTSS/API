@@ -7,6 +7,14 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   try {
     const clientes = req.body;
+
+    // Remover validação de campos obrigatórios
+    // clientes.forEach(cliente => {
+    //   if (!cliente.tipo || !cliente.status || !cliente.razaoSocial || !cliente.cnpj) {
+    //     throw new Error("Campos obrigatórios não preenchidos");
+    //   }
+    // });
+
     const savedClientes = await Cliente.insertMany(clientes);
     res.status(201).json(savedClientes);
   } catch (error) {
