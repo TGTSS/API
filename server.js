@@ -11,6 +11,7 @@ import axios from "axios";
 import fornecedoresRouter from "./routes/fornecedores.js";
 import clientesRouter from "./routes/clientes.js";
 import Fornecedor from "./models/Fornecedor.js"; // Adicionar importação do modelo Fornecedor
+import Cliente from "./models/Cliente.js"; // Adicionar importação do modelo Cliente
 
 const app = express();
 
