@@ -36,6 +36,8 @@ router.post("/", async (req, res) => {
       segmento: req.body.segmento,
     });
 
+    console.log("Objeto Cliente a ser salvo:", cliente); // Log para verificar o objeto Cliente
+
     const savedCliente = await cliente.save();
     console.log("Cliente salvo:", savedCliente); // Log para verificar o cliente salvo
 
