@@ -101,6 +101,22 @@ app.post("/api/beneficiarios", async (req, res) => {
   }
 });
 
+// Rota para cadastrar um novo cliente
+app.post("/api/clientes", async (req, res) => {
+  try {
+    console.log("Rota POST /api/clientes chamada"); // Log para depuração
+    const cliente = new Cliente({
+      ...req.body,
+      endereco: req.body.endereco, // Adicionar o campo endereco
+    });
+    const savedCliente = await cliente.save();
+    res.status(201).json(savedCliente);
+  } catch (error) {
+    console.error("Erro ao cadastrar cliente:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para criar um registro
 app.post("/records", async (req, res) => {
   try {
