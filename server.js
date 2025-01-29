@@ -143,6 +143,50 @@ app.post("/api/clientes", async (req, res) => {
   }
 });
 
+// Rota para importar clientes a partir de um arquivo JSON
+app.post("/api/clientes/import", async (req, res) => {
+  try {
+    console.log("Rota POST /api/clientes/import chamada"); // Log para depuração
+    const clientes = req.body;
+    if (!Array.isArray(clientes)) {
+      return res.status(400).json({ message: "Dados inválidos" });
+    }
+
+    const clientesToSave = clientes.map(cliente => ({
+      tipo: cliente.tipo,
+      tambemFornecedor: cliente.tambemFornecedor,
+      status: cliente.status,
+      nomeFantasia: cliente.nomeFantasia,
+      razaoSocial: cliente.razaoSocial,
+      cnpj: cliente.cnpj,
+      inscricaoEstadual: cliente.inscricaoEstadual,
+      inscricaoMunicipal: cliente.inscricaoMunicipal,
+      cpf: cliente.cpf,
+      nome: cliente.nome,
+      telefone1: cliente.telefone1,
+      email: cliente.email,
+      logradouro: cliente.logradouro,
+      numero: cliente.numero,
+      complemento: cliente.complemento,
+      bairro: cliente.bairro,
+      cidade: cliente.cidade,
+      estado: cliente.estado,
+      cep: cliente.cep,
+      contatos: cliente.contatos,
+      selectedPhone: cliente.selectedPhone,
+      informacoesComplementares: cliente.informacoesComplementares,
+      documentos: cliente.documentos,
+      segmento: cliente.segmento,
+    }));
+
+    const savedClientes = await Cliente.insertMany(clientesToSave);
+    res.status(201).json(savedClientes);
+  } catch (error) {
+    console.error("Erro ao importar clientes:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para criar um registro
 app.post("/records", async (req, res) => {
   try {

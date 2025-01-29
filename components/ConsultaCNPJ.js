@@ -14,7 +14,12 @@ app.post("/api/fornecedores", async (req, res) => {
   const fornecedor = new Fornecedor(req.body);
   try {
     const savedFornecedor = await fornecedor.save();
-    res.status(201).json({ message: "Fornecedor cadastrado com sucesso", fornecedor: savedFornecedor });
+    res
+      .status(201)
+      .json({
+        message: "Fornecedor cadastrado com sucesso",
+        fornecedor: savedFornecedor,
+      });
   } catch (error) {
     console.error("Erro ao cadastrar fornecedor:", error.message);
     res.status(500).json({ error: "Erro ao cadastrar fornecedor" });
@@ -27,7 +32,19 @@ app.get("/consulta/:cnpj", async (req, res) => {
     const response = await axios.get(
       `https://www.receitaws.com.br/v1/cnpj/${cnpj}`
     );
-    const { nome, fantasia, cnpj: cnpjRetornado, logradouro, numero, municipio, bairro, uf, cep, email, telefone } = response.data;
+    const {
+      nome,
+      fantasia,
+      cnpj: cnpjRetornado,
+      logradouro,
+      numero,
+      municipio,
+      bairro,
+      uf,
+      cep,
+      email,
+      telefone,
+    } = response.data;
     const filteredData = {
       nome,
       fantasia,
@@ -38,14 +55,14 @@ app.get("/consulta/:cnpj", async (req, res) => {
         municipio,
         bairro,
         uf,
-        cep
+        cep,
       },
       email,
-      telefone
+      telefone,
     };
     res.json(filteredData);
   } catch (error) {
-    console.error('Erro ao consultar o CNPJ:', error.message);
+    console.error("Erro ao consultar o CNPJ:", error.message);
     res.status(500).json({ error: "Erro ao consultar o CNPJ" });
   }
 });
