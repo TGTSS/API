@@ -6,17 +6,17 @@ const router = express.Router();
 // Rota para criar um novo cliente
 router.post("/", async (req, res) => {
   try {
-    const clientes = req.body;
+    const cliente = new Cliente(req.body);
 
-    console.log("Dados recebidos:", clientes);
+    console.log("Dados recebidos:", req.body);
 
-    const savedClientes = await Cliente.insertMany(clientes);
+    const savedCliente = await cliente.save();
 
-    console.log("Clientes salvos:", savedClientes);
+    console.log("Cliente salvo:", savedCliente);
 
-    res.status(201).json(savedClientes);
+    res.status(201).json(savedCliente);
   } catch (error) {
-    console.error("Erro ao criar clientes:", error);
+    console.error("Erro ao criar cliente:", error);
     res.status(400).json({ message: error.message });
   }
 });
