@@ -368,6 +368,22 @@ app.delete("/api/beneficiarios", async (req, res) => {
   }
 });
 
+// Rota para excluir um cliente
+app.delete("/api/clientes/:id", async (req, res) => {
+  try {
+    console.log(`Rota DELETE /api/clientes/${req.params.id} chamada`); // Log para depuração
+    const { id } = req.params;
+    const deletedCliente = await Cliente.findByIdAndDelete(id); // Excluir pelo campo _id
+    if (!deletedCliente) {
+      return res.status(404).json({ message: "Cliente não encontrado" });
+    }
+    res.status(200).json({ message: "Cliente excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir o cliente:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para listar todos os beneficiários
 app.get("/api/beneficiarios", async (req, res) => {
   try {

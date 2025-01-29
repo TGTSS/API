@@ -3,15 +3,15 @@ import Cliente from "../models/Cliente.js";
 
 const router = express.Router();
 
-// Rota para cadastrar um novo cliente
+// Rota para cadastrar novos clientes
 router.post("/", async (req, res) => {
   try {
-    const cliente = new Cliente(req.body);
-    const savedCliente = await cliente.save();
-    res.status(201).json({ message: "Cliente cadastrado com sucesso", cliente: savedCliente });
+    const clientes = req.body;
+    const savedClientes = await Cliente.insertMany(clientes);
+    res.status(201).json(savedClientes);
   } catch (error) {
-    console.error("Erro ao cadastrar cliente:", error);
-    res.status(500).json({ message: "Erro ao cadastrar cliente", error: error.message });
+    console.error("Erro ao cadastrar clientes:", error);
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -68,6 +68,17 @@ router.delete("/:id", async (req, res) => {
   } catch (error) {
     console.error("Erro ao excluir cliente:", error);
     res.status(500).json({ message: "Erro ao excluir cliente", error: error.message });
+  }
+});
+
+// Rota para apagar todos os clientes
+router.delete("/", async (req, res) => {
+  try {
+    await Cliente.deleteMany({});
+    res.json({ message: "Todos os clientes foram excluídos com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir todos os clientes:", error);
+    res.status(500).json({ message: "Erro ao excluir todos os clientes", error: error.message });
   }
 });
 
