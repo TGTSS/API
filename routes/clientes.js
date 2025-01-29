@@ -36,7 +36,7 @@ router.post("/", async (req, res) => {
       segmento: req.body.segmento,
     });
 
-    console.log("Objeto Cliente a ser salvo:", cliente); // Log para verificar o objeto Cliente
+    console.log("Objeto Cliente a ser salvo:", cliente.toObject()); // Log para verificar o objeto Cliente
 
     const savedCliente = await cliente.save();
     console.log("Cliente salvo:", savedCliente); // Log para verificar o cliente salvo
@@ -78,7 +78,9 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedCliente = await Cliente.findByIdAndUpdate(id, req.body, { new: true });
+    const updatedCliente = await Cliente.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
     if (!updatedCliente) {
       return res.status(404).json({ message: "Cliente não encontrado" });
     }
