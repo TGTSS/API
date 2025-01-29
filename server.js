@@ -12,6 +12,7 @@ import fornecedoresRouter from "./routes/fornecedores.js";
 import clientesRouter from "./routes/clientes.js";
 import Fornecedor from "./models/Fornecedor.js";
 import Cliente from "./models/Cliente.js";
+import funcionariosRouter from "./routes/funcionarios.js";
 
 const app = express();
 
@@ -631,6 +632,7 @@ app.get("/consulta/:cnpj", async (req, res) => {
 app.use("/api/beneficiarios", beneficiariosRouter);
 app.use("/api/fornecedores", fornecedoresRouter);
 app.use("/api/clientes", clientesRouter);
+app.use("/api/funcionarios", funcionariosRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
