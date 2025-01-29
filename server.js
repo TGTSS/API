@@ -10,8 +10,8 @@ import os from "os";
 import axios from "axios";
 import fornecedoresRouter from "./routes/fornecedores.js";
 import clientesRouter from "./routes/clientes.js";
-import Fornecedor from "./models/Fornecedor.js"; // Adicionar importação do modelo Fornecedor
-import Cliente from "./models/Cliente.js"; // Adicionar importação do modelo Cliente
+import Fornecedor from "./models/Fornecedor.js";
+import Cliente from "./models/Cliente.js";
 
 const app = express();
 
@@ -20,14 +20,14 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
-  "https://nexustecnologia.modernaedificacoes.com.br", // Corrigir para https
-  "https://i9systemas.modernaedificacoes.com.br", // Adicionar novo domínio
-  "https://api-urh2.onrender.com", // Adicionar novo domínio
+  "https://nexustecnologia.modernaedificacoes.com.br",
+  "https://i9systemas.modernaedificacoes.com.br",
+  "https://api-urh2.onrender.com",
 ];
 app.use(
   cors({
-    origin: allowedOrigins, // Usar allowedOrigins
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"], // Adicionar PATCH
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -43,19 +43,9 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   let ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
   if (ip === "::1") {
-    ip = "127.0.0.1"; // Tratar o caso de localhost IPv6
+    ip = "127.0.0.1";
   }
   req.clientIp = ip;
-  next();
-});
-
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, PATCH"
-  ); // Adicionar PATCH
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   next();
 });
 
@@ -74,7 +64,7 @@ mongoose
 // Adicionar um beneficiário de exemplo ao banco de dados
 app.post("/api/beneficiarios/exemplo", async (req, res) => {
   try {
-    console.log("Rota POST /api/beneficiarios/exemplo chamada"); // Log para depuração
+    console.log("Rota POST /api/beneficiarios/exemplo chamada");
     const exemploBeneficiario = new Beneficiario({
       name: "Beneficiário Exemplo",
     });
@@ -89,10 +79,10 @@ app.post("/api/beneficiarios/exemplo", async (req, res) => {
 // Rota para cadastrar um novo beneficiário
 app.post("/api/beneficiarios", async (req, res) => {
   try {
-    console.log("Rota POST /api/beneficiarios chamada"); // Log para depuração
+    console.log("Rota POST /api/beneficiarios chamada");
     const beneficiario = new Beneficiario({
       ...req.body,
-      endereco: req.body.endereco, // Adicionar o campo endereco
+      endereco: req.body.endereco,
     });
     const savedBeneficiario = await beneficiario.save();
     res.status(201).json(savedBeneficiario);
@@ -105,40 +95,17 @@ app.post("/api/beneficiarios", async (req, res) => {
 // Rota para cadastrar um novo cliente
 app.post("/api/clientes", async (req, res) => {
   try {
-    console.log("Rota POST /api/clientes chamada"); // Log para depuração
-    console.log("Dados recebidos:", req.body); // Log para verificar os dados recebidos
+    console.log("Rota POST /api/clientes chamada");
+    console.log("Dados recebidos:", req.body);
 
     const cliente = new Cliente({
-      tipo: req.body.tipo,
-      tambemFornecedor: req.body.tambemFornecedor,
-      status: req.body.status,
-      nomeFantasia: req.body.nomeFantasia,
-      razaoSocial: req.body.razaoSocial,
-      cnpj: req.body.cnpj,
-      inscricaoEstadual: req.body.inscricaoEstadual,
-      inscricaoMunicipal: req.body.inscricaoMunicipal,
-      cpf: req.body.cpf,
-      nome: req.body.nome,
-      telefone1: req.body.telefone1,
-      email: req.body.email,
-      logradouro: req.body.logradouro,
-      numero: req.body.numero,
-      complemento: req.body.complemento,
-      bairro: req.body.bairro,
-      cidade: req.body.cidade,
-      estado: req.body.estado,
-      cep: req.body.cep,
-      contatos: req.body.contatos,
-      selectedPhone: req.body.selectedPhone,
-      informacoesComplementares: req.body.informacoesComplementares,
-      documentos: req.body.documentos,
-      segmento: req.body.segmento,
+      ...req.body,
     });
 
-    console.log("Objeto Cliente a ser salvo:", cliente.toObject()); // Log para verificar o objeto Cliente
+    console.log("Objeto Cliente a ser salvo:", cliente.toObject());
 
     const savedCliente = await cliente.save();
-    console.log("Cliente salvo:", savedCliente); // Log para verificar o cliente salvo
+    console.log("Cliente salvo:", savedCliente);
     res.status(201).json(savedCliente);
   } catch (error) {
     console.error("Erro ao cadastrar cliente:", error);
@@ -149,43 +116,20 @@ app.post("/api/clientes", async (req, res) => {
 // Rota para importar clientes a partir de um arquivo JSON
 app.post("/api/clientes/import", async (req, res) => {
   try {
-    console.log("Rota POST /api/clientes/import chamada"); // Log para depuração
+    console.log("Rota POST /api/clientes/import chamada");
     const clientes = req.body;
     if (!Array.isArray(clientes)) {
       return res.status(400).json({ message: "Dados inválidos" });
     }
 
     const clientesToSave = clientes.map(cliente => ({
-      tipo: cliente.tipo,
-      tambemFornecedor: cliente.tambemFornecedor,
-      status: cliente.status,
-      nomeFantasia: cliente.nomeFantasia,
-      razaoSocial: cliente.razaoSocial,
-      cnpj: cliente.cnpj,
-      inscricaoEstadual: cliente.inscricaoEstadual,
-      inscricaoMunicipal: cliente.inscricaoMunicipal,
-      cpf: cliente.cpf,
-      nome: cliente.nome,
-      telefone1: cliente.telefone1,
-      email: cliente.email,
-      logradouro: cliente.logradouro,
-      numero: cliente.numero,
-      complemento: cliente.complemento,
-      bairro: cliente.bairro,
-      cidade: cliente.cidade,
-      estado: cliente.estado,
-      cep: cliente.cep,
-      contatos: cliente.contatos,
-      selectedPhone: cliente.selectedPhone,
-      informacoesComplementares: cliente.informacoesComplementares,
-      documentos: cliente.documentos,
-      segmento: cliente.segmento,
+      ...cliente,
     }));
 
-    console.log("Clientes a serem salvos:", JSON.stringify(clientesToSave, null, 2)); // Log para depuração
+    console.log("Clientes a serem salvos:", JSON.stringify(clientesToSave, null, 2));
 
     const savedClientes = await Cliente.insertMany(clientesToSave);
-    console.log("Clientes salvos:", JSON.stringify(savedClientes, null, 2)); // Log para depuração
+    console.log("Clientes salvos:", JSON.stringify(savedClientes, null, 2));
     res.status(201).json(savedClientes);
   } catch (error) {
     console.error("Erro ao importar clientes:", error);
@@ -196,21 +140,17 @@ app.post("/api/clientes/import", async (req, res) => {
 // Rota para criar um registro
 app.post("/records", async (req, res) => {
   try {
-    console.log("Rota POST /records chamada"); // Log para depuração
-    console.log("Dados recebidos:", req.body); // Adicione este log para depuração
+    console.log("Rota POST /records chamada");
+    console.log("Dados recebidos:", req.body);
     const { beneficiario, fornecedor, date, services, totalValue } = req.body;
 
-    // Verifique se todos os campos necessários estão presentes
     if (!beneficiario || !fornecedor || !date || !services || !totalValue) {
-      console.log("Campos obrigatórios ausentes"); // Log para depuração
-      return res
-        .status(400)
-        .json({ message: "Todos os campos são obrigatórios" });
+      console.log("Campos obrigatórios ausentes");
+      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
     }
 
-    // Verifique se o campo date é um objeto Date válido
     if (isNaN(Date.parse(date))) {
-      console.log("Data inválida:", date); // Log para depuração
+      console.log("Data inválida:", date);
       return res.status(400).json({ message: "Data inválida" });
     }
 
@@ -218,15 +158,15 @@ app.post("/records", async (req, res) => {
       ...req.body,
       beneficiario: {
         ...beneficiario,
-        endereco: beneficiario.endereco, // Garantir que o campo endereco seja salvo
+        endereco: beneficiario.endereco,
       },
-      status: req.body.status || "pendente", // Adicionar o campo status
-      ipAddress: req.clientIp, // Adicionar o endereço IP do cliente
+      status: req.body.status || "pendente",
+      ipAddress: req.clientIp,
     });
     const savedRecord = await record.save();
-    res.status(201).json({ _id: savedRecord._id }); // Retornar o _id gerado
+    res.status(201).json({ _id: savedRecord._id });
   } catch (error) {
-    console.error("Erro ao salvar o registro:", error); // Adicione este log para depuração
+    console.error("Erro ao salvar o registro:", error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -234,8 +174,8 @@ app.post("/records", async (req, res) => {
 // Rota para listar todos os registros
 app.get("/records", async (req, res) => {
   try {
-    console.log("Rota GET /records chamada"); // Log para depuração
-    const records = await Record.find().lean(); // Usar lean() para melhorar o desempenho
+    console.log("Rota GET /records chamada");
+    const records = await Record.find().lean();
     res.json(records);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -245,20 +185,20 @@ app.get("/records", async (req, res) => {
 // Rota para buscar um registro específico
 app.get("/records/:id", async (req, res) => {
   try {
-    console.log(`Rota GET /records/${req.params.id} chamada`); // Log para depuração
+    console.log(`Rota GET /records/${req.params.id} chamada`);
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      console.log(`ID inválido: ${id}`); // Log para depuração
+      console.log(`ID inválido: ${id}`);
       return res.status(400).json({ message: "ID inválido" });
     }
-    const record = await Record.findById(id); // Buscar pelo campo _id
+    const record = await Record.findById(id);
     if (!record) {
-      console.log(`Registro não encontrado: ${id}`); // Log para depuração
+      console.log(`Registro não encontrado: ${id}`);
       return res.status(404).json({ message: "Registro não encontrado" });
     }
     res.json(record);
   } catch (error) {
-    console.error("Erro ao buscar o registro:", error); // Adicionar log para depuração
+    console.error("Erro ao buscar o registro:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -266,7 +206,7 @@ app.get("/records/:id", async (req, res) => {
 // Rota para atualizar um registro com assinatura
 app.put("/records/:id", async (req, res) => {
   try {
-    console.log(`Rota PUT /records/${req.params.id} chamada`); // Log para depuração
+    console.log(`Rota PUT /records/${req.params.id} chamada`);
     const { id } = req.params;
     const { signature, signatureURL, status } = req.body;
     const record = await Record.findById(id);
@@ -290,17 +230,14 @@ app.put("/records/:id", async (req, res) => {
 // Rota para atualizar a localização de um registro
 app.put("/records/:id/location", async (req, res) => {
   try {
-    console.log(`Rota PUT /records/${req.params.id}/location chamada`); // Log para depuração
+    console.log(`Rota PUT /records/${req.params.id}/location chamada`);
     const { id } = req.params;
-    const { location } = req.body; // Receber o objeto location diretamente
-    console.log("Atualizando localização para o registro:", id); // Log para depuração
-    console.log("Nova localização:", location); // Log para depuração
+    const { location } = req.body;
+    console.log("Atualizando localização para o registro:", id);
+    console.log("Nova localização:", location);
 
-    // Verifique se os dados de localização estão presentes
     if (!location || !location.latitude || !location.longitude) {
-      return res
-        .status(400)
-        .json({ message: "Dados de localização inválidos" });
+      return res.status(400).json({ message: "Dados de localização inválidos" });
     }
 
     const updatedRecord = await Record.findByIdAndUpdate(
@@ -319,28 +256,9 @@ app.put("/records/:id/location", async (req, res) => {
 });
 
 // Rota para atualizar o status de um registro
-app.put("/records/:id/status", async (req, res) => {
-  try {
-    console.log(`Rota PUT /records/${req.params.id}/status chamada`); // Log para depuração
-    const { id } = req.params;
-    const { status } = req.body;
-    const record = await Record.findById(id);
-    if (!record) {
-      return res.status(404).json({ message: "Registro não encontrado" });
-    }
-    record.status = status;
-    const updatedRecord = await record.save();
-    res.json(updatedRecord);
-  } catch (error) {
-    console.error("Erro ao atualizar o status do registro:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para atualizar o status de um registro
 app.patch("/records/:id/status", async (req, res) => {
   try {
-    console.log(`Rota PATCH /records/${req.params.id}/status chamada`); // Log para depuração
+    console.log(`Rota PATCH /records/${req.params.id}/status chamada`);
     const { id } = req.params;
     const { status } = req.body;
     const record = await Record.findById(id);
@@ -359,13 +277,11 @@ app.patch("/records/:id/status", async (req, res) => {
 // Rota para listar registros por localização
 app.get("/records/location/:location", async (req, res) => {
   try {
-    console.log(`Rota GET /records/location/${req.params.location} chamada`); // Log para depuração
+    console.log(`Rota GET /records/location/${req.params.location} chamada`);
     const { location } = req.params;
     const records = await Record.find({ location });
     if (records.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Nenhum registro encontrado para esta localização" });
+      return res.status(404).json({ message: "Nenhum registro encontrado para esta localização" });
     }
     res.json(records);
   } catch (error) {
@@ -377,9 +293,9 @@ app.get("/records/location/:location", async (req, res) => {
 // Rota para excluir um registro
 app.delete("/records/:id", async (req, res) => {
   try {
-    console.log(`Rota DELETE /records/${req.params.id} chamada`); // Log para depuração
+    console.log(`Rota DELETE /records/${req.params.id} chamada`);
     const { id } = req.params;
-    const deletedRecord = await Record.findByIdAndDelete(id); // Excluir pelo campo _id
+    const deletedRecord = await Record.findByIdAndDelete(id);
     if (!deletedRecord) {
       return res.status(404).json({ message: "Registro não encontrado" });
     }
@@ -393,11 +309,9 @@ app.delete("/records/:id", async (req, res) => {
 // Rota para excluir todos os registros
 app.delete("/records", async (req, res) => {
   try {
-    console.log("Rota DELETE /records chamada"); // Log para depuração
+    console.log("Rota DELETE /records chamada");
     await Record.deleteMany({});
-    res
-      .status(200)
-      .json({ message: "Todos os registros foram excluídos com sucesso" });
+    res.status(200).json({ message: "Todos os registros foram excluídos com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir todos os registros:", error);
     res.status(500).json({ message: error.message });
@@ -407,11 +321,9 @@ app.delete("/records", async (req, res) => {
 // Rota para excluir todos os beneficiários
 app.delete("/api/beneficiarios", async (req, res) => {
   try {
-    console.log("Rota DELETE /api/beneficiarios chamada"); // Log para depuração
+    console.log("Rota DELETE /api/beneficiarios chamada");
     await Beneficiario.deleteMany({});
-    res
-      .status(200)
-      .json({ message: "Todos os beneficiários foram excluídos com sucesso" });
+    res.status(200).json({ message: "Todos os beneficiários foram excluídos com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir todos os beneficiários:", error);
     res.status(500).json({ message: error.message });
@@ -421,9 +333,9 @@ app.delete("/api/beneficiarios", async (req, res) => {
 // Rota para excluir um cliente
 app.delete("/api/clientes/:id", async (req, res) => {
   try {
-    console.log(`Rota DELETE /api/clientes/${req.params.id} chamada`); // Log para depuração
+    console.log(`Rota DELETE /api/clientes/${req.params.id} chamada`);
     const { id } = req.params;
-    const deletedCliente = await Cliente.findByIdAndDelete(id); // Excluir pelo campo _id
+    const deletedCliente = await Cliente.findByIdAndDelete(id);
     if (!deletedCliente) {
       return res.status(404).json({ message: "Cliente não encontrado" });
     }
@@ -437,13 +349,9 @@ app.delete("/api/clientes/:id", async (req, res) => {
 // Rota para listar todos os beneficiários
 app.get("/api/beneficiarios", async (req, res) => {
   try {
-    console.log("Rota GET /api/beneficiarios chamada"); // Log para depuração
-    const beneficiarios = await Beneficiario.find().lean(); // Usar lean() para melhorar o desempenho
-    console.log(
-      "Beneficiários carregados:",
-      JSON.stringify(beneficiarios, null, 2)
-    ); // Modificar log para exibir beneficiários no formato solicitado
-    res.setHeader("Content-Type", "application/json"); // Adicionar cabeçalho Content-Type
+    console.log("Rota GET /api/beneficiarios chamada");
+    const beneficiarios = await Beneficiario.find().lean();
+    console.log("Beneficiários carregados:", JSON.stringify(beneficiarios, null, 2));
     res.json(beneficiarios);
   } catch (error) {
     console.error("Erro ao buscar beneficiários:", error);
@@ -454,55 +362,46 @@ app.get("/api/beneficiarios", async (req, res) => {
 // Rota para listar recibos recusados
 app.get("/records/recusados", async (req, res) => {
   try {
-    console.log("Rota GET /records/recusados chamada"); // Log para depuração
-    const records = await Record.find({ status: "recusado" }).lean(); // Usar lean() para melhorar o desempenho
-    console.log("Recibos recusados encontrados:", records); // Log para depuração
+    console.log("Rota GET /records/recusados chamada");
+    const records = await Record.find({ status: "recusado" }).lean();
+    console.log("Recibos recusados encontrados:", records);
     res.json(records);
   } catch (error) {
-    console.error("Erro ao buscar recibos recusados:", error); // Log para depuração
-    res.status(500).json({
-      message: "Erro ao buscar recibos recusados",
-      error: error.message,
-    });
+    console.error("Erro ao buscar recibos recusados:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 
 // Rota para listar recibos pendentes
 app.get("/records/pendentes", async (req, res) => {
   try {
-    console.log("Rota GET /records/pendentes chamada"); // Log para depuração
-    const records = await Record.find({ status: "pendente" }).lean(); // Usar lean() para melhorar o desempenho
-    console.log("Recibos pendentes encontrados:", records); // Log para depuração
+    console.log("Rota GET /records/pendentes chamada");
+    const records = await Record.find({ status: "pendente" }).lean();
+    console.log("Recibos pendentes encontrados:", records);
     res.json(records);
   } catch (error) {
-    console.error("Erro ao buscar recibos pendentes:", error); // Log para depuração
-    res.status(500).json({
-      message: "Erro ao buscar recibos pendentes",
-      error: error.message,
-    });
+    console.error("Erro ao buscar recibos pendentes:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 
 // Rota para listar recibos aprovados
 app.get("/records/aprovados", async (req, res) => {
   try {
-    console.log("Rota GET /records/aprovados chamada"); // Log para depuração
-    const records = await Record.find({ status: "aprovado" }).lean(); // Usar lean() para melhorar o desempenho
-    console.log("Recibos aprovados encontrados:", records); // Log para depuração
+    console.log("Rota GET /records/aprovados chamada");
+    const records = await Record.find({ status: "aprovado" }).lean();
+    console.log("Recibos aprovados encontrados:", records);
     res.json(records);
   } catch (error) {
-    console.error("Erro ao buscar recibos aprovados:", error); // Log para depuração
-    res.status(500).json({
-      message: "Erro ao buscar recibos aprovados",
-      error: error.message,
-    });
+    console.error("Erro ao buscar recibos aprovados:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 
 // Rota para obter o próximo ID disponível
 app.get("/records/nextId", async (req, res) => {
   try {
-    console.log("Rota GET /records/nextId chamada"); // Log para depuração
+    console.log("Rota GET /records/nextId chamada");
     const counter = await Counter.findById("recordId");
     const nextId = counter ? counter.seq + 1 : 1;
     res.json({ nextId });
@@ -526,28 +425,20 @@ app.get("/db/location", async (req, res) => {
     res.json({ dbLocation: locationResponse.data });
   } catch (error) {
     console.error("Erro ao obter a localização do banco de dados:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao obter a localização do banco de dados" });
+    res.status(500).json({ message: "Erro ao obter a localização do banco de dados" });
   }
 });
 
 // Rota para obter todos os recibos categorizados
 app.get("/api/recibos", async (req, res) => {
   try {
-    console.log("Rota GET /api/recibos chamada"); // Log para depuração
-    const recusados = await Record.find({ status: "recusado" })
-      .sort({ _id: -1 })
-      .limit(0);
-    const pendentes = await Record.find({ status: "pendente" })
-      .sort({ _id: -1 })
-      .limit(0);
-    const aprovados = await Record.find({ status: "aprovado" })
-      .sort({ _id: -1 })
-      .limit(0);
+    console.log("Rota GET /api/recibos chamada");
+    const recusados = await Record.find({ status: "recusado" }).sort({ _id: -1 }).limit(0);
+    const pendentes = await Record.find({ status: "pendente" }).sort({ _id: -1 }).limit(0);
+    const aprovados = await Record.find({ status: "aprovado" }).sort({ _id: -1 }).limit(0);
     res.json({ recusados, pendentes, aprovados });
   } catch (error) {
-    console.error("Erro ao buscar recibos:", error); // Log para depuração
+    console.error("Erro ao buscar recibos:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -563,7 +454,7 @@ app.post("/records/sign", async (req, res) => {
     record.ipAddress = ip;
     record.macAddress = mac;
     record.status = "assinado";
-    record.location = location; // Atualizar a localização diretamente
+    record.location = location;
     const updatedRecord = await record.save();
     res.json(updatedRecord);
   } catch (error) {
@@ -575,24 +466,16 @@ app.post("/records/sign", async (req, res) => {
 // Rota para receber dados do site e salvar no banco de dados
 app.post("/api/recibos", async (req, res) => {
   try {
-    console.log("Rota POST /api/recibos chamada"); // Log para depuração
+    console.log("Rota POST /api/recibos chamada");
     const { formData } = req.body;
 
-    // Verifique se todos os campos necessários estão presentes
-    if (
-      !formData ||
-      !formData.fornecedor ||
-      !formData.beneficiario ||
-      !formData.services
-    ) {
+    if (!formData || !formData.fornecedor || !formData.beneficiario || !formData.services) {
       return res.status(400).json({ message: "Dados incompletos" });
     }
 
     const record = new Record({
       ...formData,
-      date: formData.date?.date
-        ? new Date(formData.date.date).toISOString()
-        : null,
+      date: formData.date?.date ? new Date(formData.date.date).toISOString() : null,
       ipAddress: req.clientIp,
       beneficiario: {
         ...formData.beneficiario,
@@ -650,9 +533,9 @@ app.get("/server/info", async (req, res) => {
       throw new Error("Endereço MAC não encontrado");
     }
 
-    console.log("IP do servidor:", ipResponse.data.ip); // Log do IP
-    console.log("Localização do servidor:", locationResponse.data); // Log da localização
-    console.log("Endereço MAC do servidor:", macAddress); // Log do endereço MAC
+    console.log("IP do servidor:", ipResponse.data.ip);
+    console.log("Localização do servidor:", locationResponse.data);
+    console.log("Endereço MAC do servidor:", macAddress);
 
     res.json({
       ip: ipResponse.data.ip,
@@ -679,11 +562,11 @@ app.get("/server/info", async (req, res) => {
 // Rota para listar todos os fornecedores
 app.get("/api/fornecedores", async (req, res) => {
   try {
-    console.log("Rota GET /api/fornecedores chamada"); // Log para depuração
-    const fornecedores = await Fornecedor.find().lean(); // Usar lean() para melhorar o desempenho
+    console.log("Rota GET /api/fornecedores chamada");
+    const fornecedores = await Fornecedor.find().lean();
     res.json(fornecedores);
   } catch (error) {
-    console.error("Erro ao buscar fornecedores:", error); // Log para depuração
+    console.error("Erro ao buscar fornecedores:", error);
     res.status(500).json({ message: error.message });
   }
 });
