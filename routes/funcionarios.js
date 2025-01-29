@@ -3,9 +3,6 @@ import Funcionario from "../models/Funcionario.js";
 
 const router = express.Router();
 
-// Middleware para analisar o corpo da solicitação como JSON
-router.use(express.json());
-
 // Rota para cadastrar um novo funcionário
 router.post("/", async (req, res) => {
   try {
@@ -84,7 +81,7 @@ router.post("/api/funcionarios/import", async (req, res) => {
 
     const funcionariosToSave = funcionarios.map(funcionario => ({
       ...funcionario,
-      dataNascimento: funcionario.dataNascimento ? new Date(funcionario.dataNascimento) : null // Garantir que a data de nascimento seja um objeto Date ou null
+      dataNascimento: funcionario.dataNascimento || null // Aceitar qualquer tipo de valor para dataNascimento
     }));
 
     const savedFuncionarios = await Funcionario.insertMany(funcionariosToSave);
