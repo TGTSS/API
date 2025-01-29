@@ -71,4 +71,24 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Rota para importar funcionários a partir de um arquivo JSON
+router.post("/import", async (req, res) => {
+  try {
+    const funcionarios = req.body;
+    if (!Array.isArray(funcionarios)) {
+      return res.status(400).json({ message: "Dados inválidos" });
+    }
+
+    const funcionariosToSave = funcionarios.map(funcionario => ({
+      ...funcionario,
+    }));
+
+    const savedFuncionarios = await Funcionario.insertMany(funcionariosToSave);
+    res.status(201).json(savedFuncionarios);
+  } catch (error) {
+    console.error("Erro ao importar funcionários:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
