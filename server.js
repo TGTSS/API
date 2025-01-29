@@ -21,7 +21,7 @@ const allowedOrigins = [
   "http://localhost:5175",
   "https://nexustecnologia.modernaedificacoes.com.br", // Corrigir para https
   "https://i9systemas.modernaedificacoes.com.br", // Adicionar novo domínio
-  "https://api-urh2.onrender.com" // Adicionar novo domínio
+  "https://api-urh2.onrender.com", // Adicionar novo domínio
 ];
 app.use(
   cors({
