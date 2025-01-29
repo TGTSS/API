@@ -3,24 +3,10 @@ import Cliente from "../models/Cliente.js";
 
 const router = express.Router();
 
-// Função de validação
-const validarCliente = (cliente) => {
-  const camposObrigatorios = ["tipo", "status", "razaoSocial", "cnpj"];
-  for (const campo of camposObrigatorios) {
-    if (!cliente[campo]) {
-      return false;
-    }
-  }
-  return true;
-};
-
 // Rota para criar um novo cliente
 router.post("/", async (req, res) => {
   try {
     const clientes = req.body;
-    if (!Array.isArray(clientes) || !clientes.every(validarCliente)) {
-      return res.status(400).json({ message: "Dados de cliente inválidos" });
-    }
     const savedClientes = await Cliente.insertMany(clientes);
     res.status(201).json(savedClientes);
   } catch (error) {
@@ -81,21 +67,6 @@ router.delete("/:id", async (req, res) => {
     res.status(200).json({ message: "Cliente excluído com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir cliente:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para cadastrar um novo cliente
-router.post("/cadastro", async (req, res) => {
-  try {
-    const cliente = req.body;
-    if (!validarCliente(cliente)) {
-      return res.status(400).json({ message: "Dados de cliente inválidos" });
-    }
-    const savedCliente = await new Cliente(cliente).save();
-    res.status(201).json(savedCliente);
-  } catch (error) {
-    console.error("Erro ao cadastrar cliente:", error);
     res.status(500).json({ message: error.message });
   }
 });
