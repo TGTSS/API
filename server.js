@@ -23,7 +23,7 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5175",
   "https://nexustecnologia.modernaedificacoes.com.br",
-  "https://i9systemas.modernaedificacoes.com.br",
+  "https://i9systemas.com.br",
   "https://api-urh2.onrender.com",
 ];
 app.use(
