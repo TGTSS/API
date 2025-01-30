@@ -79,10 +79,12 @@ router.post("/api/funcionarios/import", async (req, res) => {
       return res.status(400).json({ message: "Dados inválidos" });
     }
 
-    const funcionariosToSave = funcionarios.map(funcionario => ({
-      ...funcionario,
-      dataNascimento: funcionario.dataNascimento || null // Aceitar qualquer tipo de valor para dataNascimento
-    }));
+    const funcionariosToSave = funcionarios.map(funcionario => {
+      if (funcionario.dataNascimento && isNaN(Date.parse(funcionario.dataNascimento))) {
+        funcionario.dataNascimento = null; // Definir como null se a data for inválida
+      }
+      return funcionario;
+    });
 
     const savedFuncionarios = await Funcionario.insertMany(funcionariosToSave);
     res.status(201).json(savedFuncionarios);
