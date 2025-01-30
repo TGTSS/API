@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const FuncionarioSchema = new mongoose.Schema({
   status: { type: String },
   nome: { type: String },
-  cpf: { type: String, unique: true },
+  cpf: { type: String, unique: true, required: true },
   telefone1: { type: String },
   telefone2: { type: String },
   email: { type: String },
