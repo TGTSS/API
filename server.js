@@ -348,6 +348,22 @@ app.delete("/api/clientes/:id", async (req, res) => {
   }
 });
 
+// Rota para excluir um fornecedor
+app.delete("/api/fornecedores/:id", async (req, res) => {
+  try {
+    console.log(`Rota DELETE /api/fornecedores/${req.params.id} chamada`);
+    const { id } = req.params;
+    const deletedFornecedor = await Fornecedor.findByIdAndDelete(id);
+    if (!deletedFornecedor) {
+      return res.status(404).json({ message: "Fornecedor não encontrado" });
+    }
+    res.status(200).json({ message: "Fornecedor excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir o fornecedor:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para listar todos os beneficiários
 app.get("/api/beneficiarios", async (req, res) => {
   try {
@@ -611,6 +627,22 @@ app.put("/api/fornecedores/:id", async (req, res) => {
     res.json(updatedFornecedor);
   } catch (error) {
     console.error("Erro ao atualizar fornecedor:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para excluir um fornecedor
+app.delete("/api/fornecedores/:id", async (req, res) => {
+  try {
+    console.log(`Rota DELETE /api/fornecedores/${req.params.id} chamada`);
+    const { id } = req.params;
+    const deletedFornecedor = await Fornecedor.findByIdAndDelete(id);
+    if (!deletedFornecedor) {
+      return res.status(404).json({ message: "Fornecedor não encontrado" });
+    }
+    res.status(200).json({ message: "Fornecedor excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir o fornecedor:", error);
     res.status(500).json({ message: error.message });
   }
 });
