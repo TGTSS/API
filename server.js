@@ -503,10 +503,12 @@ app.post("/api/funcionarios/import", async (req, res) => {
       return res.status(400).json({ message: "Dados inválidos" });
     }
 
-    const funcionariosToSave = funcionarios.map(funcionario => ({
-      ...funcionario,
-      dataNascimento: funcionario.dataNascimento ? new Date(funcionario.dataNascimento) : null // Garantir que a data de nascimento seja um objeto Date ou null
-    }));
+    const funcionariosToSave = funcionarios.map(funcionario => {
+      if (funcionario.dataNascimento && isNaN(Date.parse(funcionario.dataNascimento))) {
+        funcionario.dataNascimento = null; // Definir como null se a data for inválida
+      }
+      return funcionario;
+    });
 
     const savedFuncionarios = await Funcionario.insertMany(funcionariosToSave);
     console.log("Funcionários salvos:", JSON.stringify(savedFuncionarios, null, 2));
