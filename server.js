@@ -14,6 +14,7 @@ import Fornecedor from "./models/Fornecedor.js";
 import Cliente from "./models/Cliente.js";
 import funcionariosRouter from "./routes/funcionarios.js";
 import Funcionario from "./models/Funcionario.js"; // Adicionei esta linha
+import Segmento from "./models/Segmento.js"; // Adicionei esta linha
 
 const app = express();
 
@@ -535,6 +536,22 @@ app.post("/api/funcionarios/import", async (req, res) => {
   }
 });
 
+// Rota para adicionar um novo segmento
+app.post("/api/segmentos", async (req, res) => {
+  try {
+    const { nome } = req.body;
+    if (!nome) {
+      return res.status(400).json({ message: "Nome do segmento é obrigatório" });
+    }
+    const novoSegmento = new Segmento({ nome });
+    await novoSegmento.save();
+    res.status(201).json({ message: "Segmento adicionado com sucesso" });
+  } catch (error) {
+    console.error("Erro ao adicionar segmento:", error);
+    res.status(500).json({ message: "Erro ao adicionar segmento" });
+  }
+});
+
 // Função para obter o endereço MAC do servidor
 const getServerMacAddress = () => {
   const networkInterfaces = os.networkInterfaces();
@@ -683,7 +700,11 @@ app.get("/consulta/:cnpj", async (req, res) => {
     res.json(filteredData);
   } catch (error) {
     console.error(`Erro ao consultar CNPJ ${req.params.cnpj}:`, error);
-    res.status(500).json({ message: "Erro ao consultar CNPJ", error: error.message });
+    if (error.response) {
+      res.status(error.response.status).json({ message: "Erro ao consultar CNPJ", error: error.message });
+    } else {
+      res.status(500).json({ message: "Erro ao consultar CNPJ", error: error.message });
+    }
   }
 });
 
