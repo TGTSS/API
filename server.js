@@ -16,6 +16,8 @@ import funcionariosRouter from "./routes/funcionarios.js";
 import Funcionario from "./models/Funcionario.js"; // Adicionei esta linha
 import Segmento from "./models/Segmento.js"; // Adicionei esta linha
 import segmentosRouter from "./routes/segmentos.js"; // Adicionei esta linha
+import Funcao from "./models/Funcao.js"; // Adicionei esta linha
+import FormaRemuneracao from "./models/FormaRemuneracao.js"; // Adicionei esta linha
 
 const app = express();
 
@@ -550,6 +552,74 @@ app.post("/api/segmentos", async (req, res) => {
   } catch (error) {
     console.error("Erro ao adicionar segmento:", error);
     res.status(500).json({ message: "Erro ao adicionar segmento" });
+  }
+});
+
+// Rota para listar todos os segmentos
+app.get("/api/segmentos", async (req, res) => {
+  try {
+    console.log("Rota GET /api/segmentos chamada");
+    const segmentos = await Segmento.find().lean();
+    res.json(segmentos);
+  } catch (error) {
+    console.error("Erro ao buscar segmentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para adicionar uma nova função
+app.post("/api/funcoes", async (req, res) => {
+  try {
+    const { nome } = req.body;
+    if (!nome) {
+      return res.status(400).json({ message: "Nome da função é obrigatório" });
+    }
+    const novaFuncao = new Funcao({ nome });
+    await novaFuncao.save();
+    res.status(201).json({ message: "Função adicionada com sucesso" });
+  } catch (error) {
+    console.error("Erro ao adicionar função:", error);
+    res.status(500).json({ message: "Erro ao adicionar função" });
+  }
+});
+
+// Rota para adicionar uma nova forma de remuneração
+app.post("/api/formasRemuneracao", async (req, res) => {
+  try {
+    const { nome } = req.body;
+    if (!nome) {
+      return res.status(400).json({ message: "Nome da forma de remuneração é obrigatório" });
+    }
+    const novaFormaRemuneracao = new FormaRemuneracao({ nome });
+    await novaFormaRemuneracao.save();
+    res.status(201).json({ message: "Forma de remuneração adicionada com sucesso" });
+  } catch (error) {
+    console.error("Erro ao adicionar forma de remuneração:", error);
+    res.status(500).json({ message: "Erro ao adicionar forma de remuneração" });
+  }
+});
+
+// Rota para listar todas as funções
+app.get("/api/funcoes", async (req, res) => {
+  try {
+    console.log("Rota GET /api/funcoes chamada");
+    const funcoes = await Funcao.find().lean();
+    res.json(funcoes);
+  } catch (error) {
+    console.error("Erro ao buscar funções:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar todas as formas de remuneração
+app.get("/api/formasRemuneracao", async (req, res) => {
+  try {
+    console.log("Rota GET /api/formasRemuneracao chamada");
+    const formasRemuneracao = await FormaRemuneracao.find().lean();
+    res.json(formasRemuneracao);
+  } catch (error) {
+    console.error("Erro ao buscar formas de remuneração:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 
