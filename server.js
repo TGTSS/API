@@ -624,6 +624,30 @@ app.get("/api/formasRemuneracao", async (req, res) => {
   }
 });
 
+// Rota para adicionar um novo insumo
+app.post("/api/insumos", async (req, res) => {
+  try {
+    const insumo = req.body;
+    const novoInsumo = new Insumo(insumo);
+    await novoInsumo.save();
+    res.status(201).json(novoInsumo);
+  } catch (error) {
+    console.error("Erro ao adicionar insumo:", error);
+    res.status(500).json({ message: "Erro ao adicionar insumo" });
+  }
+});
+
+// Rota para listar todos os insumos
+app.get("/api/insumos", async (req, res) => {
+  try {
+    const insumos = await Insumo.find().lean();
+    res.json(insumos);
+  } catch (error) {
+    console.error("Erro ao buscar insumos:", error);
+    res.status(500).json({ message: "Erro ao buscar insumos" });
+  }
+});
+
 // Função para obter o endereço MAC do servidor
 const getServerMacAddress = () => {
   const networkInterfaces = os.networkInterfaces();
