@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const InsumoSchema = new mongoose.Schema({
-  codigo: { type: String, required: true },
+  codigo: { type: String },
   descricao: { type: String },
   tipo: { type: String },
   unidade: { type: String },
