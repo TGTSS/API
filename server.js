@@ -18,6 +18,7 @@ import Segmento from "./models/Segmento.js"; // Adicionei esta linha
 import segmentosRouter from "./routes/segmentos.js"; // Adicionei esta linha
 import Funcao from "./models/Funcao.js"; // Adicionei esta linha
 import FormaRemuneracao from "./models/FormaRemuneracao.js"; // Adicionei esta linha
+import insumosRouter from "./routes/insumos.js"; // Adicionei esta linha
 
 const app = express();
 
@@ -784,6 +785,7 @@ app.use("/api/fornecedores", fornecedoresRouter);
 app.use("/api/clientes", clientesRouter);
 app.use("/api/funcionarios", funcionariosRouter);
 app.use("/api/segmentos", segmentosRouter); // Adicionei esta linha
+app.use("/api/insumos", insumosRouter); // Adicionei esta linha
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
