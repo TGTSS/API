@@ -15,6 +15,26 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Rota para importar vários insumos a partir de um arquivo JSON
+router.post("/import", async (req, res) => {
+  try {
+    const insumos = req.body;
+    if (!Array.isArray(insumos)) {
+      return res.status(400).json({ message: "Dados inválidos" });
+    }
+
+    const insumosToSave = insumos.map(insumo => ({
+      ...insumo,
+    }));
+
+    const savedInsumos = await Insumo.insertMany(insumosToSave);
+    res.status(201).json(savedInsumos);
+  } catch (error) {
+    console.error("Erro ao importar insumos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para listar todos os insumos
 router.get("/", async (req, res) => {
   try {
