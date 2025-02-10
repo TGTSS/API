@@ -2,13 +2,13 @@ import mongoose from "mongoose";
 
 const InsumoSchema = new mongoose.Schema({
   codigo: { type: String, required: true },
-  descricao: { type: String, required: true },
-  tipo: { type: String, required: true },
-  unidade: { type: String, required: true },
-  grupo: { type: String, required: true },
-  base: { type: String, required: true },
-  custo: { type: Number, required: true },
-  status: { type: String, required: true },
+  descricao: { type: String },
+  tipo: { type: String },
+  unidade: { type: String },
+  grupo: { type: String },
+  base: { type: String },
+  custo: { type: Number },
+  status: { type: String },
   observacoes: { type: String },
   arquivos: { type: String },
 });
