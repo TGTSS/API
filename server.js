@@ -19,6 +19,7 @@ import segmentosRouter from "./routes/segmentos.js"; // Adicionei esta linha
 import Funcao from "./models/Funcao.js"; // Adicionei esta linha
 import FormaRemuneracao from "./models/FormaRemuneracao.js"; // Adicionei esta linha
 import insumosRouter from "./routes/insumos.js"; // Adicionei esta linha
+import Insumo from "./models/Insumo.js"; // Adicionei esta linha
 
 const app = express();
 
