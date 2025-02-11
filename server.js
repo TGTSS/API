@@ -22,6 +22,8 @@ import insumosRouter from "./routes/insumos.js"; // Adicionei esta linha
 import Insumo from "./models/Insumo.js"; // Adicionei esta linha
 import composicoesRouter from "./routes/composicoes.js"; // Adicionei esta linha
 import usersRouter from "./routes/users.js"; // Adicione esta linha
+import typesRouter from "./routes/types.js"; // Adicione esta linha
+import unitsRouter from "./routes/units.js"; // Adicione esta linha
 
 const app = express();
 
@@ -868,6 +870,8 @@ app.use("/api/segmentos", segmentosRouter); // Adicionei esta linha
 app.use("/api/insumos", insumosRouter); // Adicionei esta linha
 app.use("/api/composicoes", composicoesRouter); // Adicionei esta linha
 app.use("/api/users", usersRouter); // Adicione esta linha
+app.use("/api/tipos", typesRouter); // Adicione esta linha
+app.use("/api/unidades", unitsRouter); // Adicione esta linha
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
