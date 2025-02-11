@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import nodemailer from "nodemailer";
 
 const router = express.Router();
 
@@ -84,6 +85,60 @@ router.put("/email/:email/permissao", async (req, res) => {
   } catch (error) {
     console.error("Erro ao atualizar permissão do usuário:", error);
     res.status(500).json({ message: "Erro ao atualizar permissão do usuário" });
+  }
+});
+
+// Rota para solicitar redefinição de senha
+router.post("/forgot-password", async (req, res) => {
+  const { email, from, subject, message } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    // Configurar o transporte de email
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Enviar email
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject,
+      text: message,
+    });
+
+    res.status(200).json({ message: "Email de redefinição de senha enviado" });
+  } catch (error) {
+    console.error("Erro ao enviar email de redefinição de senha:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao enviar email de redefinição de senha" });
+  }
+});
+
+// Rota para redefinir a senha
+router.post("/reset-password", async (req, res) => {
+  const { email, newPassword } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ message: "Senha redefinida com sucesso" });
+  } catch (error) {
+    console.error("Erro ao redefinir senha:", error);
+    res.status(500).json({ message: "Erro ao redefinir senha" });
   }
 });
 
