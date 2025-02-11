@@ -65,13 +65,15 @@ router.get("/", async (req, res) => {
 });
 
 // Rota para atualizar a permissão de um usuário
-router.put("/:id/permissao", async (req, res) => {
+router.put("/email/:email/permissao", async (req, res) => {
   try {
-    console.log(`Rota PUT /api/users/${req.params.id}/permissao chamada`);
-    const { id } = req.params;
+    console.log(
+      `Rota PUT /api/users/email/${req.params.email}/permissao chamada`
+    );
+    const { email } = req.params;
     const { permissao } = req.body;
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
+    const updatedUser = await User.findOneAndUpdate(
+      { email },
       { permissao },
       { new: true }
     );
