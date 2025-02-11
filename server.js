@@ -20,6 +20,8 @@ import Funcao from "./models/Funcao.js"; // Adicionei esta linha
 import FormaRemuneracao from "./models/FormaRemuneracao.js"; // Adicionei esta linha
 import insumosRouter from "./routes/insumos.js"; // Adicionei esta linha
 import Insumo from "./models/Insumo.js"; // Adicionei esta linha
+import composicoesRouter from "./routes/composicoes.js"; // Adicionei esta linha
+import usersRouter from "./routes/users.js"; // Adicione esta linha
 
 const app = express();
 
@@ -130,11 +132,14 @@ app.post("/api/clientes/import", async (req, res) => {
       return res.status(400).json({ message: "Dados inválidos" });
     }
 
-    const clientesToSave = clientes.map(cliente => ({
+    const clientesToSave = clientes.map((cliente) => ({
       ...cliente,
     }));
 
-    console.log("Clientes a serem salvos:", JSON.stringify(clientesToSave, null, 2));
+    console.log(
+      "Clientes a serem salvos:",
+      JSON.stringify(clientesToSave, null, 2)
+    );
 
     const savedClientes = await Cliente.insertMany(clientesToSave);
     console.log("Clientes salvos:", JSON.stringify(savedClientes, null, 2));
@@ -154,7 +159,9 @@ app.post("/records", async (req, res) => {
 
     if (!beneficiario || !fornecedor || !date || !services || !totalValue) {
       console.log("Campos obrigatórios ausentes");
-      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
+      return res
+        .status(400)
+        .json({ message: "Todos os campos são obrigatórios" });
     }
 
     if (isNaN(Date.parse(date))) {
@@ -245,7 +252,9 @@ app.put("/records/:id/location", async (req, res) => {
     console.log("Nova localização:", location);
 
     if (!location || !location.latitude || !location.longitude) {
-      return res.status(400).json({ message: "Dados de localização inválidos" });
+      return res
+        .status(400)
+        .json({ message: "Dados de localização inválidos" });
     }
 
     const updatedRecord = await Record.findByIdAndUpdate(
@@ -289,7 +298,9 @@ app.get("/records/location/:location", async (req, res) => {
     const { location } = req.params;
     const records = await Record.find({ location });
     if (records.length === 0) {
-      return res.status(404).json({ message: "Nenhum registro encontrado para esta localização" });
+      return res
+        .status(404)
+        .json({ message: "Nenhum registro encontrado para esta localização" });
     }
     res.json(records);
   } catch (error) {
@@ -319,7 +330,9 @@ app.delete("/records", async (req, res) => {
   try {
     console.log("Rota DELETE /records chamada");
     await Record.deleteMany({});
-    res.status(200).json({ message: "Todos os registros foram excluídos com sucesso" });
+    res
+      .status(200)
+      .json({ message: "Todos os registros foram excluídos com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir todos os registros:", error);
     res.status(500).json({ message: error.message });
@@ -331,7 +344,9 @@ app.delete("/api/beneficiarios", async (req, res) => {
   try {
     console.log("Rota DELETE /api/beneficiarios chamada");
     await Beneficiario.deleteMany({});
-    res.status(200).json({ message: "Todos os beneficiários foram excluídos com sucesso" });
+    res
+      .status(200)
+      .json({ message: "Todos os beneficiários foram excluídos com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir todos os beneficiários:", error);
     res.status(500).json({ message: error.message });
@@ -375,7 +390,10 @@ app.get("/api/beneficiarios", async (req, res) => {
   try {
     console.log("Rota GET /api/beneficiarios chamada");
     const beneficiarios = await Beneficiario.find().lean();
-    console.log("Beneficiários carregados:", JSON.stringify(beneficiarios, null, 2));
+    console.log(
+      "Beneficiários carregados:",
+      JSON.stringify(beneficiarios, null, 2)
+    );
     res.json(beneficiarios);
   } catch (error) {
     console.error("Erro ao buscar beneficiários:", error);
@@ -449,7 +467,9 @@ app.get("/db/location", async (req, res) => {
     res.json({ dbLocation: locationResponse.data });
   } catch (error) {
     console.error("Erro ao obter a localização do banco de dados:", error);
-    res.status(500).json({ message: "Erro ao obter a localização do banco de dados" });
+    res
+      .status(500)
+      .json({ message: "Erro ao obter a localização do banco de dados" });
   }
 });
 
@@ -457,9 +477,15 @@ app.get("/db/location", async (req, res) => {
 app.get("/api/recibos", async (req, res) => {
   try {
     console.log("Rota GET /api/recibos chamada");
-    const recusados = await Record.find({ status: "recusado" }).sort({ _id: -1 }).limit(0);
-    const pendentes = await Record.find({ status: "pendente" }).sort({ _id: -1 }).limit(0);
-    const aprovados = await Record.find({ status: "aprovado" }).sort({ _id: -1 }).limit(0);
+    const recusados = await Record.find({ status: "recusado" })
+      .sort({ _id: -1 })
+      .limit(0);
+    const pendentes = await Record.find({ status: "pendente" })
+      .sort({ _id: -1 })
+      .limit(0);
+    const aprovados = await Record.find({ status: "aprovado" })
+      .sort({ _id: -1 })
+      .limit(0);
     res.json({ recusados, pendentes, aprovados });
   } catch (error) {
     console.error("Erro ao buscar recibos:", error);
@@ -493,13 +519,20 @@ app.post("/api/recibos", async (req, res) => {
     console.log("Rota POST /api/recibos chamada");
     const { formData } = req.body;
 
-    if (!formData || !formData.fornecedor || !formData.beneficiario || !formData.services) {
+    if (
+      !formData ||
+      !formData.fornecedor ||
+      !formData.beneficiario ||
+      !formData.services
+    ) {
       return res.status(400).json({ message: "Dados incompletos" });
     }
 
     const record = new Record({
       ...formData,
-      date: formData.date?.date ? new Date(formData.date.date).toISOString() : null,
+      date: formData.date?.date
+        ? new Date(formData.date.date).toISOString()
+        : null,
       ipAddress: req.clientIp,
       beneficiario: {
         ...formData.beneficiario,
@@ -525,15 +558,21 @@ app.post("/api/funcionarios/import", async (req, res) => {
       return res.status(400).json({ message: "Dados inválidos" });
     }
 
-    const funcionariosToSave = funcionarios.map(funcionario => {
-      if (funcionario.dataNascimento && isNaN(Date.parse(funcionario.dataNascimento))) {
+    const funcionariosToSave = funcionarios.map((funcionario) => {
+      if (
+        funcionario.dataNascimento &&
+        isNaN(Date.parse(funcionario.dataNascimento))
+      ) {
         funcionario.dataNascimento = null; // Definir como null se a data for inválida
       }
       return funcionario;
     });
 
     const savedFuncionarios = await Funcionario.insertMany(funcionariosToSave);
-    console.log("Funcionários salvos:", JSON.stringify(savedFuncionarios, null, 2));
+    console.log(
+      "Funcionários salvos:",
+      JSON.stringify(savedFuncionarios, null, 2)
+    );
     res.status(201).json(savedFuncionarios);
   } catch (error) {
     console.error("Erro ao importar funcionários:", error);
@@ -546,7 +585,9 @@ app.post("/api/segmentos", async (req, res) => {
   try {
     const { nome } = req.body;
     if (!nome) {
-      return res.status(400).json({ message: "Nome do segmento é obrigatório" });
+      return res
+        .status(400)
+        .json({ message: "Nome do segmento é obrigatório" });
     }
     const novoSegmento = new Segmento({ nome });
     await novoSegmento.save();
@@ -590,11 +631,15 @@ app.post("/api/formasRemuneracao", async (req, res) => {
   try {
     const { nome } = req.body;
     if (!nome) {
-      return res.status(400).json({ message: "Nome da forma de remuneração é obrigatório" });
+      return res
+        .status(400)
+        .json({ message: "Nome da forma de remuneração é obrigatório" });
     }
     const novaFormaRemuneracao = new FormaRemuneracao({ nome });
     await novaFormaRemuneracao.save();
-    res.status(201).json({ message: "Forma de remuneração adicionada com sucesso" });
+    res
+      .status(201)
+      .json({ message: "Forma de remuneração adicionada com sucesso" });
   } catch (error) {
     console.error("Erro ao adicionar forma de remuneração:", error);
     res.status(500).json({ message: "Erro ao adicionar forma de remuneração" });
@@ -734,7 +779,11 @@ app.put("/api/fornecedores/:id", async (req, res) => {
     console.log(`Rota PUT /api/fornecedores/${req.params.id} chamada`);
     const { id } = req.params;
     const fornecedor = req.body;
-    const updatedFornecedor = await Fornecedor.findByIdAndUpdate(id, fornecedor, { new: true });
+    const updatedFornecedor = await Fornecedor.findByIdAndUpdate(
+      id,
+      fornecedor,
+      { new: true }
+    );
     if (!updatedFornecedor) {
       return res.status(404).json({ message: "Fornecedor não encontrado" });
     }
@@ -765,7 +814,9 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
 app.get("/consulta/:cnpj", async (req, res) => {
   try {
     const { cnpj } = req.params;
-    const response = await axios.get(`https://www.receitaws.com.br/v1/cnpj/${cnpj}`);
+    const response = await axios.get(
+      `https://www.receitaws.com.br/v1/cnpj/${cnpj}`
+    );
     const {
       nome,
       fantasia,
@@ -798,9 +849,13 @@ app.get("/consulta/:cnpj", async (req, res) => {
   } catch (error) {
     console.error(`Erro ao consultar CNPJ ${req.params.cnpj}:`, error);
     if (error.response) {
-      res.status(error.response.status).json({ message: "Erro ao consultar CNPJ", error: error.message });
+      res
+        .status(error.response.status)
+        .json({ message: "Erro ao consultar CNPJ", error: error.message });
     } else {
-      res.status(500).json({ message: "Erro ao consultar CNPJ", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Erro ao consultar CNPJ", error: error.message });
     }
   }
 });
@@ -811,6 +866,8 @@ app.use("/api/clientes", clientesRouter);
 app.use("/api/funcionarios", funcionariosRouter);
 app.use("/api/segmentos", segmentosRouter); // Adicionei esta linha
 app.use("/api/insumos", insumosRouter); // Adicionei esta linha
+app.use("/api/composicoes", composicoesRouter); // Adicionei esta linha
+app.use("/api/users", usersRouter); // Adicione esta linha
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
