@@ -862,6 +862,28 @@ app.get("/consulta/:cnpj", async (req, res) => {
   }
 });
 
+// Rota para solicitar redefinição de senha
+app.post("/api/users/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email é obrigatório" });
+    }
+
+    // Lógica para enviar email de redefinição de senha
+    // Exemplo: const user = await User.findOne({ email });
+    // if (!user) {
+    //   return res.status(404).json({ message: "Usuário não encontrado" });
+    // }
+    // Enviar email de redefinição de senha...
+
+    res.status(200).json({ message: "Email de redefinição de senha enviado" });
+  } catch (error) {
+    console.error("Erro ao solicitar redefinição de senha:", error);
+    res.status(500).json({ message: "Erro ao solicitar redefinição de senha" });
+  }
+});
+
 app.use("/api/beneficiarios", beneficiariosRouter);
 app.use("/api/fornecedores", fornecedoresRouter);
 app.use("/api/clientes", clientesRouter);
