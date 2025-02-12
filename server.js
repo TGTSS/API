@@ -24,6 +24,7 @@ import composicoesRouter from "./routes/composicoes.js"; // Adicionei esta linha
 import usersRouter from "./routes/users.js"; // Adicione esta linha
 import typesRouter from "./routes/types.js"; // Adicione esta linha
 import unitsRouter from "./routes/units.js"; // Adicione esta linha
+import transporter from "./config/nodemailer.js"; // Adicione esta linha
 
 const app = express();
 
@@ -870,12 +871,23 @@ app.post("/api/users/forgot-password", async (req, res) => {
       return res.status(400).json({ message: "Email é obrigatório" });
     }
 
-    // Lógica para enviar email de redefinição de senha
-    // Exemplo: const user = await User.findOne({ email });
-    // if (!user) {
-    //   return res.status(404).json({ message: "Usuário não encontrado" });
-    // }
-    // Enviar email de redefinição de senha...
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Redefinição de senha",
+      text: `Olá,
+
+Você solicitou a redefinição de sua senha. Por favor, clique no link abaixo para redefinir sua senha:
+
+[Redefinir Senha](https://www.i9systemas.com.br/reset-password?email=${email})
+
+Se você não solicitou essa redefinição, por favor, ignore este email.
+
+Atenciosamente,
+Equipe i9Systemas`,
+    };
+
+    await transporter.sendMail(mailOptions);
 
     res.status(200).json({ message: "Email de redefinição de senha enviado" });
   } catch (error) {
