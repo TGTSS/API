@@ -875,7 +875,7 @@ app.post("/api/users/forgot-password", async (req, res) => {
     }
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM,
       to: email,
       subject: "Redefinição de senha",
       text: `Olá,
@@ -894,10 +894,11 @@ Equipe i9Systemas`,
 
     res.status(200).json({ message: "Email de redefinição de senha enviado" });
   } catch (error) {
-    console.error("Erro ao solicitar redefinição de senha:", error);
-    res.status(500).json({ message: "Erro ao solicitar redefinição de senha" });
+    console.error("Erro ao enviar email:", error);
+    res.status(500).json({ message: "Erro ao enviar email" });
   }
 });
+
 
 app.use("/api/beneficiarios", beneficiariosRouter);
 app.use("/api/fornecedores", fornecedoresRouter);
