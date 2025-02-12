@@ -25,7 +25,7 @@ import usersRouter from "./routes/users.js";
 import typesRouter from "./routes/types.js";
 import unitsRouter from "./routes/units.js";
 import transporter from "./config/nodemailer.js";
-import dotenv from "dotenv";
+
 
 dotenv.config();
 
@@ -864,23 +864,6 @@ app.get("/consulta/:cnpj", async (req, res) => {
         .json({ message: "Erro ao consultar CNPJ", error: error.message });
     }
   }
-});
-
-// Rota para solicitar redefinição de senha
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-
-dotenv.config(); // Carrega as variáveis de ambiente
-
-// Configuração do transportador de e-mail usando SendGrid
-const transporter = nodemailer.createTransport({
-  host: "smtp.sendgrid.net", // Servidor SMTP do SendGrid
-  port: 465, // Porta SSL (use 587 se estiver usando TLS)
-  secure: true, // Use SSL/TLS
-  auth: {
-    user: "apikey", // Nome de usuário é sempre "apikey" no SendGrid
-    pass: process.env.EMAIL_API_KEY, // A chave da API do SendGrid
-  },
 });
 
 // Função para enviar o e-mail de redefinição de senha
