@@ -1,15 +1,17 @@
 import nodemailer from "nodemailer";
-import sgTransport from "nodemailer-sendgrid-transport";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config();  // Carrega as variáveis de ambiente
 
-const transporter = nodemailer.createTransport(
-  sgTransport({
-    auth: {
-      api_key: process.env.EMAIL_API_KEY, // Pegamos a API Key do .env
-    },
-  })
-);
+// Configuração do transportador de e-mail usando SendGrid
+const transporter = nodemailer.createTransport({
+  host: "smtp.sendgrid.net",  // Servidor SMTP do SendGrid
+  port: 465,  // Porta SSL (use 587 se estiver usando TLS)
+  secure: true,  // Use SSL/TLS
+  auth: {
+    user: "apikey",  // Nome de usuário é sempre "apikey" no SendGrid
+    pass: process.env.EMAIL_API_KEY,  // A chave da API do SendGrid
+  },
+});
 
 export default transporter;

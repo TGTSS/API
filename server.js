@@ -867,6 +867,23 @@ app.get("/consulta/:cnpj", async (req, res) => {
 });
 
 // Rota para solicitar redefinição de senha
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+
+dotenv.config(); // Carrega as variáveis de ambiente
+
+// Configuração do transportador de e-mail usando SendGrid
+const transporter = nodemailer.createTransport({
+  host: "smtp.sendgrid.net", // Servidor SMTP do SendGrid
+  port: 465, // Porta SSL (use 587 se estiver usando TLS)
+  secure: true, // Use SSL/TLS
+  auth: {
+    user: "apikey", // Nome de usuário é sempre "apikey" no SendGrid
+    pass: process.env.EMAIL_API_KEY, // A chave da API do SendGrid
+  },
+});
+
+// Função para enviar o e-mail de redefinição de senha
 app.post("/api/users/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -875,8 +892,8 @@ app.post("/api/users/forgot-password", async (req, res) => {
     }
 
     const mailOptions = {
-      from: process.env.EMAIL_FROM,
-      to: email,
+      from: process.env.EMAIL_FROM, // E-mail do remetente (configurado no .env)
+      to: email, // E-mail do destinatário
       subject: "Redefinição de senha",
       text: `Olá,
 
@@ -884,13 +901,13 @@ Você solicitou a redefinição de sua senha. Por favor, clique no link abaixo p
 
 [Redefinir Senha](https://www.i9systemas.com.br/reset-password?email=${email})
 
-Se você não solicitou essa redefinição, por favor, ignore este email.
+Se você não solicitou essa redefinição, por favor, ignore este e-mail.
 
 Atenciosamente,
 Equipe i9Systemas`,
     };
 
-    await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions); // Envia o e-mail
 
     res.status(200).json({ message: "Email de redefinição de senha enviado" });
   } catch (error) {
@@ -898,7 +915,6 @@ Equipe i9Systemas`,
     res.status(500).json({ message: "Erro ao enviar email" });
   }
 });
-
 
 app.use("/api/beneficiarios", beneficiariosRouter);
 app.use("/api/fornecedores", fornecedoresRouter);
