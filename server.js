@@ -25,6 +25,9 @@ import usersRouter from "./routes/users.js"; // Adicione esta linha
 import typesRouter from "./routes/types.js"; // Adicione esta linha
 import unitsRouter from "./routes/units.js"; // Adicione esta linha
 import transporter from "./config/nodemailer.js"; // Adicione esta linha
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 
