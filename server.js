@@ -24,10 +24,10 @@ import composicoesRouter from "./routes/composicoes.js";
 import usersRouter from "./routes/users.js";
 import typesRouter from "./routes/types.js";
 import unitsRouter from "./routes/units.js";
-import transporter from "./config/nodemailer.js";
-import dotenv from "dotenv"; // Adicione esta linha
+import dotenv from "dotenv";
+import sendEmail from "./utils/sendEmail.js";
 
-dotenv.config(); // Adicione esta linha
+dotenv.config();
 
 const app = express();
 
@@ -874,11 +874,8 @@ app.post("/api/users/forgot-password", async (req, res) => {
       return res.status(400).json({ message: "Email é obrigatório" });
     }
 
-    const mailOptions = {
-      from: process.env.EMAIL_FROM, // E-mail do remetente (configurado no .env)
-      to: email, // E-mail do destinatário
-      subject: "Redefinição de senha",
-      text: `Olá,
+    const subject = "Redefinição de senha";
+    const text = `Olá,
 
 Você solicitou a redefinição de sua senha. Por favor, clique no link abaixo para redefinir sua senha:
 
@@ -887,10 +884,9 @@ Você solicitou a redefinição de sua senha. Por favor, clique no link abaixo p
 Se você não solicitou essa redefinição, por favor, ignore este e-mail.
 
 Atenciosamente,
-Equipe i9Systemas`,
-    };
+Equipe i9Systemas`;
 
-    await transporter.sendMail(mailOptions); // Envia o e-mail
+    await sendEmail(email, subject, text);
 
     res.status(200).json({ message: "Email de redefinição de senha enviado" });
   } catch (error) {

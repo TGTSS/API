@@ -142,4 +142,20 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
+// Rota para deletar um usuário pelo email
+router.delete("/email/:email", async (req, res) => {
+  try {
+    console.log(`Rota DELETE /api/users/email/${req.params.email} chamada`);
+    const { email } = req.params;
+    const deletedUser = await User.findOneAndDelete({ email });
+    if (!deletedUser) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+    res.json({ message: "Usuário deletado com sucesso" });
+  } catch (error) {
+    console.error("Erro ao deletar usuário:", error);
+    res.status(500).json({ message: "Erro ao deletar usuário" });
+  }
+});
+
 export default router;
