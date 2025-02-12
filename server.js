@@ -13,18 +13,18 @@ import clientesRouter from "./routes/clientes.js";
 import Fornecedor from "./models/Fornecedor.js";
 import Cliente from "./models/Cliente.js";
 import funcionariosRouter from "./routes/funcionarios.js";
-import Funcionario from "./models/Funcionario.js"; // Adicionei esta linha
-import Segmento from "./models/Segmento.js"; // Adicionei esta linha
-import segmentosRouter from "./routes/segmentos.js"; // Adicionei esta linha
-import Funcao from "./models/Funcao.js"; // Adicionei esta linha
-import FormaRemuneracao from "./models/FormaRemuneracao.js"; // Adicionei esta linha
-import insumosRouter from "./routes/insumos.js"; // Adicionei esta linha
-import Insumo from "./models/Insumo.js"; // Adicionei esta linha
-import composicoesRouter from "./routes/composicoes.js"; // Adicionei esta linha
-import usersRouter from "./routes/users.js"; // Adicione esta linha
-import typesRouter from "./routes/types.js"; // Adicione esta linha
-import unitsRouter from "./routes/units.js"; // Adicione esta linha
-import transporter from "./config/nodemailer.js"; // Adicione esta linha
+import Funcionario from "./models/Funcionario.js";
+import Segmento from "./models/Segmento.js";
+import segmentosRouter from "./routes/segmentos.js";
+import Funcao from "./models/Funcao.js";
+import FormaRemuneracao from "./models/FormaRemuneracao.js";
+import insumosRouter from "./routes/insumos.js";
+import Insumo from "./models/Insumo.js";
+import composicoesRouter from "./routes/composicoes.js";
+import usersRouter from "./routes/users.js";
+import typesRouter from "./routes/types.js";
+import unitsRouter from "./routes/units.js";
+import transporter from "./config/nodemailer.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -903,12 +903,12 @@ app.use("/api/beneficiarios", beneficiariosRouter);
 app.use("/api/fornecedores", fornecedoresRouter);
 app.use("/api/clientes", clientesRouter);
 app.use("/api/funcionarios", funcionariosRouter);
-app.use("/api/segmentos", segmentosRouter); // Adicionei esta linha
-app.use("/api/insumos", insumosRouter); // Adicionei esta linha
-app.use("/api/composicoes", composicoesRouter); // Adicionei esta linha
-app.use("/api/users", usersRouter); // Adicione esta linha
-app.use("/api/tipos", typesRouter); // Adicione esta linha
-app.use("/api/unidades", unitsRouter); // Adicione esta linha
+app.use("/api/segmentos", segmentosRouter);
+app.use("/api/insumos", insumosRouter);
+app.use("/api/composicoes", composicoesRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/tipos", typesRouter);
+app.use("/api/unidades", unitsRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
