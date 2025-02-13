@@ -788,6 +788,32 @@ app.get("/api/fornecedores", async (req, res) => {
   }
 });
 
+// Rota para cadastrar um novo fornecedor
+app.post("/api/fornecedores", async (req, res) => {
+  try {
+    console.log("Rota POST /api/fornecedores chamada");
+    const { cnpj, cpf } = req.body;
+
+    // Verificar se o fornecedor já existe pelo CNPJ ou CPF
+    const fornecedorExistente = await Fornecedor.findOne({
+      $or: [{ cnpj }, { cpf }],
+    });
+
+    if (fornecedorExistente) {
+      return res.status(400).json({
+        message: "Fornecedor com o mesmo CPF ou CNPJ já cadastrado",
+      });
+    }
+
+    const fornecedor = new Fornecedor(req.body);
+    const savedFornecedor = await fornecedor.save();
+    res.status(201).json(savedFornecedor);
+  } catch (error) {
+    console.error("Erro ao cadastrar fornecedor:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para atualizar um fornecedor
 app.put("/api/fornecedores/:id", async (req, res) => {
   try {
