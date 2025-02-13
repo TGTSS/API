@@ -851,6 +851,25 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
   }
 });
 
+// Rota para verificar a duplicidade de CNPJ ou CPF
+app.get("/api/fornecedores/check/:documento", async (req, res) => {
+  try {
+    const { documento } = req.params;
+    const fornecedorExistente = await Fornecedor.findOne({
+      $or: [{ cnpj: documento }, { cpf: documento }],
+    });
+
+    if (fornecedorExistente) {
+      return res.json({ exists: true });
+    } else {
+      return res.json({ exists: false });
+    }
+  } catch (error) {
+    console.error("Erro ao verificar duplicidade de documento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para consultar CNPJ
 app.get("/consulta/:cnpj", async (req, res) => {
   try {
