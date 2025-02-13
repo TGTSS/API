@@ -801,9 +801,12 @@ app.post("/api/fornecedores", async (req, res) => {
       return res.status(400).json({ message: "CNPJ ou CPF é obrigatório" });
     }
 
+    // Remover formatação do CNPJ
+    const formattedCnpj = cnpj ? cnpj.replace(/[^\d]/g, "") : null;
+
     // Verificar se o fornecedor já existe pelo CNPJ ou CPF
     const fornecedorExistente = await Fornecedor.findOne({
-      $or: [{ cnpj }, { cpf }],
+      $or: [{ cnpj: formattedCnpj }, { cpf }],
     });
 
     if (fornecedorExistente) {
@@ -819,7 +822,7 @@ app.post("/api/fornecedores", async (req, res) => {
     res.status(201).json(savedFornecedor);
   } catch (error) {
     console.error("Erro ao cadastrar fornecedor:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message, error });
   }
 });
 
@@ -864,13 +867,16 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
 app.get("/api/fornecedores/check/:documento", async (req, res) => {
   try {
     const { documento } = req.params;
+    console.log("Verificando duplicidade para o documento:", documento);
     const fornecedorExistente = await Fornecedor.findOne({
       $or: [{ cnpj: documento }, { cpf: documento }],
     });
 
     if (fornecedorExistente) {
+      console.log("Documento já cadastrado:", fornecedorExistente);
       return res.json({ exists: true });
     } else {
+      console.log("Documento não cadastrado");
       return res.json({ exists: false });
     }
   } catch (error) {
