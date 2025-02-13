@@ -794,12 +794,15 @@ app.post("/api/fornecedores", async (req, res) => {
     console.log("Rota POST /api/fornecedores chamada");
     const { cnpj, cpf } = req.body;
 
+    console.log("Dados recebidos:", req.body);
+
     // Verificar se o fornecedor já existe pelo CNPJ ou CPF
     const fornecedorExistente = await Fornecedor.findOne({
       $or: [{ cnpj }, { cpf }],
     });
 
     if (fornecedorExistente) {
+      console.log("Fornecedor já cadastrado:", fornecedorExistente);
       return res.status(400).json({
         message: "Fornecedor com o mesmo CPF ou CNPJ já cadastrado",
       });
@@ -807,6 +810,7 @@ app.post("/api/fornecedores", async (req, res) => {
 
     const fornecedor = new Fornecedor(req.body);
     const savedFornecedor = await fornecedor.save();
+    console.log("Fornecedor salvo:", savedFornecedor);
     res.status(201).json(savedFornecedor);
   } catch (error) {
     console.error("Erro ao cadastrar fornecedor:", error);
