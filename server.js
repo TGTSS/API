@@ -473,9 +473,18 @@ app.get("/db/location", async (req, res) => {
     res.json({ dbLocation: locationResponse.data });
   } catch (error) {
     console.error("Erro ao obter a localização do banco de dados:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao obter a localização do banco de dados" });
+
+    if (error.response && error.response.status === 429) {
+      return res.status(429).json({
+        message: "Muitas solicitações. Tente novamente mais tarde.",
+        error: error.message,
+      });
+    }
+
+    res.status(500).json({
+      message: "Erro ao obter a localização do banco de dados",
+      error: error.message,
+    });
   }
 });
 
