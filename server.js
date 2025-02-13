@@ -802,15 +802,6 @@ app.get("/api/fornecedores", async (req, res) => {
 app.post("/api/fornecedores", async (req, res) => {
   try {
     console.log("Rota POST /api/fornecedores chamada");
-    const { cnpj, cpf } = req.body;
-
-    console.log("Dados recebidos:", req.body);
-
-    // Verificar se o CNPJ ou CPF está presente
-    if (!cnpj && !cpf) {
-      return res.status(400).json({ message: "CNPJ ou CPF é obrigatório" });
-    }
-
     const fornecedor = new Fornecedor({
       ...req.body,
     });
