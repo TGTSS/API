@@ -911,3 +911,18 @@ app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
   console.log(`Allowed Origins: ${allowedOrigins.join(", ")}`);
 });
+
+// Rota para listar recibos recusados
+app.get("/api/records", async (req, res) => {
+  try {
+    const { status } = req.query;
+    if (!status) {
+      return res.status(400).json({ message: "Status é obrigatório" });
+    }
+    const records = await Record.find({ status }).lean();
+    res.json(records);
+  } catch (error) {
+    console.error("Erro ao buscar recibos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
