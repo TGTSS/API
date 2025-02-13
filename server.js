@@ -26,10 +26,18 @@ import typesRouter from "./routes/types.js";
 import unitsRouter from "./routes/units.js";
 import dotenv from "dotenv";
 import sendEmail from "./utils/sendEmail.js";
+import { Server } from "socket.io";
 
 dotenv.config();
 
 const app = express();
+const server = require("http").createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  },
+});
 
 // Middlewares
 const allowedOrigins = [
@@ -96,6 +104,7 @@ app.post("/api/beneficiarios/exemplo", async (req, res) => {
     });
     const savedBeneficiario = await exemploBeneficiario.save();
     res.status(201).json(savedBeneficiario);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao adicionar beneficiário de exemplo:", error);
     res.status(500).json({ message: error.message });
@@ -112,6 +121,7 @@ app.post("/api/beneficiarios", async (req, res) => {
     });
     const savedBeneficiario = await beneficiario.save();
     res.status(201).json(savedBeneficiario);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao cadastrar beneficiário:", error);
     res.status(500).json({ message: error.message });
@@ -133,6 +143,7 @@ app.post("/api/clientes", async (req, res) => {
     const savedCliente = await cliente.save();
     console.log("Cliente salvo:", savedCliente);
     res.status(201).json(savedCliente);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao cadastrar cliente:", error);
     res.status(500).json({ message: error.message });
@@ -160,6 +171,7 @@ app.post("/api/clientes/import", async (req, res) => {
     const savedClientes = await Cliente.insertMany(clientesToSave);
     console.log("Clientes salvos:", JSON.stringify(savedClientes, null, 2));
     res.status(201).json(savedClientes);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao importar clientes:", error);
     res.status(500).json({ message: error.message });
@@ -196,6 +208,7 @@ app.post("/records", async (req, res) => {
     });
     const savedRecord = await record.save();
     res.status(201).json({ _id: savedRecord._id });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao salvar o registro:", error);
     res.status(400).json({ message: error.message });
@@ -252,6 +265,7 @@ app.put("/records/:id", async (req, res) => {
     record.status = status || record.status;
     const updatedRecord = await record.save();
     res.json(updatedRecord);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao atualizar o registro:", error);
     res.status(500).json({ message: error.message });
@@ -282,6 +296,7 @@ app.put("/records/:id/location", async (req, res) => {
       return res.status(404).json({ message: "Registro não encontrado" });
     }
     res.json(updatedRecord);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao atualizar a localização do registro:", error);
     res.status(500).json({ message: error.message });
@@ -301,6 +316,7 @@ app.patch("/records/:id/status", async (req, res) => {
     record.status = status;
     const updatedRecord = await record.save();
     res.json(updatedRecord);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao atualizar o status do registro:", error);
     res.status(500).json({ message: error.message });
@@ -335,6 +351,7 @@ app.delete("/records/:id", async (req, res) => {
       return res.status(404).json({ message: "Registro não encontrado" });
     }
     res.status(200).json({ message: "Registro excluído com sucesso" });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao excluir o registro:", error);
     res.status(500).json({ message: error.message });
@@ -349,6 +366,7 @@ app.delete("/records", async (req, res) => {
     res
       .status(200)
       .json({ message: "Todos os registros foram excluídos com sucesso" });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao excluir todos os registros:", error);
     res.status(500).json({ message: error.message });
@@ -363,6 +381,7 @@ app.delete("/api/beneficiarios", async (req, res) => {
     res
       .status(200)
       .json({ message: "Todos os beneficiários foram excluídos com sucesso" });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao excluir todos os beneficiários:", error);
     res.status(500).json({ message: error.message });
@@ -379,6 +398,7 @@ app.delete("/api/clientes/:id", async (req, res) => {
       return res.status(404).json({ message: "Cliente não encontrado" });
     }
     res.status(200).json({ message: "Cliente excluído com sucesso" });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao excluir o cliente:", error);
     res.status(500).json({ message: error.message });
@@ -395,6 +415,7 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
       return res.status(404).json({ message: "Fornecedor não encontrado" });
     }
     res.status(200).json({ message: "Fornecedor excluído com sucesso" });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao excluir o fornecedor:", error);
     res.status(500).json({ message: error.message });
@@ -532,6 +553,7 @@ app.post("/records/sign", async (req, res) => {
     record.location = location;
     const updatedRecord = await record.save();
     res.json(updatedRecord);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao assinar o registro:", error);
     res.status(500).json({ message: error.message });
@@ -568,6 +590,7 @@ app.post("/api/recibos", async (req, res) => {
 
     const savedRecord = await record.save();
     res.status(201).json({ _id: savedRecord._id });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao salvar o recibo:", error);
     res.status(500).json({ message: error.message });
@@ -599,6 +622,7 @@ app.post("/api/funcionarios/import", async (req, res) => {
       JSON.stringify(savedFuncionarios, null, 2)
     );
     res.status(201).json(savedFuncionarios);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao importar funcionários:", error);
     res.status(500).json({ message: error.message });
@@ -617,6 +641,7 @@ app.post("/api/segmentos", async (req, res) => {
     const novoSegmento = new Segmento({ nome });
     await novoSegmento.save();
     res.status(201).json({ message: "Segmento adicionado com sucesso" });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao adicionar segmento:", error);
     res.status(500).json({ message: "Erro ao adicionar segmento" });
@@ -645,6 +670,7 @@ app.post("/api/funcoes", async (req, res) => {
     const novaFuncao = new Funcao({ nome });
     await novaFuncao.save();
     res.status(201).json({ message: "Função adicionada com sucesso" });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao adicionar função:", error);
     res.status(500).json({ message: "Erro ao adicionar função" });
@@ -665,6 +691,7 @@ app.post("/api/formasRemuneracao", async (req, res) => {
     res
       .status(201)
       .json({ message: "Forma de remuneração adicionada com sucesso" });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao adicionar forma de remuneração:", error);
     res.status(500).json({ message: "Erro ao adicionar forma de remuneração" });
@@ -702,6 +729,7 @@ app.post("/api/insumos", async (req, res) => {
     const novoInsumo = new Insumo(insumo);
     await novoInsumo.save();
     res.status(201).json(novoInsumo);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao adicionar insumo:", error);
     res.status(500).json({ message: "Erro ao adicionar insumo" });
@@ -808,6 +836,7 @@ app.post("/api/fornecedores", async (req, res) => {
     const savedFornecedor = await fornecedor.save();
     console.log("Fornecedor salvo:", savedFornecedor);
     res.status(201).json(savedFornecedor);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao cadastrar fornecedor:", error);
     res.status(500).json({ message: error.message, error });
@@ -829,6 +858,7 @@ app.put("/api/fornecedores/:id", async (req, res) => {
       return res.status(404).json({ message: "Fornecedor não encontrado" });
     }
     res.json(updatedFornecedor);
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao atualizar fornecedor:", error);
     res.status(500).json({ message: error.message });
@@ -845,6 +875,7 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
       return res.status(404).json({ message: "Fornecedor não encontrado" });
     }
     res.status(200).json({ message: "Fornecedor excluído com sucesso" });
+    await emitirAtualizacaoRecibos();
   } catch (error) {
     console.error("Erro ao excluir o fornecedor:", error);
     res.status(500).json({ message: error.message });
@@ -968,8 +999,20 @@ app.use("/api/users", usersRouter);
 app.use("/api/tipos", typesRouter);
 app.use("/api/unidades", unitsRouter);
 
+// Emitir evento de atualização de recibos
+const emitirAtualizacaoRecibos = async () => {
+  try {
+    const recusados = await Record.find({ status: "recusado" }).lean();
+    const pendentes = await Record.find({ status: "pendente" }).lean();
+    const aprovados = await Record.find({ status: "aprovado" }).lean();
+    io.emit("recibosAtualizados", { recusados, pendentes, aprovados });
+  } catch (error) {
+    console.error("Erro ao emitir atualização de recibos:", error);
+  }
+};
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
   console.log(`Allowed Origins: ${allowedOrigins.join(", ")}`);
 });
