@@ -801,24 +801,8 @@ app.post("/api/fornecedores", async (req, res) => {
       return res.status(400).json({ message: "CNPJ ou CPF é obrigatório" });
     }
 
-    // Remover formatação do CNPJ
-    const formattedCnpj = cnpj ? cnpj.replace(/[^\d]/g, "") : null;
-
-    // Verificar se o fornecedor já existe pelo CNPJ ou CPF
-    const fornecedorExistente = await Fornecedor.findOne({
-      $or: [{ cnpj: formattedCnpj }, { cpf }],
-    });
-
-    if (fornecedorExistente) {
-      console.log("Fornecedor já cadastrado:", fornecedorExistente);
-      return res.status(400).json({
-        message: "Fornecedor com o mesmo CPF ou CNPJ já cadastrado",
-      });
-    }
-
     const fornecedor = new Fornecedor({
       ...req.body,
-      cnpj: formattedCnpj,
     });
     const savedFornecedor = await fornecedor.save();
     console.log("Fornecedor salvo:", savedFornecedor);
@@ -859,7 +843,7 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
     if (!deletedFornecedor) {
       return res.status(404).json({ message: "Fornecedor não encontrado" });
     }
-     res.status(200).json({ message: "Fornecedor excluído com sucesso" });
+    res.status(200).json({ message: "Fornecedor excluído com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir o fornecedor:", error);
     res.status(500).json({ message: error.message });
@@ -874,6 +858,7 @@ app.get("/api/fornecedores/check/:documento", async (req, res) => {
 
     // Remover formatação do documento
     const formattedDocumento = documento.replace(/[^\d]/g, "");
+    console.log("Documento formatado:", formattedDocumento);
 
     const fornecedorExistente = await Fornecedor.findOne({
       $or: [{ cnpj: formattedDocumento }, { cpf: formattedDocumento }],

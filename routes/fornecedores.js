@@ -45,7 +45,9 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedFornecedor = await Fornecedor.findByIdAndUpdate(id, req.body, { new: true });
+    const updatedFornecedor = await Fornecedor.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
     if (!updatedFornecedor) {
       return res.status(404).json({ message: "Fornecedor não encontrado" });
     }
@@ -67,6 +69,33 @@ router.delete("/:id", async (req, res) => {
     res.status(200).json({ message: "Fornecedor excluído com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir fornecedor:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para verificar a duplicidade de CNPJ ou CPF
+router.get("/check/:documento", async (req, res) => {
+  try {
+    const { documento } = req.params;
+    console.log("Verificando duplicidade para o documento:", documento);
+
+    // Remover formatação do documento
+    const formattedDocumento = documento.replace(/[^\d]/g, "");
+    console.log("Documento formatado:", formattedDocumento);
+
+    const fornecedorExistente = await Fornecedor.findOne({
+      $or: [{ cnpj: formattedDocumento }, { cpf: formattedDocumento }],
+    });
+
+    if (fornecedorExistente) {
+      console.log("Documento já cadastrado:", fornecedorExistente);
+      return res.json({ exists: true });
+    } else {
+      console.log("Documento não cadastrado");
+      return res.json({ exists: false });
+    }
+  } catch (error) {
+    console.error("Erro ao verificar duplicidade de documento:", error);
     res.status(500).json({ message: error.message });
   }
 });
