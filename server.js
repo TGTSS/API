@@ -796,6 +796,11 @@ app.post("/api/fornecedores", async (req, res) => {
 
     console.log("Dados recebidos:", req.body);
 
+    // Verificar se o CNPJ ou CPF está presente
+    if (!cnpj && !cpf) {
+      return res.status(400).json({ message: "CNPJ ou CPF é obrigatório" });
+    }
+
     // Verificar se o fornecedor já existe pelo CNPJ ou CPF
     const fornecedorExistente = await Fornecedor.findOne({
       $or: [{ cnpj }, { cpf }],

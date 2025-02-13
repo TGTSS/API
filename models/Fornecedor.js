@@ -6,8 +6,22 @@ const FornecedorSchema = new mongoose.Schema({
   status: { type: String },
   nomeFantasia: { type: String },
   razaoSocial: { type: String },
-  cnpj: { type: String, unique: true, sparse: true, required: true },
-  cpf: { type: String, unique: true, sparse: true },
+  cnpj: {
+    type: String,
+    unique: true,
+    sparse: true,
+    required: function () {
+      return !this.cpf;
+    },
+  },
+  cpf: {
+    type: String,
+    unique: true,
+    sparse: true,
+    required: function () {
+      return !this.cnpj;
+    },
+  },
   inscricaoEstadual: { type: String },
   inscricaoMunicipal: { type: String },
   telefone1: { type: String },
