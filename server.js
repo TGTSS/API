@@ -361,20 +361,6 @@ app.delete("/records/:id", async (req, res) => {
   }
 });
 
-// Rota para excluir todos os registros
-app.delete("/records", async (req, res) => {
-  try {
-    console.log("Rota DELETE /records chamada");
-    await Record.deleteMany({});
-    res
-      .status(200)
-      .json({ message: "Todos os registros foram excluídos com sucesso" });
-    await emitirAtualizacaoRecibos();
-  } catch (error) {
-    console.error("Erro ao excluir todos os registros:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
 
 // Rota para excluir todos os beneficiários
 app.delete("/api/beneficiarios", async (req, res) => {

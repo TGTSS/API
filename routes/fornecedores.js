@@ -7,6 +7,14 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   try {
     const fornecedores = req.body;
+
+    // Verificar se cnpj ou cpf são nulos
+    fornecedores.forEach((fornecedor) => {
+      if (!fornecedor.cnpj && !fornecedor.cpf) {
+        throw new Error("CNPJ ou CPF é obrigatório");
+      }
+    });
+
     const savedFornecedores = await Fornecedor.insertMany(fornecedores);
     res.status(201).json(savedFornecedores);
   } catch (error) {
