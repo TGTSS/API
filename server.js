@@ -32,13 +32,6 @@ import http from "http";
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  },
-});
 
 // Middlewares
 const allowedOrigins = [
@@ -49,6 +42,15 @@ const allowedOrigins = [
   "https://i9systemas.com.br",
   "https://api-urh2.onrender.com",
 ];
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  },
+});
+
 app.use(
   cors({
     origin: allowedOrigins,
