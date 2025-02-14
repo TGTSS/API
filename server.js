@@ -27,11 +27,12 @@ import unitsRouter from "./routes/units.js";
 import dotenv from "dotenv";
 import sendEmail from "./utils/sendEmail.js";
 import { Server } from "socket.io";
+import http from "http";
 
 dotenv.config();
 
 const app = express();
-const server = require("http").createServer(app);
+const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
