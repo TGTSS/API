@@ -28,6 +28,7 @@ import dotenv from "dotenv";
 import sendEmail from "./utils/sendEmail.js";
 import { Server } from "socket.io";
 import http from "http";
+import retryRequest from "./utils/retryRequest.js";
 
 dotenv.config();
 
@@ -360,7 +361,6 @@ app.delete("/records/:id", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
 
 // Rota para excluir todos os beneficiários
 app.delete("/api/beneficiarios", async (req, res) => {
@@ -767,8 +767,8 @@ console.log(replacedString); // Output: Hello, JavaScript!
 // Rota para obter a localização e o endereço MAC do servidor
 app.get("/server/info", async (req, res) => {
   try {
-    const ipResponse = await axios.get("https://api.ipify.org?format=json");
-    const locationResponse = await axios.get(
+    const ipResponse = await retryRequest("https://api.ipify.org?format=json");
+    const locationResponse = await retryRequest(
       `https://ipapi.co/${ipResponse.data.ip}/json/`
     );
     const macAddress = getServerMacAddress();
