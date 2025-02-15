@@ -537,7 +537,7 @@ app.post("/records/sign", async (req, res) => {
     }
     record.ipAddress = ip;
     record.macAddress = mac;
-    record.status = "assinado";
+    record.status = "pendente";
     record.location = location;
     const updatedRecord = await record.save();
     res.json(updatedRecord);

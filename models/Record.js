@@ -62,7 +62,7 @@ const RecordSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    enum: ["recusado", "pendente", "aprovado"],
+    enum: ["recusado", "pendente", "aprovado"], // Removido "assinado"
     default: "pendente",
   },
   location: {
