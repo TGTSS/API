@@ -15,23 +15,31 @@ const RecordSchema = new mongoose.Schema({
       cidade: { type: String, default: "" },
       cep: { type: String, default: "" },
       complemento: { type: String, default: "" },
-      uf: { type: String, default: "" }
+      uf: { type: String, default: "" },
     },
     latitude: { type: Number },
-    longitude: { type: Number }
+    longitude: { type: Number },
   },
   fornecedor: {
-    name: { type: String, required: true, default: "MODERNA EDIFICAÇÕES & EMPREENDIMENTOS" },
+    name: {
+      type: String,
+      required: true,
+      default: "MODERNA EDIFICAÇÕES & EMPREENDIMENTOS",
+    },
     cnpj: { type: String, required: true, default: "22.484.557/0001-88" },
     phone: { type: String, default: "(00) 0 0000-0000" },
     email: { type: String, default: "" },
     endereco: {
-      logradouro: { type: String, required: true, default: "Rua Dona Lidinha Falcâo, WestFlat, Loja 02" },
+      logradouro: {
+        type: String,
+        required: true,
+        default: "Rua Dona Lidinha Falcâo, WestFlat, Loja 02",
+      },
       numero: { type: String, required: true, default: "2221" },
       bairro: { type: String, required: true, default: "Bela Vista" },
       cidade: { type: String, required: true, default: "Mossoro/RN" },
       cep: { type: String, required: true, default: "59612-045" },
-      uf: { type: String, required: true }
+      uf: { type: String, required: true },
     },
   },
   endereco: {
@@ -51,7 +59,12 @@ const RecordSchema = new mongoose.Schema({
     },
   ],
   totalValue: { type: String, required: true },
-  status: { type: String, required: true, enum: ['recusado', 'pendente', 'aprovado', 'assinado'], default: 'pendente' },
+  status: {
+    type: String,
+    required: true,
+    enum: ["recusado", "pendente", "aprovado"],
+    default: "pendente",
+  },
   location: {
     latitude: { type: Number },
     longitude: { type: Number },
@@ -59,13 +72,13 @@ const RecordSchema = new mongoose.Schema({
     bairro: { type: String },
     cidade: { type: String },
     estado: { type: String },
-    pais: { type: String }
+    pais: { type: String },
   },
   locationDetails: { type: Object },
   signature: { type: String },
   signatureURL: { type: String },
   ipAddress: { type: String },
-  macAddress: { type: String }
+  macAddress: { type: String },
 });
 
 // Middleware para gerar ID sequencial
