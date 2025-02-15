@@ -29,6 +29,7 @@ const FornecedorSchema = new mongoose.Schema({
   ],
   informacoesComplementares: { type: String },
   documentos: [{ type: String }],
+  segmento: { type: String }, // Adicionado campo segmento
 });
 
 const Fornecedor = mongoose.model("Fornecedor", FornecedorSchema);
