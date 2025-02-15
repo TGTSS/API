@@ -28,7 +28,6 @@ import dotenv from "dotenv";
 import sendEmail from "./utils/sendEmail.js";
 import { Server } from "socket.io";
 import http from "http";
-import retryRequest from "./utils/retryRequest.js";
 
 dotenv.config();
 
@@ -767,23 +766,21 @@ console.log(replacedString); // Output: Hello, JavaScript!
 // Rota para obter a localização e o endereço MAC do servidor
 app.get("/server/info", async (req, res) => {
   try {
-    const ipResponse = await retryRequest("https://api.ipify.org?format=json");
-    const locationResponse = await retryRequest(
-      `https://ipapi.co/${ipResponse.data.ip}/json/`
+    // Obtendo IP e localização diretamente do ipinfo.io
+    const ipResponse = await axios.get(
+      "https://ipinfo.io/json?token=c42ec638ad1e91"
     );
-    const macAddress = getServerMacAddress();
 
-    if (!macAddress) {
-      throw new Error("Endereço MAC não encontrado");
-    }
+    const macAddress = getServerMacAddress();
+    if (!macAddress) throw new Error("Endereço MAC não encontrado");
 
     console.log("IP do servidor:", ipResponse.data.ip);
-    console.log("Localização do servidor:", locationResponse.data);
+    console.log("Localização do servidor:", ipResponse.data);
     console.log("Endereço MAC do servidor:", macAddress);
 
     res.json({
       ip: ipResponse.data.ip,
-      location: locationResponse.data,
+      location: ipResponse.data, // Já contém cidade, região, país e coordenadas
       macAddress: macAddress,
     });
   } catch (error) {
