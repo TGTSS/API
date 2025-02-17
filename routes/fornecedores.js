@@ -3,23 +3,40 @@ import Fornecedor from "../models/Fornecedor.js";
 
 const router = express.Router();
 
+// Função para remover caracteres não numéricos do CNPJ
+const formatCNPJ = (cnpj) => {
+  return cnpj.replace(/[^\d]/g, "");
+};
+
+// Middleware para validar CNPJ
+const validarCNPJ = async (req, res, next) => {
+  const { cnpj } = req.body;
+  if (!cnpj) {
+    return res.status(400).json({ message: "CNPJ é obrigatório" });
+  }
+
+  const formattedCNPJ = formatCNPJ(cnpj);
+  const fornecedorExistente = await Fornecedor.findOne({ cnpj: formattedCNPJ });
+
+  if (fornecedorExistente) {
+    return res.status(400).json({ message: "CNPJ já cadastrado" });
+  }
+
+  req.body.cnpj = formattedCNPJ;
+  next();
+};
+
 // Rota para criar um novo fornecedor
-router.post("/", async (req, res) => {
+router.post("/", validarCNPJ, async (req, res) => {
   try {
-    const fornecedores = req.body;
-
-    // Verificar se cnpj ou cpf são nulos
-    fornecedores.forEach((fornecedor) => {
-      if (!fornecedor.cnpj && !fornecedor.cpf) {
-        throw new Error("CNPJ ou CPF é obrigatório");
-      }
+    const fornecedor = new Fornecedor({
+      ...req.body,
     });
-
-    const savedFornecedores = await Fornecedor.insertMany(fornecedores);
-    res.status(201).json(savedFornecedores);
+    const savedFornecedor = await fornecedor.save();
+    res.status(201).json(savedFornecedor);
   } catch (error) {
-    console.error("Erro ao criar fornecedores:", error);
-    res.status(400).json({ message: error.message });
+    console.error("Erro ao criar fornecedor:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 

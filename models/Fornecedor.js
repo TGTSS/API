@@ -4,10 +4,10 @@ const FornecedorSchema = new mongoose.Schema({
   tipo: { type: String },
   tambemCliente: { type: Boolean },
   status: { type: String },
-  nome: {type: String},
+  nome: { type: String },
   nomeFantasia: { type: String },
   razaoSocial: { type: String },
-  cnpj: { type: String, unique: true, sparse: true },
+  cnpj: { type: String, unique: true, sparse: true, required: true },
   inscricaoEstadual: { type: String },
   inscricaoMunicipal: { type: String },
   telefone1: { type: String },
@@ -33,5 +33,15 @@ const FornecedorSchema = new mongoose.Schema({
 });
 
 const Fornecedor = mongoose.model("Fornecedor", FornecedorSchema);
+
+// Remover registros com cnpj: null
+await Fornecedor.deleteMany({ cnpj: null });
+
+// Recriar o índice do CNPJ corretamente
+await Fornecedor.collection.dropIndex("cnpj_1");
+await Fornecedor.collection.createIndex(
+  { cnpj: 1 },
+  { unique: true, sparse: true }
+);
 
 export default Fornecedor;

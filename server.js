@@ -812,8 +812,31 @@ app.get("/api/fornecedores", async (req, res) => {
   }
 });
 
+// Função para remover caracteres não numéricos do CNPJ
+const formatCNPJ = (cnpj) => {
+  return cnpj.replace(/[^\d]/g, "");
+};
+
+// Middleware para validar CNPJ
+const validarCNPJ = async (req, res, next) => {
+  const { cnpj } = req.body;
+  if (!cnpj) {
+    return res.status(400).json({ message: "CNPJ é obrigatório" });
+  }
+
+  const formattedCNPJ = formatCNPJ(cnpj);
+  const fornecedorExistente = await Fornecedor.findOne({ cnpj: formattedCNPJ });
+
+  if (fornecedorExistente) {
+    return res.status(400).json({ message: "CNPJ já cadastrado" });
+  }
+
+  req.body.cnpj = formattedCNPJ;
+  next();
+};
+
 // Rota para cadastrar um novo fornecedor
-app.post("/api/fornecedores", async (req, res) => {
+app.post("/api/fornecedores", validarCNPJ, async (req, res) => {
   try {
     console.log("Rota POST /api/fornecedores chamada");
     const fornecedor = new Fornecedor({
