@@ -868,7 +868,7 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
   }
 });
 
-// Rota para verificar a duplicidade de CNPJ ou CPF
+// Rota para verificar a duplicidade de CNPJ ou CPF para fornecedores
 app.get("/api/fornecedores/check/:documento", async (req, res) => {
   try {
     const { documento } = req.params;
@@ -884,6 +884,33 @@ app.get("/api/fornecedores/check/:documento", async (req, res) => {
 
     if (fornecedorExistente) {
       console.log("Documento já cadastrado:", fornecedorExistente);
+      return res.json({ exists: true });
+    } else {
+      console.log("Documento não cadastrado");
+      return res.json({ exists: false });
+    }
+  } catch (error) {
+    console.error("Erro ao verificar duplicidade de documento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para verificar a duplicidade de CNPJ ou CPF para clientes
+app.get("/api/clientes/check/:documento", async (req, res) => {
+  try {
+    const { documento } = req.params;
+    console.log("Verificando duplicidade para o documento:", documento);
+
+    // Remover formatação do documento
+    const formattedDocumento = documento.replace(/[^\d]/g, "");
+    console.log("Documento formatado:", formattedDocumento);
+
+    const clienteExistente = await Cliente.findOne({
+      $or: [{ cnpj: formattedDocumento }, { cpf: formattedDocumento }],
+    });
+
+    if (clienteExistente) {
+      console.log("Documento já cadastrado:", clienteExistente);
       return res.json({ exists: true });
     } else {
       console.log("Documento não cadastrado");
