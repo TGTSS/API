@@ -6,21 +6,19 @@ const router = express.Router();
 // Rota para criar um novo cliente
 router.post("/", async (req, res) => {
   try {
-    console.log("Rota POST /api/clientes chamada");
-    console.log("Dados recebidos:", req.body);
+    const clientes = req.body;
 
-    const cliente = new Cliente({
-      ...req.body,
+    // Verificar se cnpj ou cpf são nulos
+    clientes.forEach((cliente) => {
+      if (!cliente.cnpj && !cliente.cpf) {
+        throw new Error("CNPJ ou CPF é obrigatório");
+      }
     });
 
-    console.log("Objeto Cliente a ser salvo:", cliente.toObject());
-
-    const savedCliente = await cliente.save();
-    console.log("Cliente salvo:", savedCliente);
-
-    res.status(201).json(savedCliente);
+    const savedClientes = await Cliente.insertMany(clientes);
+    res.status(201).json(savedClientes);
   } catch (error) {
-    console.error("Erro ao criar cliente:", error);
+    console.error("Erro ao criar clientes:", error);
     res.status(400).json({ message: error.message });
   }
 });

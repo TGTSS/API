@@ -1,12 +1,13 @@
 import mongoose from "mongoose";
 
-const clienteSchema = new mongoose.Schema({
+const ClienteSchema = new mongoose.Schema({
   tipo: { type: String },
   tambemFornecedor: { type: Boolean },
   status: { type: String },
+  nome: { type: String },
   nomeFantasia: { type: String },
   razaoSocial: { type: String },
-  cnpj: { type: String, unique: true, required: true },
+  cnpj: { type: String },
   inscricaoEstadual: { type: String },
   inscricaoMunicipal: { type: String },
   telefone1: { type: String },
@@ -18,10 +19,6 @@ const clienteSchema = new mongoose.Schema({
   cidade: { type: String },
   estado: { type: String },
   cep: { type: String },
-  cpf: { type: String, unique: true, required: true },
-  nome: { type: String },
-  selectedPhone: { type: String },
-  segmento: { type: String },
   contatos: [
     {
       nome: { type: String },
@@ -32,8 +29,9 @@ const clienteSchema = new mongoose.Schema({
   ],
   informacoesComplementares: { type: String },
   documentos: [{ type: String }],
+  segmento: { type: String }, // Adicionado campo segmento
 });
 
-const Cliente = mongoose.model("Cliente", clienteSchema);
+const Cliente = mongoose.model("Cliente", ClienteSchema);
 
 export default Cliente;
