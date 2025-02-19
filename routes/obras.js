@@ -8,6 +8,29 @@ import Conta from "../models/Conta.js";
 
 const router = express.Router();
 
+// Rota para listar todos os status de obra
+router.get("/status", async (req, res) => {
+  try {
+    const status = await StatusObra.find();
+    res.json(status);
+  } catch (error) {
+    console.error("Erro ao buscar status de obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar um novo status de obra
+router.post("/status", async (req, res) => {
+  try {
+    const status = new StatusObra(req.body);
+    const savedStatus = await status.save();
+    res.status(201).json(savedStatus);
+  } catch (error) {
+    console.error("Erro ao criar status de obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para criar uma nova obra
 router.post("/", async (req, res) => {
   try {
@@ -129,29 +152,6 @@ router.delete("/:id", async (req, res) => {
     res.status(200).json({ message: "Obra excluída com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir obra:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para listar todos os status de obra
-router.get("/status", async (req, res) => {
-  try {
-    const status = await StatusObra.find();
-    res.json(status);
-  } catch (error) {
-    console.error("Erro ao buscar status de obra:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para criar um novo status de obra
-router.post("/status", async (req, res) => {
-  try {
-    const status = new StatusObra(req.body);
-    const savedStatus = await status.save();
-    res.status(201).json(savedStatus);
-  } catch (error) {
-    console.error("Erro ao criar status de obra:", error);
     res.status(500).json({ message: error.message });
   }
 });
