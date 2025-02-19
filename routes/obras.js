@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import Obra from "../models/Obra.js";
 import StatusObra from "../models/StatusObra.js";
 import TipoObra from "../models/TipoObra.js";
@@ -10,7 +11,17 @@ const router = express.Router();
 // Rota para criar uma nova obra
 router.post("/", async (req, res) => {
   try {
-    const obra = new Obra(req.body);
+    const { status, tipo, quemPaga, conta, cliente, ...rest } = req.body;
+
+    const obra = new Obra({
+      ...rest,
+      status: mongoose.Types.ObjectId(status),
+      tipo: mongoose.Types.ObjectId(tipo),
+      quemPaga: mongoose.Types.ObjectId(quemPaga),
+      conta: mongoose.Types.ObjectId(conta),
+      cliente: mongoose.Types.ObjectId(cliente),
+    });
+
     const savedObra = await obra.save();
     res.status(201).json(savedObra);
   } catch (error) {
@@ -59,9 +70,21 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedObra = await Obra.findByIdAndUpdate(id, req.body, {
-      new: true,
-    });
+    const { status, tipo, quemPaga, conta, cliente, ...rest } = req.body;
+
+    const updatedObra = await Obra.findByIdAndUpdate(
+      id,
+      {
+        ...rest,
+        status: mongoose.Types.ObjectId(status),
+        tipo: mongoose.Types.ObjectId(tipo),
+        quemPaga: mongoose.Types.ObjectId(quemPaga),
+        conta: mongoose.Types.ObjectId(conta),
+        cliente: mongoose.Types.ObjectId(cliente),
+      },
+      { new: true }
+    );
+
     if (!updatedObra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
