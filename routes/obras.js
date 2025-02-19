@@ -31,6 +31,29 @@ router.post("/status", async (req, res) => {
   }
 });
 
+// Rota para listar todos os tipos de obra
+router.get("/tipos", async (req, res) => {
+  try {
+    const tipos = await TipoObra.find();
+    res.json(tipos);
+  } catch (error) {
+    console.error("Erro ao buscar tipos de obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar um novo tipo de obra
+router.post("/tipos", async (req, res) => {
+  try {
+    const tipo = new TipoObra(req.body);
+    const savedTipo = await tipo.save();
+    res.status(201).json(savedTipo);
+  } catch (error) {
+    console.error("Erro ao criar tipo de obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para criar uma nova obra
 router.post("/", async (req, res) => {
   try {
@@ -152,29 +175,6 @@ router.delete("/:id", async (req, res) => {
     res.status(200).json({ message: "Obra excluída com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir obra:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para listar todos os tipos de obra
-router.get("/tipos", async (req, res) => {
-  try {
-    const tipos = await TipoObra.find();
-    res.json(tipos);
-  } catch (error) {
-    console.error("Erro ao buscar tipos de obra:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para criar um novo tipo de obra
-router.post("/tipos", async (req, res) => {
-  try {
-    const tipo = new TipoObra(req.body);
-    const savedTipo = await tipo.save();
-    res.status(201).json(savedTipo);
-  } catch (error) {
-    console.error("Erro ao criar tipo de obra:", error);
     res.status(500).json({ message: error.message });
   }
 });
