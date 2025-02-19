@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
 const ContatoSchema = new mongoose.Schema({
-  nome: { type: String, required: true },
-  telefone: { type: String, required: true },
-  cargo: { type: String, required: true },
-  email: { type: String, required: true },
+  nome: { type: String },
+  telefone: { type: String},
+  cargo: { type: String},
+  email: { type: String },
 });
 
 const ObraSchema = new mongoose.Schema({

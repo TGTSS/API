@@ -103,10 +103,28 @@ router.post("/contas", async (req, res) => {
 // Rota para criar uma nova obra
 router.post("/", async (req, res) => {
   try {
-    const { status, tipo, quemPaga, conta, cliente, ...rest } = req.body;
+    const {
+      status,
+      tipo,
+      quemPaga,
+      conta,
+      cliente,
+      areaConstruida,
+      contatos,
+      ...rest
+    } = req.body;
+
+    // Converter valores numéricos
+    const areaConstruidaNumber = parseFloat(areaConstruida.replace(",", "."));
+
+    // Verificar campos obrigatórios
+    if (!rest.codigo || !cliente || !contatos || contatos.length === 0) {
+      return res.status(400).json({ message: "Campos obrigatórios ausentes" });
+    }
 
     const obra = new Obra({
       ...rest,
+      areaConstruida: areaConstruidaNumber,
       status: mongoose.Types.ObjectId.isValid(status)
         ? new mongoose.Types.ObjectId(status)
         : null,
@@ -122,6 +140,12 @@ router.post("/", async (req, res) => {
       cliente: mongoose.Types.ObjectId.isValid(cliente)
         ? new mongoose.Types.ObjectId(cliente)
         : null,
+      contatos: contatos.map((contato) => ({
+        nome: contato.nome,
+        telefone: contato.telefone,
+        cargo: contato.cargo,
+        email: contato.email,
+      })),
     });
 
     const savedObra = await obra.save();
