@@ -15,11 +15,21 @@ router.post("/", async (req, res) => {
 
     const obra = new Obra({
       ...rest,
-      status: mongoose.Types.ObjectId(status),
-      tipo: mongoose.Types.ObjectId(tipo),
-      quemPaga: mongoose.Types.ObjectId(quemPaga),
-      conta: mongoose.Types.ObjectId(conta),
-      cliente: mongoose.Types.ObjectId(cliente),
+      status: mongoose.Types.ObjectId.isValid(status)
+        ? mongoose.Types.ObjectId(status)
+        : null,
+      tipo: mongoose.Types.ObjectId.isValid(tipo)
+        ? mongoose.Types.ObjectId(tipo)
+        : null,
+      quemPaga: mongoose.Types.ObjectId.isValid(quemPaga)
+        ? mongoose.Types.ObjectId(quemPaga)
+        : null,
+      conta: mongoose.Types.ObjectId.isValid(conta)
+        ? mongoose.Types.ObjectId(conta)
+        : null,
+      cliente: mongoose.Types.ObjectId.isValid(cliente)
+        ? mongoose.Types.ObjectId(cliente)
+        : null,
     });
 
     const savedObra = await obra.save();
@@ -76,11 +86,21 @@ router.put("/:id", async (req, res) => {
       id,
       {
         ...rest,
-        status: mongoose.Types.ObjectId(status),
-        tipo: mongoose.Types.ObjectId(tipo),
-        quemPaga: mongoose.Types.ObjectId(quemPaga),
-        conta: mongoose.Types.ObjectId(conta),
-        cliente: mongoose.Types.ObjectId(cliente),
+        status: mongoose.Types.ObjectId.isValid(status)
+          ? mongoose.Types.ObjectId(status)
+          : null,
+        tipo: mongoose.Types.ObjectId.isValid(tipo)
+          ? mongoose.Types.ObjectId(tipo)
+          : null,
+        quemPaga: mongoose.Types.ObjectId.isValid(quemPaga)
+          ? mongoose.Types.ObjectId(quemPaga)
+          : null,
+        conta: mongoose.Types.ObjectId.isValid(conta)
+          ? mongoose.Types.ObjectId(conta)
+          : null,
+        cliente: mongoose.Types.ObjectId.isValid(cliente)
+          ? mongoose.Types.ObjectId(cliente)
+          : null,
       },
       { new: true }
     );
