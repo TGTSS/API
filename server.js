@@ -29,6 +29,7 @@ import sendEmail from "./utils/sendEmail.js";
 import { Server } from "socket.io";
 import http from "http";
 import obrasRouter from "./routes/obras.js";
+import profissionaisRouter from "./routes/profissionais.js";
 
 dotenv.config();
 
@@ -1013,6 +1014,7 @@ app.use("/api/users", usersRouter);
 app.use("/api/tipos", typesRouter);
 app.use("/api/unidades", unitsRouter);
 app.use("/api/obras", obrasRouter);
+app.use("/api/profissionais", profissionaisRouter);
 
 // Emitir evento de atualização de recibos
 const emitirAtualizacaoRecibos = async () => {

@@ -108,19 +108,19 @@ router.post("/", async (req, res) => {
     const obra = new Obra({
       ...rest,
       status: mongoose.Types.ObjectId.isValid(status)
-        ? mongoose.Types.ObjectId(status)
+        ? new mongoose.Types.ObjectId(status)
         : null,
       tipo: mongoose.Types.ObjectId.isValid(tipo)
-        ? mongoose.Types.ObjectId(tipo)
+        ? new mongoose.Types.ObjectId(tipo)
         : null,
       quemPaga: mongoose.Types.ObjectId.isValid(quemPaga)
-        ? mongoose.Types.ObjectId(quemPaga)
+        ? new mongoose.Types.ObjectId(quemPaga)
         : null,
       conta: mongoose.Types.ObjectId.isValid(conta)
-        ? mongoose.Types.ObjectId(conta)
+        ? new mongoose.Types.ObjectId(conta)
         : null,
       cliente: mongoose.Types.ObjectId.isValid(cliente)
-        ? mongoose.Types.ObjectId(cliente)
+        ? new mongoose.Types.ObjectId(cliente)
         : null,
     });
 
