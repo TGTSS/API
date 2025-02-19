@@ -60,6 +60,9 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
     const obra = await Obra.findById(id)
       .populate("cliente")
       .populate("status")
