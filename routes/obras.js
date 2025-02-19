@@ -116,10 +116,10 @@ router.post("/", async (req, res) => {
 
     // Converter valores numéricos
     const areaConstruidaNumber = parseFloat(areaConstruida.replace(",", "."));
-
-    // Verificar campos obrigatórios
-    if (!rest.codigo || !cliente || !contatos || contatos.length === 0) {
-      return res.status(400).json({ message: "Campos obrigatórios ausentes" });
+    if (isNaN(areaConstruidaNumber)) {
+      return res
+        .status(400)
+        .json({ message: "Valor de área construída inválido" });
     }
 
     const obra = new Obra({
