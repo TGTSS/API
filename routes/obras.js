@@ -54,6 +54,52 @@ router.post("/tipos", async (req, res) => {
   }
 });
 
+// Rota para listar todos os quem paga
+router.get("/quem-paga", async (req, res) => {
+  try {
+    const quemPaga = await QuemPaga.find();
+    res.json(quemPaga);
+  } catch (error) {
+    console.error("Erro ao buscar quem paga:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar um novo quem paga
+router.post("/quem-paga", async (req, res) => {
+  try {
+    const quemPaga = new QuemPaga(req.body);
+    const savedQuemPaga = await quemPaga.save();
+    res.status(201).json(savedQuemPaga);
+  } catch (error) {
+    console.error("Erro ao criar quem paga:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar todas as contas
+router.get("/contas", async (req, res) => {
+  try {
+    const contas = await Conta.find();
+    res.json(contas);
+  } catch (error) {
+    console.error("Erro ao buscar contas:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar uma nova conta
+router.post("/contas", async (req, res) => {
+  try {
+    const conta = new Conta(req.body);
+    const savedConta = await conta.save();
+    res.status(201).json(savedConta);
+  } catch (error) {
+    console.error("Erro ao criar conta:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para criar uma nova obra
 router.post("/", async (req, res) => {
   try {
@@ -175,52 +221,6 @@ router.delete("/:id", async (req, res) => {
     res.status(200).json({ message: "Obra excluída com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir obra:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para listar todos os quem paga
-router.get("/quem-paga", async (req, res) => {
-  try {
-    const quemPaga = await QuemPaga.find();
-    res.json(quemPaga);
-  } catch (error) {
-    console.error("Erro ao buscar quem paga:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para criar um novo quem paga
-router.post("/quem-paga", async (req, res) => {
-  try {
-    const quemPaga = new QuemPaga(req.body);
-    const savedQuemPaga = await quemPaga.save();
-    res.status(201).json(savedQuemPaga);
-  } catch (error) {
-    console.error("Erro ao criar quem paga:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para listar todas as contas
-router.get("/contas", async (req, res) => {
-  try {
-    const contas = await Conta.find();
-    res.json(contas);
-  } catch (error) {
-    console.error("Erro ao buscar contas:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para criar uma nova conta
-router.post("/contas", async (req, res) => {
-  try {
-    const conta = new Conta(req.body);
-    const savedConta = await conta.save();
-    res.status(201).json(savedConta);
-  } catch (error) {
-    console.error("Erro ao criar conta:", error);
     res.status(500).json({ message: error.message });
   }
 });
