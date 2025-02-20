@@ -123,16 +123,6 @@ router.post("/", async (req, res) => {
         .json({ message: "Valor de área construída inválido" });
     }
 
-    // Lógica de geração de código com base no tipo da obra
-    let codigoObra = "";
-    if (tipo === "residencial") {
-      codigoObra = `RES-${Date.now()}`;
-    } else if (tipo === "comercial") {
-      codigoObra = `COM-${Date.now()}`;
-    } else {
-      codigoObra = `OUT-${Date.now()}`;
-    }
-
     const obra = new Obra({
       ...rest,
       areaConstruida: areaConstruidaNumber,
@@ -158,7 +148,6 @@ router.post("/", async (req, res) => {
         email: contato.email,
       })),
       mapPosition: mapPosition,
-      codigo: codigoObra, // Adiciona o código gerado à obra
     });
 
     const savedObra = await obra.save();
