@@ -105,12 +105,12 @@ const tipoAbreviacoes = {
 
 ObraSchema.pre("save", async function (next) {
   if (this.isNew) {
+    const tipoAbreviacao = tipoAbreviacoes[this.tipo.toString()] || "OT"; // OT para "Outros"
     const counter = await Counter.findByIdAndUpdate(
-      { _id: "obraId" },
+      { _id: `obraId_${tipoAbreviacao}` },
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
-    const tipoAbreviacao = tipoAbreviacoes[this.tipo.toString()] || "OT"; // OT para "Outros"
     this.codigo = `${tipoAbreviacao}-${counter.seq
       .toString()
       .padStart(2, "0")}`;
