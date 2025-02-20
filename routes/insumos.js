@@ -23,7 +23,7 @@ router.post("/import", async (req, res) => {
       return res.status(400).json({ message: "Dados inválidos" });
     }
 
-    const insumosToSave = insumos.map(insumo => ({
+    const insumosToSave = insumos.map((insumo) => ({
       ...insumo,
     }));
 
@@ -57,6 +57,21 @@ router.get("/:id", async (req, res) => {
     res.json(insumo);
   } catch (error) {
     console.error("Erro ao buscar insumo:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para deletar um insumo específico
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedInsumo = await Insumo.findByIdAndDelete(id);
+    if (!deletedInsumo) {
+      return res.status(404).json({ message: "Insumo não encontrado" });
+    }
+    res.json({ message: "Insumo deletado com sucesso" });
+  } catch (error) {
+    console.error("Erro ao deletar insumo:", error);
     res.status(500).json({ message: error.message });
   }
 });

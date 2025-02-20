@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Counter from "./Counter.js";
 
 const ContatoSchema = new mongoose.Schema({
   nome: { type: String },
@@ -52,6 +53,18 @@ const ObraSchema = new mongoose.Schema({
     type: [Number], // [latitude, longitude]
     index: "2dsphere",
   },
+});
+
+ObraSchema.pre("save", async function (next) {
+  if (this.isNew) {
+    const counter = await Counter.findByIdAndUpdate(
+      { _id: "obraId" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    this.codigo = counter.seq.toString().padStart(6, "0");
+  }
+  next();
 });
 
 const Obra = mongoose.model("Obra", ObraSchema);
