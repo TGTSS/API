@@ -14,7 +14,7 @@ const ObraSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "StatusObra",
   },
-  codigo: { type: String },
+  codigo: { type: String, unique: true },
   codigoObras: { type: String },
   tipo: {
     type: mongoose.Schema.Types.ObjectId,
