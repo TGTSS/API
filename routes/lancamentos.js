@@ -15,6 +15,8 @@ router.post("/:id/:tipo", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
+    novoLancamento.id = new mongoose.Types.ObjectId(); // Gerar um novo ID para o lançamento
+
     if (tipo === "receita") {
       obra.receitas.push(novoLancamento);
     } else if (tipo === "pagamento") {
@@ -23,7 +25,7 @@ router.post("/:id/:tipo", async (req, res) => {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
 
-    const savedObra = await obra.save();
+    await obra.save();
     res.status(201).json(novoLancamento);
   } catch (error) {
     console.error("Erro ao adicionar lançamento:", error);
@@ -45,7 +47,7 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
     let lancamentoIndex;
     if (tipo === "receita") {
       lancamentoIndex = obra.receitas.findIndex(
-        (item) => item.id === lancamentoId
+        (item) => item.id.toString() === lancamentoId
       );
       if (lancamentoIndex === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
@@ -53,7 +55,7 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
       obra.receitas[lancamentoIndex] = lancamentoEditado;
     } else if (tipo === "pagamento") {
       lancamentoIndex = obra.pagamentos.findIndex(
-        (item) => item.id === lancamentoId
+        (item) => item.id.toString() === lancamentoId
       );
       if (lancamentoIndex === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
@@ -63,7 +65,7 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
 
-    const savedObra = await obra.save();
+    await obra.save();
     res.json(lancamentoEditado);
   } catch (error) {
     console.error("Erro ao editar lançamento:", error);
