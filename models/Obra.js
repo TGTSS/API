@@ -8,6 +8,23 @@ const ContatoSchema = new mongoose.Schema({
   email: { type: String },
 });
 
+const ReceitaSchema = new mongoose.Schema({
+  vencimento: { type: String },
+  valor: { type: Number },
+  recebido: { type: Number },
+  descricao: { type: String },
+  categoria: { type: String },
+});
+
+const PagamentoSchema = new mongoose.Schema({
+  vencimento: { type: String },
+  valor: { type: Number },
+  pago: { type: Number },
+  descricao: { type: String },
+  categoria: { type: String },
+  centroCusto: { type: String },
+});
+
 const ObraSchema = new mongoose.Schema({
   nome: { type: String },
   status: {
@@ -50,6 +67,8 @@ const ObraSchema = new mongoose.Schema({
     ref: "Cliente",
   },
   contatos: [ContatoSchema],
+  receitas: [ReceitaSchema],
+  pagamentos: [PagamentoSchema],
   mapPosition: {
     type: [Number], // [latitude, longitude]
     index: "2dsphere",
