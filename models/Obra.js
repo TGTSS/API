@@ -9,6 +9,10 @@ const ContatoSchema = new mongoose.Schema({
 });
 
 const ReceitaSchema = new mongoose.Schema({
+  id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: new mongoose.Types.ObjectId(),
+  },
   vencimento: { type: String },
   valor: { type: Number },
   recebido: { type: Number },
@@ -17,6 +21,10 @@ const ReceitaSchema = new mongoose.Schema({
 });
 
 const PagamentoSchema = new mongoose.Schema({
+  id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: new mongoose.Types.ObjectId(),
+  },
   vencimento: { type: String },
   valor: { type: Number },
   pago: { type: Number },
