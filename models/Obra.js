@@ -18,6 +18,9 @@ const ReceitaSchema = new mongoose.Schema({
   recebido: { type: Number },
   descricao: { type: String },
   categoria: { type: String },
+  centroCusto: { type: String },
+  clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" },
+  dataQuitacao: { type: String },
 });
 
 const PagamentoSchema = new mongoose.Schema({
@@ -31,6 +34,8 @@ const PagamentoSchema = new mongoose.Schema({
   descricao: { type: String },
   categoria: { type: String },
   centroCusto: { type: String },
+  clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" },
+  dataQuitacao: { type: String },
 });
 
 const ObraSchema = new mongoose.Schema({
