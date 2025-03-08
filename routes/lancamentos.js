@@ -73,4 +73,34 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
   }
 });
 
+// Rota para obter todos os lançamentos de receita de uma obra
+router.get("/:id/receita", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const obra = await Obra.findById(id).lean();
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+    res.json(obra.receitas);
+  } catch (error) {
+    console.error("Erro ao buscar receitas:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para obter todos os lançamentos de pagamento de uma obra
+router.get("/:id/pagamentos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const obra = await Obra.findById(id).lean();
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+    res.json(obra.pagamentos);
+  } catch (error) {
+    console.error("Erro ao buscar pagamentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
