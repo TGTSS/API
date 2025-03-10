@@ -75,6 +75,7 @@ const ObraSchema = new mongoose.Schema({
   },
   comentario: { type: String },
   visivelPara: { type: String },
+  contatoPrincipal: { type: Number },
   cliente: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cliente",

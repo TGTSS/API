@@ -112,6 +112,8 @@ router.post("/", async (req, res) => {
       areaConstruida,
       contatos,
       mapPosition,
+      visivelPara,
+      contatoPrincipal,
       ...rest
     } = req.body;
 
@@ -148,6 +150,8 @@ router.post("/", async (req, res) => {
         email: contato.email,
       })),
       mapPosition: mapPosition,
+      visivelPara,
+      contatoPrincipal,
     });
 
     const savedObra = await obra.save();
@@ -201,8 +205,17 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, tipo, quemPaga, conta, cliente, mapPosition, ...rest } =
-      req.body;
+    const {
+      status,
+      tipo,
+      quemPaga,
+      conta,
+      cliente,
+      mapPosition,
+      visivelPara,
+      contatoPrincipal,
+      ...rest
+    } = req.body;
 
     const updatedObra = await Obra.findByIdAndUpdate(
       id,
@@ -224,6 +237,8 @@ router.put("/:id", async (req, res) => {
           ? mongoose.Types.ObjectId(cliente)
           : null,
         mapPosition: mapPosition,
+        visivelPara,
+        contatoPrincipal,
       },
       { new: true }
     );
