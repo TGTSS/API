@@ -100,6 +100,22 @@ router.post("/contas", async (req, res) => {
   }
 });
 
+// Rota para obter o último código de obra
+router.get("/ultimo-codigo", async (req, res) => {
+  try {
+    const ultimaObra = await Obra.findOne()
+      .sort({ codigo: -1 })
+      .select("codigo");
+    const ultimoCodigo = ultimaObra
+      ? parseInt(ultimaObra.codigo.split("-")[1])
+      : 0;
+    res.json({ ultimoCodigo });
+  } catch (error) {
+    console.error("Erro ao obter o último código de obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para criar uma nova obra
 router.post("/", async (req, res) => {
   try {
