@@ -32,6 +32,10 @@ import obrasRouter from "./routes/obras.js";
 import profissionaisRouter from "./routes/profissionais.js";
 import lancamentosRouter from "./routes/lancamentos.js";
 import diariosRouter from "./routes/diarios.js";
+import Etapa from "./models/Etapa.js"; // Adicionado
+import RegistroDiario from "./models/RegistroDiario.js"; // Adicionado
+import Galeria from "./models/Galeria.js"; // Adicionado
+import Documento from "./models/Documento.js"; // Adicionado
 
 dotenv.config();
 

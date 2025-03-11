@@ -5,6 +5,10 @@ import StatusObra from "../models/StatusObra.js";
 import TipoObra from "../models/TipoObra.js";
 import QuemPaga from "../models/QuemPaga.js";
 import Conta from "../models/Conta.js";
+import Etapa from "../models/Etapa.js"; // Adicionado
+import RegistroDiario from "../models/RegistroDiario.js"; // Adicionado
+import Galeria from "../models/Galeria.js"; // Adicionado
+import Documento from "../models/Documento.js"; // Adicionado
 
 const router = express.Router();
 
