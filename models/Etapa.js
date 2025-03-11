@@ -6,6 +6,7 @@ const EtapaSchema = new mongoose.Schema({
   obra: { type: mongoose.Schema.Types.ObjectId, ref: "Obra", required: true },
   dataInicio: { type: Date },
   dataFim: { type: Date },
+  progresso: { type: Number, required: true },
 });
 
 const Etapa = mongoose.model("Etapa", EtapaSchema);

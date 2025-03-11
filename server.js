@@ -94,6 +94,28 @@ app.use((req, res, next) => {
   next();
 });
 
+const etapasPadrao = [
+  { nome: "Fundação", progresso: 100 },
+  { nome: "Estrutura", progresso: 85 },
+  { nome: "Alvenaria", progresso: 70 },
+  { nome: "Instalações Elétricas", progresso: 50 },
+  { nome: "Instalações Hidráulicas", progresso: 45 },
+  { nome: "Acabamento", progresso: 20 },
+  { nome: "Pintura", progresso: 0 },
+];
+
+const inserirEtapasPadrao = async () => {
+  try {
+    const count = await Etapa.countDocuments();
+    if (count === 0) {
+      await Etapa.insertMany(etapasPadrao);
+      console.log("Etapas padrão inseridas com sucesso.");
+    }
+  } catch (error) {
+    console.error("Erro ao inserir etapas padrão:", error);
+  }
+};
+
 // Conexão ao MongoDB
 mongoose
   .connect(
@@ -103,7 +125,10 @@ mongoose
       useUnifiedTopology: true,
     }
   )
-  .then(() => console.log("Conectado ao MongoDB"))
+  .then(() => {
+    console.log("Conectado ao MongoDB");
+    inserirEtapasPadrao(); // Adicionado
+  })
   .catch((err) => console.error("Erro ao conectar ao MongoDB:", err));
 
 // Adicionar um beneficiário de exemplo ao banco de dados

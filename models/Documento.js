@@ -5,6 +5,7 @@ const DocumentoSchema = new mongoose.Schema({
   url: { type: String, required: true },
   obra: { type: mongoose.Schema.Types.ObjectId, ref: "Obra", required: true },
   dataUpload: { type: Date, default: Date.now },
+  data: { type: Date, required: true },
 });
 
 const Documento = mongoose.model("Documento", DocumentoSchema);
