@@ -217,6 +217,109 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Rota para listar todas as etapas de uma obra
+router.get("/:id/etapas", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const etapas = await Etapa.find({ obra: id });
+    res.json(etapas);
+  } catch (error) {
+    console.error("Erro ao buscar etapas da obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar todos os registros diários de uma obra
+router.get("/:id/registros", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const registros = await RegistroDiario.find({ obra: id });
+    res.json(registros);
+  } catch (error) {
+    console.error("Erro ao buscar registros diários da obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar todas as fotos da galeria de uma obra
+router.get("/:id/galeria", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const fotos = await Galeria.find({ obra: id });
+    res.json(fotos);
+  } catch (error) {
+    console.error("Erro ao buscar galeria de fotos da obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar todos os documentos de uma obra
+router.get("/:id/documentos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const documentos = await Documento.find({ obra: id });
+    res.json(documentos);
+  } catch (error) {
+    console.error("Erro ao buscar documentos da obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar um novo registro diário
+router.post("/:id/registros", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const registro = new RegistroDiario({ ...req.body, obra: id });
+    const savedRegistro = await registro.save();
+    res.status(201).json(savedRegistro);
+  } catch (error) {
+    console.error("Erro ao criar registro diário:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar uma nova etapa
+router.post("/:id/etapas", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const etapa = new Etapa({ ...req.body, obra: id });
+    const savedEtapa = await etapa.save();
+    res.status(201).json(savedEtapa);
+  } catch (error) {
+    console.error("Erro ao criar etapa:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para adicionar fotos à galeria
+router.post("/:id/galeria", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const fotos = req.body.fotos.map((foto) => ({ ...foto, obra: id }));
+    const savedFotos = await Galeria.insertMany(fotos);
+    res.status(201).json(savedFotos);
+  } catch (error) {
+    console.error("Erro ao adicionar fotos à galeria:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para adicionar documentos
+router.post("/:id/documentos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const documentos = req.body.documentos.map((documento) => ({
+      ...documento,
+      obra: id,
+    }));
+    const savedDocumentos = await Documento.insertMany(documentos);
+    res.status(201).json(savedDocumentos);
+  } catch (error) {
+    console.error("Erro ao adicionar documentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para atualizar uma obra
 router.put("/:id", async (req, res) => {
   try {

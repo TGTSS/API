@@ -87,6 +87,12 @@ const ObraSchema = new mongoose.Schema({
     type: [Number], // [latitude, longitude]
     index: "2dsphere",
   },
+  etapas: [{ type: mongoose.Schema.Types.ObjectId, ref: "Etapa" }],
+  registrosDiarios: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "RegistroDiario" },
+  ],
+  galeria: [{ type: mongoose.Schema.Types.ObjectId, ref: "Galeria" }],
+  documentos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Documento" }],
 });
 
 const tipoAbreviacoes = {
