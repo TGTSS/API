@@ -443,6 +443,10 @@ router.put("/:id/orcamento", async (req, res) => {
 
     const { stages, globalBdi, dataCriacao } = req.body;
 
+    if (!Array.isArray(stages)) {
+      return res.status(400).json({ message: "Stages deve ser um array" });
+    }
+
     const orcamentoData = {
       stages: stages.map((stage) => ({
         ...stage,
