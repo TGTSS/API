@@ -134,6 +134,10 @@ router.post("/", async (req, res) => {
       mapPosition,
       visivelPara,
       contatoPrincipal,
+      documentos,
+      dataInicio,
+      previsaoTermino,
+      imagem,
       ...rest
     } = req.body;
 
@@ -172,6 +176,13 @@ router.post("/", async (req, res) => {
       mapPosition: mapPosition,
       visivelPara,
       contatoPrincipal,
+      documentos: documentos.map((doc) => ({
+        nome: doc.nome,
+        arquivo: doc.arquivo,
+      })),
+      dataInicio,
+      previsaoTermino,
+      imagem,
     });
 
     const savedObra = await obra.save();
@@ -337,6 +348,10 @@ router.put("/:id", async (req, res) => {
       mapPosition,
       visivelPara,
       contatoPrincipal,
+      documentos,
+      dataInicio,
+      previsaoTermino,
+      imagem,
       ...rest
     } = req.body;
 
@@ -362,6 +377,13 @@ router.put("/:id", async (req, res) => {
         mapPosition: mapPosition,
         visivelPara,
         contatoPrincipal,
+        documentos: documentos.map((doc) => ({
+          nome: doc.nome,
+          arquivo: doc.arquivo,
+        })),
+        dataInicio,
+        previsaoTermino,
+        imagem,
       },
       { new: true }
     );

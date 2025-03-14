@@ -38,6 +38,11 @@ const PagamentoSchema = new mongoose.Schema({
   dataQuitacao: { type: String },
 });
 
+const DocumentoSchema = new mongoose.Schema({
+  nome: { type: String },
+  arquivo: { type: String },
+});
+
 const ObraSchema = new mongoose.Schema({
   nome: { type: String },
   status: {
@@ -93,6 +98,10 @@ const ObraSchema = new mongoose.Schema({
   ],
   galeria: [{ type: mongoose.Schema.Types.ObjectId, ref: "Galeria" }],
   documentos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Documento" }],
+  dataInicio: { type: Date },
+  previsaoTermino: { type: Date },
+  imagem: { type: String },
+  documentos: [DocumentoSchema],
 });
 
 const tipoAbreviacoes = {
