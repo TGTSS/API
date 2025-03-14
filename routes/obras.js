@@ -434,21 +434,21 @@ router.get("/:id/orcamento", async (req, res) => {
 });
 
 // Rota para criar ou atualizar o orçamento de uma obra
-router.post("/:id/orcamento", async (req, res) => {
+router.put("/:id/orcamento", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const { stages, globalBdi } = req.body;
+    const { stages, globalBdi, dataCriacao } = req.body;
 
     const orcamentoData = {
       stages: stages.map((stage) => ({
         ...stage,
-        subStages: stage.subStages.map((subStage) => ({
+        subStages: (stage.subStages || []).map((subStage) => ({
           ...subStage,
-          items: subStage.items.map((item) => ({
+          items: (subStage.items || []).map((item) => ({
             ...item,
             custoTotal: item.quantity * item.unitPrice,
             precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
@@ -456,7 +456,7 @@ router.post("/:id/orcamento", async (req, res) => {
               item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
           })),
         })),
-        items: stage.items.map((item) => ({
+        items: (stage.items || []).map((item) => ({
           ...item,
           custoTotal: item.quantity * item.unitPrice,
           precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
@@ -465,7 +465,7 @@ router.post("/:id/orcamento", async (req, res) => {
         })),
       })),
       globalBdi,
-      dataCriacao: new Date(),
+      dataCriacao: dataCriacao || new Date(),
       dataAtualizacao: new Date(),
     };
 
@@ -479,7 +479,7 @@ router.post("/:id/orcamento", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    res.status(201).json(obra.orcamento);
+    res.status(200).json(obra.orcamento);
   } catch (error) {
     console.error("Erro ao salvar orçamento:", error);
     res.status(500).json({ message: error.message });
