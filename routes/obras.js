@@ -413,4 +413,134 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Rota para obter o orçamento de uma obra específica
+router.get("/:id/orcamento", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id).select("orcamento");
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.json(obra.orcamento);
+  } catch (error) {
+    console.error("Erro ao buscar orçamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar ou atualizar o orçamento de uma obra
+router.post("/:id/orcamento", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const { stages, globalBdi } = req.body;
+
+    const orcamentoData = {
+      stages: stages.map((stage) => ({
+        ...stage,
+        subStages: stage.subStages.map((subStage) => ({
+          ...subStage,
+          items: subStage.items.map((item) => ({
+            ...item,
+            custoTotal: item.quantity * item.unitPrice,
+            precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
+            precoTotal:
+              item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
+          })),
+        })),
+        items: stage.items.map((item) => ({
+          ...item,
+          custoTotal: item.quantity * item.unitPrice,
+          precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
+          precoTotal:
+            item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
+        })),
+      })),
+      globalBdi,
+      dataCriacao: new Date(),
+      dataAtualizacao: new Date(),
+    };
+
+    const obra = await Obra.findByIdAndUpdate(
+      id,
+      { $set: { orcamento: orcamentoData } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.status(201).json(obra.orcamento);
+  } catch (error) {
+    console.error("Erro ao salvar orçamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para atualizar apenas o BDI global do orçamento
+router.patch("/:id/orcamento/bdi", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { globalBdi } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          "orcamento.globalBdi": globalBdi,
+          "orcamento.dataAtualizacao": new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.json(obra.orcamento);
+  } catch (error) {
+    console.error("Erro ao atualizar BDI global:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para excluir o orçamento de uma obra
+router.delete("/:id/orcamento", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findByIdAndUpdate(
+      id,
+      { $unset: { orcamento: 1 } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.json({ message: "Orçamento excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir orçamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
