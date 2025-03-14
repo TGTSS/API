@@ -458,7 +458,9 @@ router.put("/:id/orcamento", async (req, res) => {
             precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
             precoTotal:
               item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
+            _id: undefined, // Remover _id
           })),
+          _id: undefined, // Remover _id
         })),
         items: (stage.items || []).map((item) => ({
           ...item,
@@ -466,7 +468,9 @@ router.put("/:id/orcamento", async (req, res) => {
           precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
           precoTotal:
             item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
+          _id: undefined, // Remover _id
         })),
+        _id: undefined, // Remover _id
       })),
       globalBdi,
       dataCriacao: dataCriacao || new Date(),
