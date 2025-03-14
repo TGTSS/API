@@ -43,6 +43,17 @@ const DocumentoSchema = new mongoose.Schema({
   arquivo: { type: String },
 });
 
+const EnderecoSchema = new mongoose.Schema({
+  logradouro: { type: String },
+  numero: { type: String },
+  complemento: { type: String },
+  bairro: { type: String },
+  cidade: { type: String },
+  estado: { type: String },
+  cep: { type: String },
+  enderecoCompleto: { type: String },
+});
+
 const ObraSchema = new mongoose.Schema({
   nome: { type: String },
   status: {
@@ -58,18 +69,13 @@ const ObraSchema = new mongoose.Schema({
   art: { type: String },
   responsavelTecnico: { type: String },
   responsavelObra: { type: String },
+  arquiteto: { type: String }, // Novo campo
   ceiCno: { type: String },
   areaConstruida: { type: Number },
   areaTerreno: { type: Number },
   numeroPavimentos: { type: Number },
   numeroUnidades: { type: Number },
-  cep: { type: String },
-  logradouro: { type: String },
-  numero: { type: String },
-  complemento: { type: String },
-  bairro: { type: String },
-  estado: { type: String },
-  cidade: { type: String },
+  endereco: EnderecoSchema, // Estrutura de endereço atualizada
   quemPaga: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "QuemPaga",
@@ -100,6 +106,7 @@ const ObraSchema = new mongoose.Schema({
   documentos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Documento" }],
   dataInicio: { type: Date },
   previsaoTermino: { type: Date },
+  dataPrevisao: { type: Date }, // Novo campo
   imagem: { type: String },
   documentos: [DocumentoSchema],
 });
