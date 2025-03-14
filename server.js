@@ -33,6 +33,7 @@ import profissionaisRouter from "./routes/profissionais.js";
 import lancamentosRouter from "./routes/lancamentos.js";
 import diariosRouter from "./routes/diarios.js";
 import orcamentosRouter from "./routes/orcamentos.js";
+import orcamentoRouter from "./routes/orcamento.js";
 
 dotenv.config();
 
@@ -1046,6 +1047,7 @@ app.use("/api/profissionais", profissionaisRouter);
 app.use("/api/lancamentos", lancamentosRouter);
 app.use("/api/diarios", diariosRouter);
 app.use("/api/orcamentos", orcamentosRouter);
+app.use("/api/orcamento", orcamentoRouter);
 
 // Emitir evento de atualização de recibos
 const emitirAtualizacaoRecibos = async () => {
