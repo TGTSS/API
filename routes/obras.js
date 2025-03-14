@@ -210,9 +210,9 @@ router.get("/", async (req, res) => {
 });
 
 // Rota para buscar uma obra específica
-router.get("/:id", async (req, res) => {
+router.get("/:_id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { _id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
@@ -233,9 +233,9 @@ router.get("/:id", async (req, res) => {
 });
 
 // Rota para listar todas as etapas de uma obra
-router.get("/:id/etapas", async (req, res) => {
+router.get("/:_id/etapas", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { _id } = req.params;
     const etapas = await Etapa.find({ obra: id });
     res.json(etapas);
   } catch (error) {
@@ -245,7 +245,7 @@ router.get("/:id/etapas", async (req, res) => {
 });
 
 // Rota para listar todos os registros diários de uma obra
-router.get("/:id/registros", async (req, res) => {
+router.get("/:_id/registros", async (req, res) => {
   try {
     const { id } = req.params;
     const registros = await RegistroDiario.find({ obra: id });
@@ -257,7 +257,7 @@ router.get("/:id/registros", async (req, res) => {
 });
 
 // Rota para listar todas as fotos da galeria de uma obra
-router.get("/:id/galeria", async (req, res) => {
+router.get("/:_id/galeria", async (req, res) => {
   try {
     const { id } = req.params;
     const fotos = await Galeria.find({ obra: id });
@@ -269,7 +269,7 @@ router.get("/:id/galeria", async (req, res) => {
 });
 
 // Rota para listar todos os documentos de uma obra
-router.get("/:id/documentos", async (req, res) => {
+router.get("/:_id/documentos", async (req, res) => {
   try {
     const { id } = req.params;
     const documentos = await Documento.find({ obra: id });
@@ -281,7 +281,7 @@ router.get("/:id/documentos", async (req, res) => {
 });
 
 // Rota para criar um novo registro diário
-router.post("/:id/registros", async (req, res) => {
+router.post("/:_id/registros", async (req, res) => {
   try {
     const { id } = req.params;
     const registro = new RegistroDiario({ ...req.body, obra: id });
@@ -294,7 +294,7 @@ router.post("/:id/registros", async (req, res) => {
 });
 
 // Rota para criar uma nova etapa
-router.post("/:id/etapas", async (req, res) => {
+router.post("/:_id/etapas", async (req, res) => {
   try {
     const { id } = req.params;
     const etapa = new Etapa({ ...req.body, obra: id });
@@ -307,7 +307,7 @@ router.post("/:id/etapas", async (req, res) => {
 });
 
 // Rota para adicionar fotos à galeria
-router.post("/:id/galeria", async (req, res) => {
+router.post("/:_id/galeria", async (req, res) => {
   try {
     const { id } = req.params;
     const fotos = req.body.fotos.map((foto) => ({ ...foto, obra: id }));
@@ -320,7 +320,7 @@ router.post("/:id/galeria", async (req, res) => {
 });
 
 // Rota para adicionar documentos
-router.post("/:id/documentos", async (req, res) => {
+router.post("/:_id/documentos", async (req, res) => {
   try {
     const { id } = req.params;
     const documentos = req.body.documentos.map((documento) => ({
@@ -336,7 +336,7 @@ router.post("/:id/documentos", async (req, res) => {
 });
 
 // Rota para atualizar uma obra
-router.put("/:id", async (req, res) => {
+router.put("/:_id", async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -433,8 +433,129 @@ router.get("/:id/orcamento", async (req, res) => {
   }
 });
 
+router.post("/:id/orcamento", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const { stages, globalBdi, dataCriacao } = req.body;
+
+    if (!Array.isArray(stages)) {
+      return res.status(400).json({ message: "Stages deve ser um array" });
+    }
+
+    const orcamentoData = {
+      stages: stages.map((stage) => ({
+        ...stage,
+        subStages: (stage.subStages || []).map((subStage) => ({
+          ...subStage,
+          items: (subStage.items || []).map((item) => ({
+            ...item,
+            custoTotal: item.quantity * item.unitPrice,
+            precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
+            precoTotal:
+              item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
+            _id: undefined, // Remover _id
+          })),
+          _id: undefined, // Remover _id
+        })),
+        items: (stage.items || []).map((item) => ({
+          ...item,
+          custoTotal: item.quantity * item.unitPrice,
+          precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
+          precoTotal:
+            item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
+          _id: undefined, // Remover _id
+        })),
+        _id: undefined, // Remover _id
+      })),
+      globalBdi,
+      dataCriacao: dataCriacao || new Date(),
+      dataAtualizacao: new Date(),
+    };
+
+    const obra = await Obra.findByIdAndUpdate(
+      id,
+      { $set: { orcamento: orcamentoData } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.status(200).json(obra.orcamento);
+  } catch (error) {
+    console.error("Erro ao salvar orçamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para criar ou atualizar o orçamento de uma obra
 router.put("/:id/orcamento", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const { stages, globalBdi, dataCriacao } = req.body;
+
+    if (!Array.isArray(stages)) {
+      return res.status(400).json({ message: "Stages deve ser um array" });
+    }
+
+    const orcamentoData = {
+      stages: stages.map((stage) => ({
+        ...stage,
+        subStages: (stage.subStages || []).map((subStage) => ({
+          ...subStage,
+          items: (subStage.items || []).map((item) => ({
+            ...item,
+            custoTotal: item.quantity * item.unitPrice,
+            precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
+            precoTotal:
+              item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
+            _id: undefined, // Remover _id
+          })),
+          _id: undefined, // Remover _id
+        })),
+        items: (stage.items || []).map((item) => ({
+          ...item,
+          custoTotal: item.quantity * item.unitPrice,
+          precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
+          precoTotal:
+            item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
+          _id: undefined, // Remover _id
+        })),
+        _id: undefined, // Remover _id
+      })),
+      globalBdi,
+      dataCriacao: dataCriacao || new Date(),
+      dataAtualizacao: new Date(),
+    };
+
+    const obra = await Obra.findByIdAndUpdate(
+      id,
+      { $set: { orcamento: orcamentoData } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.status(200).json(obra.orcamento);
+  } catch (error) {
+    console.error("Erro ao salvar orçamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar ou atualizar o orçamento de uma obra (POST)
+router.post("/:id/orcamento", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
