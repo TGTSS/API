@@ -231,7 +231,6 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
 // Rota para listar todas as etapas de uma obra
 router.get("/:id/etapas", async (req, res) => {
   try {
