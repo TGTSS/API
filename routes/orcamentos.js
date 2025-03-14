@@ -1,5 +1,5 @@
 import express from "express";
-import Orcamento from "../models/Orcamento.js";
+import Obra from "../models/Obra.js";
 
 const router = express.Router();
 
@@ -8,9 +8,13 @@ router.post("/:obraId", async (req, res) => {
   try {
     const { obraId } = req.params;
     const orcamentoData = req.body;
-    const novoOrcamento = new Orcamento({ ...orcamentoData, obraId });
-    await novoOrcamento.save();
-    res.status(201).json(novoOrcamento);
+    const obra = await Obra.findById(obraId);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+    obra.orcamento = { ...orcamentoData, dataCriacao: new Date() };
+    await obra.save();
+    res.status(201).json(obra.orcamento);
   } catch (error) {
     console.error("Erro ao criar orçamento:", error);
     res.status(500).json({ message: "Erro ao criar orçamento" });
@@ -21,11 +25,11 @@ router.post("/:obraId", async (req, res) => {
 router.get("/:obraId", async (req, res) => {
   try {
     const { obraId } = req.params;
-    const orcamento = await Orcamento.findOne({ obraId });
-    if (!orcamento) {
+    const obra = await Obra.findById(obraId);
+    if (!obra || !obra.orcamento) {
       return res.status(404).json({ message: "Orçamento não encontrado" });
     }
-    res.json(orcamento);
+    res.json(obra.orcamento);
   } catch (error) {
     console.error("Erro ao obter orçamento:", error);
     res.status(500).json({ message: "Erro ao obter orçamento" });
@@ -37,15 +41,13 @@ router.put("/:obraId", async (req, res) => {
   try {
     const { obraId } = req.params;
     const orcamentoData = req.body;
-    const orcamentoAtualizado = await Orcamento.findOneAndUpdate(
-      { obraId },
-      orcamentoData,
-      { new: true }
-    );
-    if (!orcamentoAtualizado) {
+    const obra = await Obra.findById(obraId);
+    if (!obra || !obra.orcamento) {
       return res.status(404).json({ message: "Orçamento não encontrado" });
     }
-    res.json(orcamentoAtualizado);
+    obra.orcamento = { ...orcamentoData, dataAtualizacao: new Date() };
+    await obra.save();
+    res.json(obra.orcamento);
   } catch (error) {
     console.error("Erro ao atualizar orçamento:", error);
     res.status(500).json({ message: "Erro ao atualizar orçamento" });

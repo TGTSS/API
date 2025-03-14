@@ -18,9 +18,9 @@ router.post("/:id/:tipo", async (req, res) => {
     novoLancamento.id = new mongoose.Types.ObjectId(); // Gerar um novo ID para o lançamento
 
     if (tipo === "receita") {
-      obra.receitas.push(novoLancamento);
+      obra.lancamentos.receitas.push(novoLancamento);
     } else if (tipo === "pagamento") {
-      obra.pagamentos.push(novoLancamento);
+      obra.lancamentos.pagamentos.push(novoLancamento);
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
@@ -46,21 +46,21 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
 
     let lancamentoIndex;
     if (tipo === "receita") {
-      lancamentoIndex = obra.receitas.findIndex(
+      lancamentoIndex = obra.lancamentos.receitas.findIndex(
         (item) => item.id.toString() === lancamentoId
       );
       if (lancamentoIndex === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
-      obra.receitas[lancamentoIndex] = lancamentoEditado;
+      obra.lancamentos.receitas[lancamentoIndex] = lancamentoEditado;
     } else if (tipo === "pagamento") {
-      lancamentoIndex = obra.pagamentos.findIndex(
+      lancamentoIndex = obra.lancamentos.pagamentos.findIndex(
         (item) => item.id.toString() === lancamentoId
       );
       if (lancamentoIndex === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
-      obra.pagamentos[lancamentoIndex] = lancamentoEditado;
+      obra.lancamentos.pagamentos[lancamentoIndex] = lancamentoEditado;
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
@@ -81,7 +81,7 @@ router.get("/:id/receita", async (req, res) => {
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
-    res.json(obra.receitas);
+    res.json(obra.lancamentos.receitas);
   } catch (error) {
     console.error("Erro ao buscar receitas:", error);
     res.status(500).json({ message: error.message });
@@ -96,7 +96,7 @@ router.get("/:id/pagamentos", async (req, res) => {
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
-    res.json(obra.pagamentos);
+    res.json(obra.lancamentos.pagamentos);
   } catch (error) {
     console.error("Erro ao buscar pagamentos:", error);
     res.status(500).json({ message: error.message });
