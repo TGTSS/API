@@ -210,7 +210,7 @@ router.get("/", async (req, res) => {
 });
 
 // Rota para buscar uma obra específica
-router.get("/:_id", async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const { _id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -233,7 +233,7 @@ router.get("/:_id", async (req, res) => {
 });
 
 // Rota para listar todas as etapas de uma obra
-router.get("/:_id/etapas", async (req, res) => {
+router.get("/:id/etapas", async (req, res) => {
   try {
     const { _id } = req.params;
     const etapas = await Etapa.find({ obra: id });
@@ -245,7 +245,7 @@ router.get("/:_id/etapas", async (req, res) => {
 });
 
 // Rota para listar todos os registros diários de uma obra
-router.get("/:_id/registros", async (req, res) => {
+router.get("/:id/registros", async (req, res) => {
   try {
     const { id } = req.params;
     const registros = await RegistroDiario.find({ obra: id });
@@ -257,7 +257,7 @@ router.get("/:_id/registros", async (req, res) => {
 });
 
 // Rota para listar todas as fotos da galeria de uma obra
-router.get("/:_id/galeria", async (req, res) => {
+router.get("/:id/galeria", async (req, res) => {
   try {
     const { id } = req.params;
     const fotos = await Galeria.find({ obra: id });
@@ -269,7 +269,7 @@ router.get("/:_id/galeria", async (req, res) => {
 });
 
 // Rota para listar todos os documentos de uma obra
-router.get("/:_id/documentos", async (req, res) => {
+router.get("/:id/documentos", async (req, res) => {
   try {
     const { id } = req.params;
     const documentos = await Documento.find({ obra: id });
@@ -281,7 +281,7 @@ router.get("/:_id/documentos", async (req, res) => {
 });
 
 // Rota para criar um novo registro diário
-router.post("/:_id/registros", async (req, res) => {
+router.post("/:id/registros", async (req, res) => {
   try {
     const { id } = req.params;
     const registro = new RegistroDiario({ ...req.body, obra: id });
@@ -294,7 +294,7 @@ router.post("/:_id/registros", async (req, res) => {
 });
 
 // Rota para criar uma nova etapa
-router.post("/:_id/etapas", async (req, res) => {
+router.post("/:id/etapas", async (req, res) => {
   try {
     const { id } = req.params;
     const etapa = new Etapa({ ...req.body, obra: id });
@@ -320,7 +320,7 @@ router.post("/:_id/galeria", async (req, res) => {
 });
 
 // Rota para adicionar documentos
-router.post("/:_id/documentos", async (req, res) => {
+router.post("/:id/documentos", async (req, res) => {
   try {
     const { id } = req.params;
     const documentos = req.body.documentos.map((documento) => ({
@@ -336,7 +336,7 @@ router.post("/:_id/documentos", async (req, res) => {
 });
 
 // Rota para atualizar uma obra
-router.put("/:_id", async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const {
