@@ -212,7 +212,7 @@ router.get("/", async (req, res) => {
 // Rota para buscar uma obra específica
 router.get("/:id", async (req, res) => {
   try {
-    const { _id } = req.params;
+    const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
@@ -234,7 +234,7 @@ router.get("/:id", async (req, res) => {
 // Rota para listar todas as etapas de uma obra
 router.get("/:id/etapas", async (req, res) => {
   try {
-    const { _id } = req.params;
+    const { id } = req.params;
     const etapas = await Etapa.find({ obra: id });
     res.json(etapas);
   } catch (error) {
