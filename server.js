@@ -33,6 +33,7 @@ import profissionaisRouter from "./routes/profissionais.js";
 import lancamentosRouter from "./routes/lancamentos.js";
 import diariosRouter from "./routes/diarios.js";
 import orcamentosRouter from "./routes/orcamentos.js";
+import Etapa from "./models/Etapa.js"; // Adicionado
 
 dotenv.config();
 

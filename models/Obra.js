@@ -73,6 +73,7 @@ const SubStageSchema = new mongoose.Schema({
   number: String,
   name: String,
   items: [ItemSchema],
+  progresso: Number, // Novo campo
 });
 
 const StageSchema = new mongoose.Schema({
@@ -86,6 +87,7 @@ const StageSchema = new mongoose.Schema({
   bdi: Number,
   subStages: [SubStageSchema],
   items: [ItemSchema],
+  progresso: Number, // Novo campo
 });
 
 const ObraSchema = new mongoose.Schema({

@@ -671,4 +671,34 @@ router.delete("/:id/orcamento", async (req, res) => {
   }
 });
 
+// Rota para atualizar o progresso de uma etapa
+router.patch("/:obraId/etapas/:etapaId/progresso", async (req, res) => {
+  try {
+    const { obraId, etapaId } = req.params;
+    const { progresso, subetapas } = req.body;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(obraId) ||
+      !mongoose.Types.ObjectId.isValid(etapaId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const etapa = await Etapa.findOneAndUpdate(
+      { _id: etapaId, obra: obraId },
+      { $set: { progresso, subetapas } },
+      { new: true }
+    );
+
+    if (!etapa) {
+      return res.status(404).json({ message: "Etapa não encontrada" });
+    }
+
+    res.json(etapa);
+  } catch (error) {
+    console.error("Erro ao atualizar progresso da etapa:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
