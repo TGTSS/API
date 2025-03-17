@@ -102,11 +102,15 @@ const etapasPadrao = [
   { nome: "Pintura", progresso: 0 },
 ];
 
-const inserirEtapasPadrao = async () => {
+const inserirEtapasPadrao = async (obraId) => {
   try {
-    const count = await Etapa.countDocuments();
+    const count = await Etapa.countDocuments({ obra: obraId });
     if (count === 0) {
-      await Etapa.insertMany(etapasPadrao);
+      const etapasComObra = etapasPadrao.map((etapa) => ({
+        ...etapa,
+        obra: obraId,
+      }));
+      await Etapa.insertMany(etapasComObra);
       console.log("Etapas padrão inseridas com sucesso.");
     }
   } catch (error) {
@@ -125,7 +129,6 @@ mongoose
   )
   .then(() => {
     console.log("Conectado ao MongoDB");
-    inserirEtapasPadrao(); // Adicionado
   })
   .catch((err) => console.error("Erro ao conectar ao MongoDB:", err));
 
@@ -1077,6 +1080,18 @@ app.get("/api/records", async (req, res) => {
     res.json(records);
   } catch (error) {
     console.error("Erro ao buscar recibos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/api/obras", async (req, res) => {
+  try {
+    // ...existing code...
+    const savedObra = await obra.save();
+    await inserirEtapasPadrao(savedObra._id); // Adicionado
+    res.status(201).json(savedObra);
+  } catch (error) {
+    console.error("Erro ao criar obra:", error);
     res.status(500).json({ message: error.message });
   }
 });

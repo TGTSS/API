@@ -90,6 +90,27 @@ const StageSchema = new mongoose.Schema({
   progresso: Number, // Novo campo
 });
 
+const RegistroDiarioSchema = new mongoose.Schema({
+  data: { type: Date, required: true },
+  clima: { type: String, required: true },
+  titulo: { type: String, required: true },
+  descricao: { type: String, required: true },
+  fotos: [{ type: String }],
+  etapas: [
+    {
+      id: Number,
+      nome: String,
+      progresso: Number,
+      subetapas: [
+        {
+          nome: String,
+          progresso: Number,
+        },
+      ],
+    },
+  ],
+});
+
 const ObraSchema = new mongoose.Schema({
   nome: { type: String },
   status: {
@@ -135,9 +156,7 @@ const ObraSchema = new mongoose.Schema({
     index: "2dsphere",
   },
   etapas: [{ type: mongoose.Schema.Types.ObjectId, ref: "Etapa" }],
-  registrosDiarios: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "RegistroDiario" },
-  ],
+  registrosDiarios: [RegistroDiarioSchema],
   galeria: [{ type: mongoose.Schema.Types.ObjectId, ref: "Galeria" }],
   documentos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Documento" }],
   dataInicio: { type: Date },

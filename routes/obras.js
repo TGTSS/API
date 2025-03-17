@@ -701,4 +701,87 @@ router.patch("/:obraId/etapas/:etapaId/progresso", async (req, res) => {
   }
 });
 
+// Rota para criar um novo registro diário
+router.post("/:id/registros-diarios", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { registro, etapas } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Atualizar progresso das etapas no orçamento
+    obra.orcamento.stages.forEach((stage) => {
+      const updatedStage = etapas.find((e) => e.id === stage.id);
+      if (updatedStage) {
+        stage.progresso = updatedStage.progresso;
+        stage.subStages.forEach((subStage) => {
+          const updatedSubStage = updatedStage.subetapas.find(
+            (se) => se.id === subStage.id
+          );
+          if (updatedSubStage) {
+            subStage.progresso = updatedSubStage.progresso;
+          }
+        });
+      }
+    });
+
+    // Adicionar registro diário
+    obra.registrosDiarios.push(registro);
+    await obra.save();
+
+    res.status(201).json(obra.registrosDiarios);
+  } catch (error) {
+    console.error("Erro ao criar registro diário:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar todos os registros diários de uma obra
+router.get("/:id/registros-diarios", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id).select("registrosDiarios");
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.json(obra.registrosDiarios);
+  } catch (error) {
+    console.error("Erro ao buscar registros diários:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para obter etapas e subetapas do orçamento de uma obra
+router.get("/:id/orcamento/etapas", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id).select("orcamento.stages");
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.json(obra.orcamento.stages);
+  } catch (error) {
+    console.error("Erro ao buscar etapas do orçamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
