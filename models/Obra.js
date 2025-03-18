@@ -92,9 +92,9 @@ const StageSchema = new mongoose.Schema({
 
 const RegistroDiarioSchema = new mongoose.Schema({
   data: { type: Date, required: true },
-  clima: { type: String, required: true },
-  titulo: { type: String, required: true },
-  descricao: { type: String, required: true },
+  clima: { type: String },
+  titulo: { type: String },
+  descricao: { type: String },
   fotos: [{ type: String }],
   etapas: [
     {
