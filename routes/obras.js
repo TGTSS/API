@@ -705,10 +705,18 @@ router.patch("/:obraId/etapas/:etapaId/progresso", async (req, res) => {
 router.post("/:id/registros-diarios", async (req, res) => {
   try {
     const { id } = req.params;
-    const { registro, etapas } = req.body;
+    const { registro } = req.body;
 
+    // Validate ID and check if obra exists
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
+    }
+
+    // Validate required fields in registro
+    if (!registro || !registro.data || !registro.titulo) {
+      return res.status(400).json({
+        message: "Dados incompletos. Data e título são obrigatórios",
+      });
     }
 
     const obra = await Obra.findById(id);
@@ -716,30 +724,61 @@ router.post("/:id/registros-diarios", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    // Atualizar progresso das etapas no orçamento
+    // Sanitize and structure the registro data
+    const sanitizedRegistro = {
+      ...registro,
+      data: new Date(registro.data),
+      clima: registro.clima || "não informado",
+      fotos: registro.fotos || [],
+      etapas: registro.etapas || [],
+    };
+
+    // Update stages progress
     obra.orcamento.stages.forEach((stage) => {
-      const updatedStage = etapas.find((e) => e.id === stage.id);
+      const updatedStage = sanitizedRegistro.etapas.find(
+        (e) => e.id === stage.id
+      );
       if (updatedStage) {
-        stage.progresso = updatedStage.progresso;
-        stage.subStages.forEach((subStage) => {
-          const updatedSubStage = updatedStage.subetapas.find(
-            (se) => se.id === subStage.id
-          );
-          if (updatedSubStage) {
-            subStage.progresso = updatedSubStage.progresso;
-          }
-        });
+        // Ensure progress is between 0 and 100
+        stage.progresso = Math.min(Math.max(updatedStage.progresso, 0), 100);
+
+        // Update substages
+        if (stage.subStages && stage.subStages.length > 0) {
+          stage.subStages.forEach((subStage) => {
+            const updatedSubStage = updatedStage.subetapas?.find(
+              (se) => se.nome === subStage.nome
+            );
+            if (updatedSubStage) {
+              subStage.progresso = Math.min(
+                Math.max(updatedSubStage.progresso, 0),
+                100
+              );
+            }
+          });
+        }
       }
     });
 
-    // Adicionar registro diário
-    obra.registrosDiarios.push({ ...registro, obra: id });
-    await obra.save();
+    // Add the daily record
+    obra.registrosDiarios.push(sanitizedRegistro);
 
-    res.status(201).json(obra.registrosDiarios);
+    // Save changes
+    const savedObra = await obra.save();
+    if (!savedObra) {
+      throw new Error("Erro ao salvar as alterações");
+    }
+
+    res.status(201).json({
+      message: "Registro diário criado com sucesso",
+      registro:
+        savedObra.registrosDiarios[savedObra.registrosDiarios.length - 1],
+    });
   } catch (error) {
     console.error("Erro ao criar registro diário:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: "Erro interno do servidor ao criar registro diário",
+      error: error.message,
+    });
   }
 });
 
@@ -780,48 +819,6 @@ router.get("/:id/orcamento/etapas", async (req, res) => {
     res.json(obra.orcamento.stages);
   } catch (error) {
     console.error("Erro ao buscar etapas do orçamento:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para criar um novo registro diário
-router.post("/:id/registros-diarios", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { registro } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
-    }
-
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Atualizar progresso das etapas no orçamento
-    obra.orcamento.stages.forEach((stage) => {
-      const updatedStage = registro.etapas.find((e) => e.id === stage.id);
-      if (updatedStage) {
-        stage.progresso = updatedStage.progresso;
-        stage.subStages.forEach((subStage) => {
-          const updatedSubStage = updatedStage.subetapas.find(
-            (se) => se.nome === subStage.nome
-          );
-          if (updatedSubStage) {
-            subStage.progresso = updatedSubStage.progresso;
-          }
-        });
-      }
-    });
-
-    // Adicionar registro diário
-    obra.registrosDiarios.push(registro);
-    await obra.save();
-
-    res.status(201).json(obra.registrosDiarios);
-  } catch (error) {
-    console.error("Erro ao criar registro diário:", error);
     res.status(500).json({ message: error.message });
   }
 });
