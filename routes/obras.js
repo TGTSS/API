@@ -733,7 +733,7 @@ router.post("/:id/registros-diarios", async (req, res) => {
     });
 
     // Adicionar registro diário
-    obra.registrosDiarios.push(registro);
+    obra.registrosDiarios.push({ ...registro, obra: id });
     await obra.save();
 
     res.status(201).json(obra.registrosDiarios);
