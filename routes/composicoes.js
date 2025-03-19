@@ -17,6 +17,9 @@ router.get("/", async (req, res) => {
 // Rota para adicionar uma nova composição
 router.post("/", async (req, res) => {
   try {
+    if (req.body.custoTotal) {
+      req.body.custoTotal = Number(req.body.custoTotal.replace(",", "."));
+    }
     const composicao = new Composicao(req.body);
     const savedComposicao = await composicao.save();
     res.status(201).json(savedComposicao);
@@ -29,7 +32,12 @@ router.post("/", async (req, res) => {
 // Rota para adicionar várias composições ao mesmo tempo
 router.post("/bulk", async (req, res) => {
   try {
-    const composicoes = req.body;
+    const composicoes = req.body.map((composicao) => {
+      if (composicao.custoTotal) {
+        composicao.custoTotal = Number(composicao.custoTotal.replace(",", "."));
+      }
+      return composicao;
+    });
     const result = await Composicao.insertMany(composicoes);
     res.status(201).json(result);
   } catch (error) {
@@ -87,7 +95,11 @@ router.put("/update-all/custoTotal", async (req, res) => {
   try {
     const composicoes = await Composicao.find();
     const updatePromises = composicoes.map((composicao) => {
-      composicao.custoTotal = Number(composicao.custoTotal);
+      if (typeof composicao.custoTotal === "string") {
+        composicao.custoTotal = Number(composicao.custoTotal.replace(",", "."));
+      } else {
+        composicao.custoTotal = Number(composicao.custoTotal);
+      }
       return composicao.save();
     });
     await Promise.all(updatePromises);
