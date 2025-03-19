@@ -82,4 +82,22 @@ router.delete("/all", async (req, res) => {
   }
 });
 
+// Rota para atualizar o campo custoTotal de todas as composições
+router.put("/update-all/custoTotal", async (req, res) => {
+  try {
+    const composicoes = await Composicao.find();
+    const updatePromises = composicoes.map((composicao) => {
+      composicao.custoTotal = Number(composicao.custoTotal);
+      return composicao.save();
+    });
+    await Promise.all(updatePromises);
+    res
+      .status(200)
+      .json({ message: "Todas as composições foram atualizadas com sucesso" });
+  } catch (error) {
+    console.error("Erro ao atualizar todas as composições:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

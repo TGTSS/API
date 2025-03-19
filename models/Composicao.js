@@ -5,9 +5,8 @@ const ComposicaoSchema = new mongoose.Schema({
   codigoComposicao: { type: Number },
   descricaoComposicao: { type: String },
   unidade: { type: String },
-  custoTotal: { type: String },
+  custoTotal: { type: Number },
 });
-
 
 const Composicao = mongoose.model("Composicao", ComposicaoSchema);
 
