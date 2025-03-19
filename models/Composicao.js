@@ -11,7 +11,7 @@ const ComposicaoSchema = new mongoose.Schema({
 // Middleware para converter custoTotal de string para número
 ComposicaoSchema.pre("save", function (next) {
   if (typeof this.custoTotal === "string") {
-    this.custoTotal = parseFloat(this.custoTotal);
+    this.custoTotal = parseFloat(this.custoTotal.replace(",", "."));
   }
   next();
 });
