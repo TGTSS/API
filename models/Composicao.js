@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const ComposicaoSchema = new mongoose.Schema({
-  descricaoClasse: { type: String },
+  categoria: { type: String },
   codigoComposicao: { type: Number },
   descricaoComposicao: { type: String },
   unidade: { type: String },
