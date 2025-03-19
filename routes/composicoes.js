@@ -62,6 +62,19 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// Rota para deletar todas as composições
+router.delete("/all", async (req, res) => {
+  try {
+    await Composicao.deleteMany({});
+    res
+      .status(200)
+      .json({ message: "Todas as composições foram excluídas com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir todas as composições:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para excluir uma composição
 router.delete("/:id", async (req, res) => {
   try {
@@ -73,19 +86,6 @@ router.delete("/:id", async (req, res) => {
     res.status(200).json({ message: "Composição excluída com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir composição:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para deletar todas as composições
-router.delete("/all", async (req, res) => {
-  try {
-    await Composicao.deleteMany({});
-    res
-      .status(200)
-      .json({ message: "Todas as composições foram excluídas com sucesso" });
-  } catch (error) {
-    console.error("Erro ao excluir todas as composições:", error);
     res.status(500).json({ message: error.message });
   }
 });
