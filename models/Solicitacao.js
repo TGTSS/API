@@ -1,11 +1,12 @@
 import mongoose from "mongoose";
 
 const SolicitacaoSchema = new mongoose.Schema({
+  nome: { type: String, required: true },
+  descricao: { type: String, required: true },
   data: { type: Date, default: Date.now },
   status: { type: String, required: true },
   prioridade: { type: String, required: true },
   solicitante: { type: String, required: true },
-  descricao: { type: String, required: true },
   valor: { type: Number, required: true },
   items: [
     {
