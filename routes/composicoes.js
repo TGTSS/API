@@ -29,24 +29,6 @@ router.get("/", async (req, res) => {
 // Rota para adicionar uma nova composição
 router.post("/", async (req, res) => {
   try {
-    const {
-      categoria,
-      codigoComposicao,
-      descricaoComposicao,
-      unidade,
-      custoTotal,
-    } = req.body;
-    if (
-      !categoria ||
-      !codigoComposicao ||
-      !descricaoComposicao ||
-      !unidade ||
-      custoTotal === undefined
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Todos os campos são obrigatórios" });
-    }
     req.body.custoTotal = Number(custoTotal);
     const composicao = new Composicao(req.body);
     const savedComposicao = await composicao.save();
