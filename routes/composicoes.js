@@ -63,7 +63,11 @@ router.post("/bulk", async (req, res) => {
         !unidade ||
         custoTotal === undefined
       ) {
-        throw new Error("Todos os campos são obrigatórios");
+        throw new Error(
+          `Todos os campos são obrigatórios para a composição: ${JSON.stringify(
+            composicao
+          )}`
+        );
       }
       composicao.custoTotal = Number(custoTotal);
       return composicao;
