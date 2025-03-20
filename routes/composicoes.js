@@ -29,7 +29,6 @@ router.get("/", async (req, res) => {
 // Rota para adicionar uma nova composição
 router.post("/", async (req, res) => {
   try {
-    req.body.custoTotal = Number(req.body.custoTotal);
     const composicao = new Composicao(req.body);
     const savedComposicao = await composicao.save();
     res.status(201).json(savedComposicao);
