@@ -17,9 +17,25 @@ router.get("/", async (req, res) => {
 // Rota para adicionar uma nova composição
 router.post("/", async (req, res) => {
   try {
-    if (req.body.custoTotal) {
-      req.body.custoTotal = Number(req.body.custoTotal.replace(",", "."));
+    const {
+      categoria,
+      codigoComposicao,
+      descricaoComposicao,
+      unidade,
+      custoTotal,
+    } = req.body;
+    if (
+      !categoria ||
+      !codigoComposicao ||
+      !descricaoComposicao ||
+      !unidade ||
+      custoTotal === undefined
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Todos os campos são obrigatórios" });
     }
+    req.body.custoTotal = Number(custoTotal);
     const composicao = new Composicao(req.body);
     const savedComposicao = await composicao.save();
     res.status(201).json(savedComposicao);
@@ -33,9 +49,23 @@ router.post("/", async (req, res) => {
 router.post("/bulk", async (req, res) => {
   try {
     const composicoes = req.body.map((composicao) => {
-      if (composicao.custoTotal) {
-        composicao.custoTotal = Number(composicao.custoTotal.replace(",", "."));
+      const {
+        categoria,
+        codigoComposicao,
+        descricaoComposicao,
+        unidade,
+        custoTotal,
+      } = composicao;
+      if (
+        !categoria ||
+        !codigoComposicao ||
+        !descricaoComposicao ||
+        !unidade ||
+        custoTotal === undefined
+      ) {
+        throw new Error("Todos os campos são obrigatórios");
       }
+      composicao.custoTotal = Number(custoTotal);
       return composicao;
     });
     const result = await Composicao.insertMany(composicoes);
@@ -49,6 +79,25 @@ router.post("/bulk", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const {
+      categoria,
+      codigoComposicao,
+      descricaoComposicao,
+      unidade,
+      custoTotal,
+    } = req.body;
+    if (
+      !categoria ||
+      !codigoComposicao ||
+      !descricaoComposicao ||
+      !unidade ||
+      custoTotal === undefined
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Todos os campos são obrigatórios" });
+    }
+    req.body.custoTotal = Number(custoTotal);
     const updatedComposicao = await Composicao.findByIdAndUpdate(id, req.body, {
       new: true,
     });
