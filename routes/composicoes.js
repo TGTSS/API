@@ -1,7 +1,10 @@
 import express from "express";
+import bodyParser from "body-parser"; // Adicione esta linha
 import Composicao from "../models/Composicao.js";
 
 const router = express.Router();
+
+router.use(bodyParser.json()); // Adicione esta linha
 
 // Rota para listar todas as composições
 router.get("/", async (req, res) => {
