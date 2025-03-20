@@ -34,6 +34,7 @@ import lancamentosRouter from "./routes/lancamentos.js";
 import diariosRouter from "./routes/diarios.js";
 import orcamentosRouter from "./routes/orcamentos.js";
 import Etapa from "./models/Etapa.js"; // Adicionado
+import Solicitacao from "./models/Solicitacao.js"; // Adicionado
 
 dotenv.config();
 
@@ -1093,5 +1094,86 @@ app.post("/api/obras", async (req, res) => {
   } catch (error) {
     console.error("Erro ao criar obra:", error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar uma nova solicitação
+app.post("/api/obras/:obraId/solicitacoes", async (req, res) => {
+  try {
+    const { obraId } = req.params;
+    const solicitacaoData = req.body;
+
+    const novaSolicitacao = new Solicitacao({
+      ...solicitacaoData,
+      obra: obraId,
+    });
+
+    const savedSolicitacao = await novaSolicitacao.save();
+    res.status(201).json(savedSolicitacao);
+  } catch (error) {
+    console.error("Erro ao criar solicitação:", error);
+    res.status(500).json({ message: "Erro ao criar solicitação" });
+  }
+});
+
+// Rota para obter todas as solicitações de uma obra
+app.get("/api/obras/:obraId/solicitacoes", async (req, res) => {
+  try {
+    const { obraId } = req.params;
+    const solicitacoes = await Solicitacao.find({ obra: obraId }).lean();
+    res.json(solicitacoes);
+  } catch (error) {
+    console.error("Erro ao buscar solicitações:", error);
+    res.status(500).json({ message: "Erro ao buscar solicitações" });
+  }
+});
+
+// Rota para obter uma solicitação específica
+app.get("/api/solicitacoes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const solicitacao = await Solicitacao.findById(id).lean();
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+    res.json(solicitacao);
+  } catch (error) {
+    console.error("Erro ao buscar solicitação:", error);
+    res.status(500).json({ message: "Erro ao buscar solicitação" });
+  }
+});
+
+// Rota para atualizar uma solicitação
+app.put("/api/solicitacoes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const solicitacaoData = req.body;
+    const updatedSolicitacao = await Solicitacao.findByIdAndUpdate(
+      id,
+      solicitacaoData,
+      { new: true }
+    );
+    if (!updatedSolicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+    res.json(updatedSolicitacao);
+  } catch (error) {
+    console.error("Erro ao atualizar solicitação:", error);
+    res.status(500).json({ message: "Erro ao atualizar solicitação" });
+  }
+});
+
+// Rota para excluir uma solicitação
+app.delete("/api/solicitacoes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedSolicitacao = await Solicitacao.findByIdAndDelete(id);
+    if (!deletedSolicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+    res.status(200).json({ message: "Solicitação excluída com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir solicitação:", error);
+    res.status(500).json({ message: "Erro ao excluir solicitação" });
   }
 });
