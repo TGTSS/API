@@ -6,6 +6,15 @@ const router = express.Router();
 
 router.use(bodyParser.json()); // Adicione esta linha
 
+// Middleware para tratar erros de JSON inválido
+router.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    console.error("Erro de sintaxe JSON:", err);
+    return res.status(400).json({ message: "JSON inválido" });
+  }
+  next();
+});
+
 // Rota para listar todas as composições
 router.get("/", async (req, res) => {
   try {
