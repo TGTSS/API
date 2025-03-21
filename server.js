@@ -1118,6 +1118,17 @@ app.post("/api/obras/:obraId/solicitacoes", async (req, res) => {
   }
 });
 
+// Rota para obter todas as solicitações
+app.get("/api/solicitacoes", async (req, res) => {
+  try {
+    const solicitacoes = await Solicitacao.find().lean();
+    res.json(solicitacoes);
+  } catch (error) {
+    console.error("Erro ao buscar solicitações:", error);
+    res.status(500).json({ message: "Erro ao buscar solicitações" });
+  }
+});
+
 // Rota para obter todas as solicitações de uma obra
 app.get("/api/obras/:obraId/solicitacoes", async (req, res) => {
   try {
@@ -1177,16 +1188,5 @@ app.delete("/api/solicitacoes/:id", async (req, res) => {
   } catch (error) {
     console.error("Erro ao excluir solicitação:", error);
     res.status(500).json({ message: "Erro ao excluir solicitação" });
-  }
-});
-
-// Rota para obter todas as solicitações
-app.get("/api/solicitacoes", async (req, res) => {
-  try {
-    const solicitacoes = await Solicitacao.find().lean();
-    res.json(solicitacoes);
-  } catch (error) {
-    console.error("Erro ao buscar solicitações:", error);
-    res.status(500).json({ message: "Erro ao buscar solicitações" });
   }
 });
