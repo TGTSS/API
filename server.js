@@ -1098,16 +1098,13 @@ app.post("/api/obras", async (req, res) => {
 });
 
 // Rota para criar uma nova solicitação
-app.post("/api/obras/:obraId/solicitacoes", async (req, res) => {
+app.post("/api/solicitacoes", async (req, res) => {
   try {
-    const { obraId } = req.params;
     const solicitacaoData = req.body;
 
     const novaSolicitacao = new Solicitacao({
       ...solicitacaoData,
-      obra: obraId,
-      solicitante: solicitacaoData.solicitante, // Adicionado
-      obraNome: solicitacaoData.obraNome, // Adicionado
+      data: new Date(),
     });
 
     const savedSolicitacao = await novaSolicitacao.save();
@@ -1173,6 +1170,26 @@ app.put("/api/solicitacoes/:id", async (req, res) => {
   } catch (error) {
     console.error("Erro ao atualizar solicitação:", error);
     res.status(500).json({ message: "Erro ao atualizar solicitação" });
+  }
+});
+
+// Rota para atualizar o status de uma solicitação
+app.patch("/api/solicitacoes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const solicitacao = await Solicitacao.findById(id);
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+    solicitacao.status = status;
+    const updatedSolicitacao = await solicitacao.save();
+    res.json(updatedSolicitacao);
+  } catch (error) {
+    console.error("Erro ao atualizar status da solicitação:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao atualizar status da solicitação" });
   }
 });
 
