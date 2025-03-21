@@ -1098,13 +1098,16 @@ app.post("/api/obras", async (req, res) => {
 });
 
 // Rota para criar uma nova solicitação
-app.post("/api/solicitacoes", async (req, res) => {
+app.post("/api/obras/:obraId/solicitacoes", async (req, res) => {
   try {
+    const { obraId } = req.params;
     const solicitacaoData = req.body;
 
     const novaSolicitacao = new Solicitacao({
       ...solicitacaoData,
-      data: new Date(),
+      obra: obraId,
+      solicitante: solicitacaoData.solicitante, // Adicionado
+      obraNome: solicitacaoData.obraNome, // Adicionado
     });
 
     const savedSolicitacao = await novaSolicitacao.save();
