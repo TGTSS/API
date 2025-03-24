@@ -1103,11 +1103,15 @@ app.post("/api/obras/:obraId/solicitacoes", async (req, res) => {
     const { obraId } = req.params;
     const solicitacaoData = req.body;
 
+    const numeroSequencial =
+      (await Solicitacao.countDocuments({ obra: obraId })) + 1;
+
     const novaSolicitacao = new Solicitacao({
       ...solicitacaoData,
       obra: obraId,
-      solicitante: solicitacaoData.solicitante, // Adicionado
-      obraNome: solicitacaoData.obraNome, // Adicionado
+      solicitante: solicitacaoData.solicitante,
+      obraNome: solicitacaoData.obraNome,
+      numeroSequencial,
     });
 
     const savedSolicitacao = await novaSolicitacao.save();
