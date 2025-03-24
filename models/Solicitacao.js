@@ -16,6 +16,17 @@ const SolicitacaoSchema = new mongoose.Schema({
       isManual: { type: Boolean, required: true },
     },
   ],
+  itens: [
+    {
+      descricao: { type: String, required: true },
+      quantidade: { type: Number, required: true },
+      valorUnitario: { type: Number },
+      marca: { type: String },
+      desconto: { type: Number },
+      condicaoPagamento: { type: String },
+      prazoEntrega: { type: String },
+    },
+  ],
   obra: { type: mongoose.Schema.Types.ObjectId, ref: "Obra", required: true },
   obraNome: { type: String, required: true },
   numeroSequencial: { type: Number, required: true },
