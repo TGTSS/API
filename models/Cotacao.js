@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const CotacaoSchema = new mongoose.Schema({
+  solicitacao: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Solicitacao",
+    required: true,
+  },
   items: [
     {
       description: String,

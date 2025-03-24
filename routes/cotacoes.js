@@ -4,10 +4,15 @@ import Cotacao from "../models/Cotacao.js";
 const router = express.Router();
 
 // Rota para criar uma nova cotação
-router.post("/", async (req, res) => {
+router.post("/:solicitacaoId/cotacao", async (req, res) => {
   try {
+    const { solicitacaoId } = req.params;
     const { items, status } = req.body;
-    const novaCotacao = new Cotacao({ items, status });
+    const novaCotacao = new Cotacao({
+      solicitacao: solicitacaoId,
+      items,
+      status,
+    });
     const savedCotacao = await novaCotacao.save();
     res.status(201).json(savedCotacao);
   } catch (error) {
