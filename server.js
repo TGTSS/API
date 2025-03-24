@@ -35,6 +35,7 @@ import diariosRouter from "./routes/diarios.js";
 import orcamentosRouter from "./routes/orcamentos.js";
 import Etapa from "./models/Etapa.js"; // Adicionado
 import Solicitacao from "./models/Solicitacao.js"; // Adicionado
+import cotacoesRouter from "./routes/cotacoes.js";
 
 dotenv.config();
 
@@ -1051,6 +1052,7 @@ app.use("/api/profissionais", profissionaisRouter);
 app.use("/api/lancamentos", lancamentosRouter);
 app.use("/api/diarios", diariosRouter);
 app.use("/api/orcamentos", orcamentosRouter);
+app.use("/api/cotacoes", cotacoesRouter);
 
 // Emitir evento de atualização de recibos
 const emitirAtualizacaoRecibos = async () => {
