@@ -1219,6 +1219,11 @@ app.delete("/api/solicitacoes/:id", async (req, res) => {
 app.get("/api/cotacoes/:solicitacaoId/fornecedores", async (req, res) => {
   try {
     const { solicitacaoId } = req.params;
+    if (!solicitacaoId) {
+      return res
+        .status(400)
+        .json({ message: "ID da solicitação é obrigatório" });
+    }
     const solicitacao = await Solicitacao.findById(solicitacaoId).populate(
       "fornecedores"
     );
@@ -1310,3 +1315,41 @@ app.post(
     }
   }
 );
+
+// Rota para criar uma nova cotação
+app.post("/api/solicitacoes/:solicitacaoId/cotacao", async (req, res) => {
+  try {
+    const { solicitacaoId } = req.params;
+    const { items, status } = req.body;
+
+    const solicitacao = await Solicitacao.findById(solicitacaoId);
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+
+    solicitacao.cotacoes.push({ items, status });
+    await solicitacao.save();
+
+    res.status(201).json(solicitacao);
+  } catch (error) {
+    console.error("Erro ao criar cotação:", error);
+    res.status(500).json({ message: "Erro ao criar cotação" });
+  }
+});
+
+// Rota para listar todas as cotações de uma solicitação
+app.get("/api/solicitacoes/:solicitacaoId/cotacoes", async (req, res) => {
+  try {
+    const { solicitacaoId } = req.params;
+    const solicitacao = await Solicitacao.findById(solicitacaoId).populate(
+      "cotacoes.items"
+    );
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+    res.json(solicitacao.cotacoes);
+  } catch (error) {
+    console.error("Erro ao buscar cotações:", error);
+    res.status(500).json({ message: "Erro ao buscar cotações" });
+  }
+});
