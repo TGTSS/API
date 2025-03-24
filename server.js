@@ -1297,6 +1297,7 @@ app.post(
           desconto: item.desconto,
           condicaoPagamento: item.condicaoPagamento,
           prazoEntrega: item.prazoEntrega,
+          prazoPagamento: item.prazoPagamento, // Adicionado
         })),
       };
 
