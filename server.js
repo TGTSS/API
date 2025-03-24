@@ -1210,3 +1210,64 @@ app.delete("/api/solicitacoes/:id", async (req, res) => {
     res.status(500).json({ message: "Erro ao excluir solicitação" });
   }
 });
+
+// Rota para obter fornecedores selecionados para uma solicitação
+app.get("/api/cotacoes/:solicitacaoId/fornecedores", async (req, res) => {
+  try {
+    const { solicitacaoId } = req.params;
+    const solicitacao = await Solicitacao.findById(solicitacaoId).populate(
+      "fornecedores"
+    );
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+    res.json(solicitacao.fornecedores);
+  } catch (error) {
+    console.error("Erro ao buscar fornecedores selecionados:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao buscar fornecedores selecionados" });
+  }
+});
+
+// Rota para adicionar fornecedores a uma solicitação
+app.post("/api/cotacoes/:solicitacaoId/fornecedores", async (req, res) => {
+  try {
+    const { solicitacaoId } = req.params;
+    const { fornecedores } = req.body;
+    const solicitacao = await Solicitacao.findById(solicitacaoId);
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+    solicitacao.fornecedores = fornecedores;
+    await solicitacao.save();
+    res.status(200).json(solicitacao.fornecedores);
+  } catch (error) {
+    console.error("Erro ao salvar fornecedores selecionados:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao salvar fornecedores selecionados" });
+  }
+});
+
+// Rota para remover um fornecedor de uma solicitação
+app.delete(
+  "/api/cotacoes/:solicitacaoId/fornecedores/:fornecedorId",
+  async (req, res) => {
+    try {
+      const { solicitacaoId, fornecedorId } = req.params;
+      const solicitacao = await Solicitacao.findById(solicitacaoId);
+      if (!solicitacao) {
+        return res.status(404).json({ message: "Solicitação não encontrada" });
+      }
+      solicitacao.fornecedores = solicitacao.fornecedores.filter(
+        (fornecedor) => fornecedor.toString() !== fornecedorId
+      );
+      await solicitacao.save();
+      res.status(200).json(solicitacao.fornecedores);
+    } catch (error) {
+      console.error("Erro ao remover fornecedor:", error);
+      res.status(500).json({ message: "Erro ao remover fornecedor" });
+    }
+  }
+);
