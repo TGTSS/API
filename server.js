@@ -1275,3 +1275,37 @@ app.delete(
     }
   }
 );
+
+// Rota para enviar cotação de um fornecedor
+app.post(
+  "/api/cotacoes/:solicitacaoId/fornecedor/:fornecedorId",
+  async (req, res) => {
+    try {
+      const { solicitacaoId, fornecedorId } = req.params;
+      const { itens } = req.body;
+      const solicitacao = await Solicitacao.findById(solicitacaoId);
+      if (!solicitacao) {
+        return res.status(404).json({ message: "Solicitação não encontrada" });
+      }
+
+      const cotacao = {
+        fornecedor: fornecedorId,
+        itens: itens.map((item) => ({
+          itemId: item.itemId,
+          valor: item.valor,
+          marca: item.marca,
+          desconto: item.desconto,
+          condicaoPagamento: item.condicaoPagamento,
+          prazoEntrega: item.prazoEntrega,
+        })),
+      };
+
+      solicitacao.cotacoes.push(cotacao);
+      await solicitacao.save();
+      res.status(200).json(solicitacao);
+    } catch (error) {
+      console.error("Erro ao enviar cotação:", error);
+      res.status(500).json({ message: "Erro ao enviar cotação" });
+    }
+  }
+);
