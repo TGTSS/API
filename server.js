@@ -35,6 +35,7 @@ import diariosRouter from "./routes/diarios.js";
 import orcamentosRouter from "./routes/orcamentos.js";
 import Etapa from "./models/Etapa.js"; // Adicionado
 import Solicitacao from "./models/Solicitacao.js"; // Adicionado
+import cotacoesRouter from "./routes/cotacoes.js";
 
 dotenv.config();
 
@@ -1051,6 +1052,7 @@ app.use("/api/profissionais", profissionaisRouter);
 app.use("/api/lancamentos", lancamentosRouter);
 app.use("/api/diarios", diariosRouter);
 app.use("/api/orcamentos", orcamentosRouter);
+app.use("/api/cotacoes", cotacoesRouter);
 
 // Emitir evento de atualização de recibos
 const emitirAtualizacaoRecibos = async () => {
@@ -1280,85 +1282,3 @@ app.delete(
     }
   }
 );
-
-// Rota para enviar cotação de um fornecedor
-app.post(
-  "/api/cotacoes/:solicitacaoId/fornecedor/:fornecedorId",
-  async (req, res) => {
-    try {
-      const { solicitacaoId, fornecedorId } = req.params;
-      const { itens } = req.body;
-      const solicitacao = await Solicitacao.findById(solicitacaoId);
-      if (!solicitacao) {
-        return res.status(404).json({ message: "Solicitação não encontrada" });
-      }
-
-      const cotacao = {
-        fornecedor: fornecedorId,
-        itens: itens.map((item) => ({
-          itemId: item.itemId,
-          valor: item.valor,
-          marca: item.marca,
-          desconto: item.desconto,
-          condicaoPagamento: item.condicaoPagamento,
-          prazoEntrega: item.prazoEntrega,
-          prazoPagamento: item.prazoPagamento, // Adicionado
-        })),
-      };
-
-      solicitacao.cotacoes.push(cotacao);
-      await solicitacao.save();
-      res.status(200).json(solicitacao);
-    } catch (error) {
-      console.error("Erro ao enviar cotação:", error);
-      res.status(500).json({ message: "Erro ao enviar cotação" });
-    }
-  }
-);
-
-// Rota para criar uma nova cotação
-app.post("/api/solicitacoes/:solicitacaoId/cotacao", async (req, res) => {
-  try {
-    const { solicitacaoId } = req.params;
-    const { items, status } = req.body;
-
-    const solicitacao = await Solicitacao.findById(solicitacaoId);
-    if (!solicitacao) {
-      return res.status(404).json({ message: "Solicitação não encontrada" });
-    }
-
-    const cotacao = {
-      items: items.map((item) => ({
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      })),
-      status,
-    };
-
-    solicitacao.cotacoes.push(cotacao);
-    await solicitacao.save();
-
-    res.status(201).json(solicitacao);
-  } catch (error) {
-    console.error("Erro ao criar cotação:", error);
-    res.status(500).json({ message: "Erro ao criar cotação" });
-  }
-});
-
-// Rota para listar todas as cotações de uma solicitação
-app.get("/api/solicitacoes/:solicitacaoId/cotacoes", async (req, res) => {
-  try {
-    const { solicitacaoId } = req.params;
-    const solicitacao = await Solicitacao.findById(solicitacaoId).populate(
-      "cotacoes.items"
-    );
-    if (!solicitacao) {
-      return res.status(404).json({ message: "Solicitação não encontrada" });
-    }
-    res.json(solicitacao.cotacoes);
-  } catch (error) {
-    console.error("Erro ao buscar cotações:", error);
-    res.status(500).json({ message: "Erro ao buscar cotações" });
-  }
-});

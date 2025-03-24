@@ -14,7 +14,7 @@ const CotacaoSchema = new mongoose.Schema({
       desconto: { type: Number },
       condicaoPagamento: { type: String },
       prazoEntrega: { type: String },
-      prazoPagamento: { type: String }, // Adicionado
+      prazoPagamento: { type: String },
     },
   ],
   status: String,
