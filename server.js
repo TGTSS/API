@@ -1327,7 +1327,16 @@ app.post("/api/solicitacoes/:solicitacaoId/cotacao", async (req, res) => {
       return res.status(404).json({ message: "Solicitação não encontrada" });
     }
 
-    solicitacao.cotacoes.push({ items, status });
+    const cotacao = {
+      items: items.map((item) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+      status,
+    };
+
+    solicitacao.cotacoes.push(cotacao);
     await solicitacao.save();
 
     res.status(201).json(solicitacao);

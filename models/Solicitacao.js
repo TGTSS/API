@@ -17,6 +17,14 @@ const CotacaoSchema = new mongoose.Schema({
       prazoPagamento: { type: String }, // Adicionado
     },
   ],
+  items: [
+    {
+      description: String,
+      quantity: Number,
+      unitPrice: Number,
+    },
+  ],
+  status: String,
 });
 
 const SolicitacaoSchema = new mongoose.Schema({
