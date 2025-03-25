@@ -121,14 +121,21 @@ router.post("/:cotacaoId/fornecedores", async (req, res) => {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    cotacao.fornecedores = fornecedores.map((fornecedorId) => ({
-      fornecedorId,
-    }));
+    fornecedores.forEach((fornecedorId) => {
+      if (
+        !cotacao.fornecedores.some(
+          (f) => f.fornecedorId.toString() === fornecedorId
+        )
+      ) {
+        cotacao.fornecedores.push({ fornecedorId });
+      }
+    });
 
     await cotacao.save();
     res.status(200).json(cotacao.fornecedores);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao adicionar fornecedores", error });
+    console.error("Erro ao adicionar fornecedores:", error);
+    res.status(500).json({ message: "Erro ao adicionar fornecedores" });
   }
 });
 
@@ -149,49 +156,19 @@ router.get("/:cotacaoId/fornecedores", async (req, res) => {
 // Remover fornecedor da cotação
 router.delete("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
   try {
-    const { cotacaoId, fornecedorId } = req.params;
-
-    // Verificar se o ID da cotação é válido
-    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
-      return res.status(400).json({ message: "ID da cotação inválido" });
-    }
-
-    // Verificar se o ID do fornecedor é válido
-    if (!mongoose.Types.ObjectId.isValid(fornecedorId)) {
-      return res.status(400).json({ message: "ID do fornecedor inválido" });
-    }
-
-    const cotacao = await Cotacao.findById(cotacaoId);
+    const cotacao = await Cotacao.findById(req.params.cotacaoId);
 
     if (!cotacao) {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    // Verificar se o fornecedor existe na lista
-    const fornecedorExiste = cotacao.fornecedores.some(
-      (f) => f.fornecedorId.toString() === fornecedorId
-    );
-
-    if (!fornecedorExiste) {
-      return res
-        .status(404)
-        .json({ message: "Fornecedor não encontrado na cotação" });
-    }
-
-    // Remover o fornecedor
     cotacao.fornecedores = cotacao.fornecedores.filter(
-      (f) => f.fornecedorId.toString() !== fornecedorId
+      (f) => f.fornecedorId.toString() !== req.params.fornecedorId
     );
 
     await cotacao.save();
-    res
-      .status(200)
-      .json({
-        message: "Fornecedor removido com sucesso",
-        fornecedores: cotacao.fornecedores,
-      });
+    res.status(200).json(cotacao.fornecedores);
   } catch (error) {
-    console.error("Erro ao remover fornecedor:", error);
     res.status(500).json({ message: "Erro ao remover fornecedor", error });
   }
 });
@@ -225,6 +202,27 @@ router.post("/:cotacaoId/fornecedor/:fornecedorId", async (req, res) => {
     res.status(200).json(cotacao.itensFornecedor);
   } catch (error) {
     res.status(500).json({ message: "Erro ao adicionar itens", error });
+  }
+});
+
+// Rota para gerar PDF da cotação
+router.get("/:cotacaoId/pdf", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+
+    const cotacao = await Cotacao.findById(cotacaoId)
+      .populate("fornecedores.fornecedorId")
+      .lean();
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    // Aqui você pode implementar a lógica para gerar o PDF
+    // Por exemplo, usando uma biblioteca como pdfkit ou @react-pdf/renderer
+    res.status(200).json({ message: "PDF gerado com sucesso (mock)" });
+  } catch (error) {
+    console.error("Erro ao gerar PDF:", error);
+    res.status(500).json({ message: "Erro ao gerar PDF" });
   }
 });
 
