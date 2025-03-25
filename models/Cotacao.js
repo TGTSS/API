@@ -51,6 +51,11 @@ const CotacaoSchema = new mongoose.Schema({
     ],
     default: [],
   },
+  numero: { type: String, required: true }, // Adicionado para identificar a cotação
+  etapa: {
+    nome: { type: String },
+    descricao: { type: String },
+  }, // Adicionado para armazenar informações da etapa
 });
 
 const Cotacao = mongoose.model("Cotacao", CotacaoSchema);

@@ -15,7 +15,10 @@ router.post("/", async (req, res) => {
       obraNome,
       prioridade,
       items,
+      numero,
+      etapa,
     } = req.body;
+
     const novaCotacao = new Cotacao({
       solicitacaoId,
       nome,
@@ -24,7 +27,10 @@ router.post("/", async (req, res) => {
       obraNome,
       prioridade,
       items,
+      numero,
+      etapa,
     });
+
     const savedCotacao = await novaCotacao.save();
 
     // Atualizar status da solicitação para "Em cotação"
