@@ -15,10 +15,27 @@ router.post("/", async (req, res) => {
       obraId,
       obraNome,
       prioridade,
-      items,
+      itens,
       numero,
       etapa,
     } = req.body;
+
+    // Validações
+    if (!solicitacaoId || !mongoose.Types.ObjectId.isValid(solicitacaoId)) {
+      return res.status(400).json({ message: "ID da solicitação inválido" });
+    }
+
+    if (!nome || !numero) {
+      return res
+        .status(400)
+        .json({ message: "Nome e número são obrigatórios" });
+    }
+
+    // Verificar se a solicitação existe
+    const solicitacao = await Solicitacao.findById(solicitacaoId);
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
 
     const novaCotacao = new Cotacao({
       solicitacaoId,
@@ -27,7 +44,7 @@ router.post("/", async (req, res) => {
       obraId,
       obraNome,
       prioridade,
-      items,
+      itens,
       numero,
       etapa,
     });
@@ -42,18 +59,25 @@ router.post("/", async (req, res) => {
     res.status(201).json(savedCotacao);
   } catch (error) {
     console.error("Erro ao criar cotação:", error);
-    res.status(500).json({ message: "Erro ao criar cotação" });
+    res
+      .status(500)
+      .json({ message: "Erro ao criar cotação", error: error.message });
   }
 });
 
 // Rota para listar todas as cotações
 router.get("/", async (req, res) => {
   try {
-    const cotacoes = await Cotacao.find().lean();
+    const cotacoes = await Cotacao.find()
+      .populate("solicitacaoId", "numero status")
+      .populate("obraId", "nome")
+      .lean();
     res.json(cotacoes);
   } catch (error) {
     console.error("Erro ao buscar cotações:", error);
-    res.status(500).json({ message: "Erro ao buscar cotações" });
+    res
+      .status(500)
+      .json({ message: "Erro ao buscar cotações", error: error.message });
   }
 });
 
@@ -62,19 +86,24 @@ router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Verificar se o ID é válido
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const cotacao = await Cotacao.findById(id).lean();
+    const cotacao = await Cotacao.findById(id)
+      .populate("solicitacaoId", "numero status")
+      .populate("obraId", "nome")
+      .lean();
+
     if (!cotacao) {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
     res.json(cotacao);
   } catch (error) {
     console.error("Erro ao buscar cotação:", error);
-    res.status(500).json({ message: "Erro ao buscar cotação" });
+    res
+      .status(500)
+      .json({ message: "Erro ao buscar cotação", error: error.message });
   }
 });
 
@@ -82,17 +111,26 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
     const cotacaoData = req.body;
     const updatedCotacao = await Cotacao.findByIdAndUpdate(id, cotacaoData, {
       new: true,
+      runValidators: true,
     });
+
     if (!updatedCotacao) {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
     res.json(updatedCotacao);
   } catch (error) {
     console.error("Erro ao atualizar cotação:", error);
-    res.status(500).json({ message: "Erro ao atualizar cotação" });
+    res
+      .status(500)
+      .json({ message: "Erro ao atualizar cotação", error: error.message });
   }
 });
 
@@ -100,14 +138,28 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedCotacao = await Cotacao.findByIdAndDelete(id);
-    if (!deletedCotacao) {
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(id);
+    if (!cotacao) {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
+
+    // Atualizar status da solicitação de volta para "Pendente"
+    await Solicitacao.findByIdAndUpdate(cotacao.solicitacaoId, {
+      status: "Pendente",
+    });
+
+    await Cotacao.findByIdAndDelete(id);
     res.status(200).json({ message: "Cotação excluída com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir cotação:", error);
-    res.status(500).json({ message: "Erro ao excluir cotação" });
+    res
+      .status(500)
+      .json({ message: "Erro ao excluir cotação", error: error.message });
   }
 });
 
@@ -115,10 +167,28 @@ router.delete("/:id", async (req, res) => {
 router.post("/:cotacaoId/fornecedores", async (req, res) => {
   try {
     const { fornecedores } = req.body;
-    const cotacao = await Cotacao.findById(req.params.cotacaoId);
 
+    if (!mongoose.Types.ObjectId.isValid(req.params.cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(req.params.cotacaoId);
     if (!cotacao) {
       return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    // Validar IDs dos fornecedores
+    if (!Array.isArray(fornecedores) || fornecedores.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Lista de fornecedores inválida" });
+    }
+
+    const validFornecedores = fornecedores.every((id) =>
+      mongoose.Types.ObjectId.isValid(id)
+    );
+    if (!validFornecedores) {
+      return res.status(400).json({ message: "IDs de fornecedores inválidos" });
     }
 
     cotacao.fornecedores = fornecedores.map((fornecedorId) => ({
@@ -128,27 +198,47 @@ router.post("/:cotacaoId/fornecedores", async (req, res) => {
     await cotacao.save();
     res.status(200).json(cotacao.fornecedores);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao adicionar fornecedores", error });
+    res
+      .status(500)
+      .json({
+        message: "Erro ao adicionar fornecedores",
+        error: error.message,
+      });
   }
 });
 
 // Remover fornecedor da cotação
 router.delete("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
   try {
-    const cotacao = await Cotacao.findById(req.params.cotacaoId);
+    const { cotacaoId, fornecedorId } = req.params;
 
+    if (
+      !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+      !mongoose.Types.ObjectId.isValid(fornecedorId)
+    ) {
+      return res.status(400).json({ message: "IDs inválidos" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
     if (!cotacao) {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
     cotacao.fornecedores = cotacao.fornecedores.filter(
-      (f) => f.fornecedorId.toString() !== req.params.fornecedorId
+      (f) => f.fornecedorId.toString() !== fornecedorId
+    );
+
+    // Remover também os itens do fornecedor
+    cotacao.itensFornecedor = cotacao.itensFornecedor.filter(
+      (f) => f.fornecedorId.toString() !== fornecedorId
     );
 
     await cotacao.save();
     res.status(200).json(cotacao.fornecedores);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao remover fornecedor", error });
+    res
+      .status(500)
+      .json({ message: "Erro ao remover fornecedor", error: error.message });
   }
 });
 
@@ -156,14 +246,52 @@ router.delete("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
 router.post("/:cotacaoId/fornecedor/:fornecedorId", async (req, res) => {
   try {
     const { itens, prazoPagamento } = req.body;
-    const cotacao = await Cotacao.findById(req.params.cotacaoId);
+    const { cotacaoId, fornecedorId } = req.params;
 
+    if (
+      !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+      !mongoose.Types.ObjectId.isValid(fornecedorId)
+    ) {
+      return res.status(400).json({ message: "IDs inválidos" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
     if (!cotacao) {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
+    // Validar se o fornecedor está na lista de fornecedores da cotação
+    const fornecedorExiste = cotacao.fornecedores.some(
+      (f) => f.fornecedorId.toString() === fornecedorId
+    );
+
+    if (!fornecedorExiste) {
+      return res
+        .status(400)
+        .json({
+          message: "Fornecedor não está na lista de fornecedores desta cotação",
+        });
+    }
+
+    // Validar itens
+    if (!Array.isArray(itens) || itens.length === 0) {
+      return res.status(400).json({ message: "Lista de itens inválida" });
+    }
+
+    // Validar se todos os itens existem na cotação
+    const itemIds = cotacao.itens.map((item) => item._id.toString());
+    const itensValidos = itens.every((item) =>
+      itemIds.includes(item.itemId.toString())
+    );
+
+    if (!itensValidos) {
+      return res
+        .status(400)
+        .json({ message: "Um ou mais itens não existem na cotação" });
+    }
+
     const fornecedorIndex = cotacao.itensFornecedor.findIndex(
-      (f) => f.fornecedorId.toString() === req.params.fornecedorId
+      (f) => f.fornecedorId.toString() === fornecedorId
     );
 
     if (fornecedorIndex !== -1) {
@@ -171,7 +299,7 @@ router.post("/:cotacaoId/fornecedor/:fornecedorId", async (req, res) => {
       cotacao.itensFornecedor[fornecedorIndex].prazoPagamento = prazoPagamento;
     } else {
       cotacao.itensFornecedor.push({
-        fornecedorId: req.params.fornecedorId,
+        fornecedorId,
         itens,
         prazoPagamento,
       });
@@ -180,7 +308,9 @@ router.post("/:cotacaoId/fornecedor/:fornecedorId", async (req, res) => {
     await cotacao.save();
     res.status(200).json(cotacao.itensFornecedor);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao adicionar itens", error });
+    res
+      .status(500)
+      .json({ message: "Erro ao adicionar itens", error: error.message });
   }
 });
 

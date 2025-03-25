@@ -4,21 +4,23 @@ const CotacaoSchema = new mongoose.Schema({
   solicitacaoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Solicitacao",
+    required: true,
   },
-  nome: { type: String },
+  nome: { type: String, required: true },
   descricao: { type: String },
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
   obraNome: { type: String },
   prioridade: { type: String },
-  items: {
+  itens: {
     type: [
       {
         _id: mongoose.Schema.Types.ObjectId,
-        description: String,
-        quantity: Number,
-        unitPrice: Number,
+        descricao: String,
+        quantidade: Number,
+        valor: Number,
       },
     ],
+    default: [],
   },
   fornecedores: {
     type: [
@@ -30,7 +32,7 @@ const CotacaoSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  valor: { type: Number, default: 0 }, // Adicionado para armazenar o valor total da cotação
+  valor: { type: Number, default: 0 },
   status: { type: String, default: "Em cotação" },
   data: { type: Date, default: Date.now },
   itensFornecedor: {
@@ -45,18 +47,18 @@ const CotacaoSchema = new mongoose.Schema({
             desconto: Number,
             condicaoPagamento: String,
             prazoEntrega: String,
-            prazoPagamento: String, // Adicionado para armazenar o prazo de pagamento
+            prazoPagamento: String,
           },
         ],
       },
     ],
     default: [],
   },
-  numero: { type: String, required: true }, // Adicionado para identificar a cotação
+  numero: { type: String, required: true },
   etapa: {
     nome: { type: String },
     descricao: { type: String },
-  }, // Adicionado para armazenar informações da etapa
+  },
 });
 
 const Cotacao = mongoose.model("Cotacao", CotacaoSchema);
