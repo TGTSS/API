@@ -198,16 +198,14 @@ router.post("/:cotacaoId/fornecedores", async (req, res) => {
     await cotacao.save();
     res.status(200).json(cotacao.fornecedores);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Erro ao adicionar fornecedores",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Erro ao adicionar fornecedores",
+      error: error.message,
+    });
   }
 });
 
-Router.get("/:cotacaoId/fornecedores", async (req, res) => {
+router.get("/:cotacaoId/fornecedores", async (req, res) => {
   try {
     const { cotacaoId } = req.params;
 
@@ -222,12 +220,10 @@ Router.get("/:cotacaoId/fornecedores", async (req, res) => {
 
     res.status(200).json(cotacao.fornecedores);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Erro ao buscar fornecedores da cotação",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Erro ao buscar fornecedores da cotação",
+      error: error.message,
+    });
   }
 });
 
@@ -290,11 +286,9 @@ router.post("/:cotacaoId/fornecedor/:fornecedorId", async (req, res) => {
     );
 
     if (!fornecedorExiste) {
-      return res
-        .status(400)
-        .json({
-          message: "Fornecedor não está na lista de fornecedores desta cotação",
-        });
+      return res.status(400).json({
+        message: "Fornecedor não está na lista de fornecedores desta cotação",
+      });
     }
 
     // Validar itens
