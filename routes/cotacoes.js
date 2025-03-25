@@ -15,9 +15,9 @@ router.post("/", async (req, res) => {
       obraId,
       obraNome,
       prioridade,
-      itens,
-      numero,
-      etapa,
+      items, // Atualizado para "items"
+      status,
+      data,
     } = req.body;
 
     // Validações
@@ -25,10 +25,8 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ message: "ID da solicitação inválido" });
     }
 
-    if (!nome || !numero) {
-      return res
-        .status(400)
-        .json({ message: "Nome e número são obrigatórios" });
+    if (!nome) {
+      return res.status(400).json({ message: "Nome é obrigatório" });
     }
 
     // Verificar se a solicitação existe
@@ -44,9 +42,14 @@ router.post("/", async (req, res) => {
       obraId,
       obraNome,
       prioridade,
-      itens,
-      numero,
-      etapa,
+      itens: items.map((item) => ({
+        descricao: item.description,
+        quantidade: item.quantity,
+        valor: item.unitPrice,
+        _id: item._id,
+      })),
+      status: status || "Em cotação",
+      data: data || new Date(),
     });
 
     const savedCotacao = await novaCotacao.save();

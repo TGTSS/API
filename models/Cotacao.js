@@ -14,9 +14,9 @@ const CotacaoSchema = new mongoose.Schema({
     type: [
       {
         _id: mongoose.Schema.Types.ObjectId,
-        descricao: String,
-        quantidade: Number,
-        valor: Number,
+        descricao: String, // Atualizado para "descricao"
+        quantidade: Number, // Atualizado para "quantidade"
+        valor: Number, // Atualizado para "valor"
       },
     ],
     default: [],
