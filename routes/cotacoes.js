@@ -1,6 +1,7 @@
 import express from "express";
 import Cotacao from "../models/Cotacao.js";
 import Solicitacao from "../models/Solicitacao.js";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
@@ -60,6 +61,12 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Verificar se o ID é válido
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
     const cotacao = await Cotacao.findById(id).lean();
     if (!cotacao) {
       return res.status(404).json({ message: "Cotação não encontrada" });
