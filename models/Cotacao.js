@@ -13,9 +13,10 @@ const CotacaoSchema = new mongoose.Schema({
   items: {
     type: [
       {
-        itemId: mongoose.Schema.Types.ObjectId,
-        quantidade: Number,
-        preco: Number,
+        _id: mongoose.Schema.Types.ObjectId,
+        description: String,
+        quantity: Number,
+        unitPrice: Number,
       },
     ],
   },
