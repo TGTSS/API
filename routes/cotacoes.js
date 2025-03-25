@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 import Cotacao from "../models/Cotacao.js";
 import Solicitacao from "../models/Solicitacao.js";
 import mongoose from "mongoose";
@@ -202,6 +202,30 @@ router.post("/:cotacaoId/fornecedores", async (req, res) => {
       .status(500)
       .json({
         message: "Erro ao adicionar fornecedores",
+        error: error.message,
+      });
+  }
+});
+
+Router.get("/:cotacaoId/fornecedores", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    res.status(200).json(cotacao.fornecedores);
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        message: "Erro ao buscar fornecedores da cotação",
         error: error.message,
       });
   }
