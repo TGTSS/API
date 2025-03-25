@@ -121,9 +121,15 @@ router.post("/:cotacaoId/fornecedores", async (req, res) => {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    cotacao.fornecedores = fornecedores.map((fornecedorId) => ({
-      fornecedorId,
-    }));
+    fornecedores.forEach((fornecedorId) => {
+      if (
+        !cotacao.fornecedores.some(
+          (f) => f.fornecedorId.toString() === fornecedorId
+        )
+      ) {
+        cotacao.fornecedores.push({ fornecedorId });
+      }
+    });
 
     await cotacao.save();
     res.status(200).json(cotacao.fornecedores);

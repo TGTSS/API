@@ -25,7 +25,8 @@ const CotacaoSchema = new mongoose.Schema({
       {
         fornecedorId: mongoose.Schema.Types.ObjectId,
         nome: String,
-        telefone: String,
+        telefone: String, // Adicionado para armazenar o telefone do fornecedor
+        nomeFantasia: String, // Adicionado para armazenar o nome fantasia do fornecedor
       },
     ],
     default: [],
@@ -45,6 +46,7 @@ const CotacaoSchema = new mongoose.Schema({
             desconto: Number,
             condicaoPagamento: String,
             prazoEntrega: String,
+            prazoPagamento: String, // Adicionado para armazenar o prazo de pagamento
           },
         ],
       },
