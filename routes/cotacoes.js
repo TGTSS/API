@@ -121,15 +121,9 @@ router.post("/:cotacaoId/fornecedores", async (req, res) => {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    fornecedores.forEach((fornecedorId) => {
-      if (
-        !cotacao.fornecedores.some(
-          (f) => f.fornecedorId.toString() === fornecedorId
-        )
-      ) {
-        cotacao.fornecedores.push({ fornecedorId });
-      }
-    });
+    cotacao.fornecedores = fornecedores.map((fornecedorId) => ({
+      fornecedorId,
+    }));
 
     await cotacao.save();
     res.status(200).json(cotacao.fornecedores);
@@ -175,7 +169,7 @@ router.delete("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
 // Adicionar itens enviados por um fornecedor
 router.post("/:cotacaoId/fornecedor/:fornecedorId", async (req, res) => {
   try {
-    const { itens } = req.body;
+    const { itens, prazoPagamento } = req.body;
     const cotacao = await Cotacao.findById(req.params.cotacaoId);
 
     if (!cotacao) {
@@ -188,10 +182,12 @@ router.post("/:cotacaoId/fornecedor/:fornecedorId", async (req, res) => {
 
     if (fornecedorIndex !== -1) {
       cotacao.itensFornecedor[fornecedorIndex].itens = itens;
+      cotacao.itensFornecedor[fornecedorIndex].prazoPagamento = prazoPagamento;
     } else {
       cotacao.itensFornecedor.push({
         fornecedorId: req.params.fornecedorId,
         itens,
+        prazoPagamento,
       });
     }
 
