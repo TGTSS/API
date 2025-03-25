@@ -4,9 +4,8 @@ const CotacaoSchema = new mongoose.Schema({
   solicitacaoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Solicitacao",
-    required: true,
   },
-  nome: { type: String, required: true },
+  nome: { type: String },
   descricao: { type: String },
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
   obraNome: { type: String },
@@ -54,7 +53,7 @@ const CotacaoSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  numero: { type: String, required: true },
+  numero: { type: String },
   etapa: {
     nome: { type: String },
     descricao: { type: String },
