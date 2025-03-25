@@ -115,17 +115,6 @@ router.delete("/:id", async (req, res) => {
 router.post("/:cotacaoId/fornecedores", async (req, res) => {
   try {
     const { fornecedores } = req.body;
-
-    if (
-      !fornecedores ||
-      !Array.isArray(fornecedores) ||
-      fornecedores.length === 0
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Lista de fornecedores inválida" });
-    }
-
     const cotacao = await Cotacao.findById(req.params.cotacaoId);
 
     if (!cotacao) {
@@ -146,7 +135,7 @@ router.post("/:cotacaoId/fornecedores", async (req, res) => {
     res.status(200).json(cotacao.fornecedores);
   } catch (error) {
     console.error("Erro ao adicionar fornecedores:", error);
-    res.status(500).json({ message: "Erro ao adicionar fornecedores", error });
+    res.status(500).json({ message: "Erro ao adicionar fornecedores" });
   }
 });
 
@@ -159,22 +148,13 @@ router.delete("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    const fornecedorIndex = cotacao.fornecedores.findIndex(
-      (f) => f.fornecedorId.toString() === req.params.fornecedorId
+    cotacao.fornecedores = cotacao.fornecedores.filter(
+      (f) => f.fornecedorId.toString() !== req.params.fornecedorId
     );
-
-    if (fornecedorIndex === -1) {
-      return res
-        .status(404)
-        .json({ message: "Fornecedor não encontrado na cotação" });
-    }
-
-    cotacao.fornecedores.splice(fornecedorIndex, 1);
 
     await cotacao.save();
     res.status(200).json(cotacao.fornecedores);
   } catch (error) {
-    console.error("Erro ao remover fornecedor:", error);
     res.status(500).json({ message: "Erro ao remover fornecedor", error });
   }
 });
