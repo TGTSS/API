@@ -11,7 +11,16 @@ const CotacaoSchema = new mongoose.Schema({
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra", required: true },
   obraNome: { type: String, required: true },
   prioridade: { type: String, required: true },
-  items: { type: Array, required: true },
+  items: {
+    type: [
+      {
+        itemId: mongoose.Schema.Types.ObjectId,
+        quantidade: Number,
+        preco: Number,
+      },
+    ],
+    required: true,
+  },
   status: { type: String, default: "Em cotação" },
   data: { type: Date, default: Date.now },
 });
