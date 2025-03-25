@@ -53,7 +53,7 @@ const CotacaoSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  numero: { type: String },
+  numero: { type: Number, required: true, unique: true }, // Atualizado para ser obrigatório e único
   etapa: {
     nome: { type: String },
     descricao: { type: String },

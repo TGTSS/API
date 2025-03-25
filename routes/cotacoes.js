@@ -35,6 +35,11 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ message: "Solicitação não encontrada" });
     }
 
+    // Buscar todas as cotações para obter o último número
+    const cotacoes = await Cotacao.find().lean();
+    const ultimoNumero = Math.max(...cotacoes.map((c) => c.numero || 0), 0);
+    const proximoNumero = ultimoNumero + 1;
+
     const novaCotacao = new Cotacao({
       solicitacaoId,
       nome,
@@ -50,6 +55,7 @@ router.post("/", async (req, res) => {
       })),
       status: status || "Em cotação",
       data: data || new Date(),
+      numero: proximoNumero, // Adicionado o número da cotação
     });
 
     const savedCotacao = await novaCotacao.save();
