@@ -150,20 +150,6 @@ router.post("/:cotacaoId/fornecedores", async (req, res) => {
   }
 });
 
-router.get("/:cotacaoId/fornecedores", async (req, res) => {
-  try {
-    const cotacao = await Cotacao.findById(req.params.cotacaoId);
-
-    if (!cotacao) {
-      return res.status(404).json({ message: "Cotação não encontrada" });
-    }
-
-    res.status(200).json(cotacao.fornecedores);
-  } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar fornecedores", error });
-  }
-});
-
 // Remover fornecedor da cotação
 router.delete("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
   try {
