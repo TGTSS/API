@@ -20,8 +20,37 @@ const CotacaoSchema = new mongoose.Schema({
       },
     ],
   },
+  fornecedores: {
+    type: [
+      {
+        fornecedorId: mongoose.Schema.Types.ObjectId,
+        nome: String,
+        telefone: String,
+      },
+    ],
+    default: [],
+  },
+  valor: { type: Number, default: 0 }, // Adicionado para armazenar o valor total da cotação
   status: { type: String, default: "Em cotação" },
   data: { type: Date, default: Date.now },
+  itensFornecedor: {
+    type: [
+      {
+        fornecedorId: mongoose.Schema.Types.ObjectId,
+        itens: [
+          {
+            itemId: mongoose.Schema.Types.ObjectId,
+            valor: Number,
+            marca: String,
+            desconto: Number,
+            condicaoPagamento: String,
+            prazoEntrega: String,
+          },
+        ],
+      },
+    ],
+    default: [],
+  },
 });
 
 const Cotacao = mongoose.model("Cotacao", CotacaoSchema);

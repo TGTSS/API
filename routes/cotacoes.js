@@ -98,4 +98,75 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Adicionar fornecedores à cotação
+router.post("/:cotacaoId/fornecedores", async (req, res) => {
+  try {
+    const { fornecedores } = req.body;
+    const cotacao = await Cotacao.findById(req.params.cotacaoId);
+
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    cotacao.fornecedores = fornecedores.map((fornecedorId) => ({
+      fornecedorId,
+    }));
+
+    await cotacao.save();
+    res.status(200).json(cotacao.fornecedores);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao adicionar fornecedores", error });
+  }
+});
+
+// Remover fornecedor da cotação
+router.delete("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
+  try {
+    const cotacao = await Cotacao.findById(req.params.cotacaoId);
+
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    cotacao.fornecedores = cotacao.fornecedores.filter(
+      (f) => f.fornecedorId.toString() !== req.params.fornecedorId
+    );
+
+    await cotacao.save();
+    res.status(200).json(cotacao.fornecedores);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao remover fornecedor", error });
+  }
+});
+
+// Adicionar itens enviados por um fornecedor
+router.post("/:cotacaoId/fornecedor/:fornecedorId", async (req, res) => {
+  try {
+    const { itens } = req.body;
+    const cotacao = await Cotacao.findById(req.params.cotacaoId);
+
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    const fornecedorIndex = cotacao.itensFornecedor.findIndex(
+      (f) => f.fornecedorId.toString() === req.params.fornecedorId
+    );
+
+    if (fornecedorIndex !== -1) {
+      cotacao.itensFornecedor[fornecedorIndex].itens = itens;
+    } else {
+      cotacao.itensFornecedor.push({
+        fornecedorId: req.params.fornecedorId,
+        itens,
+      });
+    }
+
+    await cotacao.save();
+    res.status(200).json(cotacao.itensFornecedor);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao adicionar itens", error });
+  }
+});
+
 export default router;
