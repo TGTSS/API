@@ -359,12 +359,10 @@ router.patch("/:cotacaoId", async (req, res) => {
     await cotacao.save();
     res.status(200).json(cotacao);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Erro ao atualizar status da cotação",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Erro ao atualizar status da cotação",
+      error: error.message,
+    });
   }
 });
 
@@ -407,6 +405,11 @@ router.patch(
         return res
           .status(404)
           .json({ message: "Item não encontrado para o fornecedor" });
+      }
+
+      // Validar o valor recebido
+      if (typeof valor !== "number" || valor <= 0) {
+        return res.status(400).json({ message: "Valor inválido" });
       }
 
       // Atualizar o valor do item
