@@ -29,6 +29,19 @@ const OrdemCompraSchema = new mongoose.Schema({
   numero: { type: Number, required: true, unique: true }, // Adicionado
   data: { type: Date, default: Date.now }, // Adicionado
   valorTotal: { type: Number, required: true }, // Adicionado
+  formaPagamento: { type: String, default: "Não especificada" },
+  prazoPagamento: { type: String, default: "Não especificado" },
+  condicoesPagamento: { type: String, default: "Não especificadas" },
+  responsavel: { type: String, default: "Não especificado" },
+  solicitante: { type: String, default: "Não especificado" },
+  centroCusto: { type: String, default: "Não especificado" },
+  departamento: { type: String, default: "Não especificado" },
+  prioridade: { type: String, default: "normal" },
+  tipoEntrega: { type: String, default: "normal" },
+  localEntrega: { type: String, default: "Não especificado" },
+  observacoesEntrega: { type: String, default: "" },
+  observacoesPagamento: { type: String, default: "" },
+  observacoesGerais: { type: String, default: "" },
 });
 
 const OrdemCompra = mongoose.model("OrdemCompra", OrdemCompraSchema);

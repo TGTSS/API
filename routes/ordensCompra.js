@@ -6,8 +6,28 @@ const router = express.Router();
 // Rota para criar uma nova ordem de compra
 router.post("/", async (req, res) => {
   try {
-    const { cotacaoId, fornecedorId, itens, total, status, dataCriacao, obra } =
-      req.body;
+    const {
+      cotacaoId,
+      fornecedorId,
+      itens,
+      total,
+      status,
+      dataCriacao,
+      obra,
+      formaPagamento,
+      prazoPagamento,
+      condicoesPagamento,
+      responsavel,
+      solicitante,
+      centroCusto,
+      departamento,
+      prioridade,
+      tipoEntrega,
+      localEntrega,
+      observacoesEntrega,
+      observacoesPagamento,
+      observacoesGerais,
+    } = req.body;
 
     if (!cotacaoId || !fornecedorId || !itens || !total) {
       return res.status(400).json({ message: "Dados incompletos" });
@@ -28,6 +48,19 @@ router.post("/", async (req, res) => {
       numero, // Adicionado
       data: new Date(), // Adicionado
       valorTotal: total, // Adicionado
+      formaPagamento,
+      prazoPagamento,
+      condicoesPagamento,
+      responsavel,
+      solicitante,
+      centroCusto,
+      departamento,
+      prioridade,
+      tipoEntrega,
+      localEntrega,
+      observacoesEntrega,
+      observacoesPagamento,
+      observacoesGerais,
     });
 
     const savedOrdemCompra = await novaOrdemCompra.save();
