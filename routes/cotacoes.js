@@ -341,4 +341,28 @@ router.post("/:cotacaoId/fornecedor/:fornecedorId", async (req, res) => {
   }
 });
 
+router.patch("/:cotacaoId", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+    const { status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    cotacao.status = status;
+    await cotacao.save();
+    res.status(200).json(cotacao);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Erro ao atualizar status da cotação", error: error.message });
+  }
+});
+
 export default router;
