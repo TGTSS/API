@@ -359,12 +359,10 @@ router.patch("/:cotacaoId", async (req, res) => {
     await cotacao.save();
     res.status(200).json(cotacao);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Erro ao atualizar status da cotação",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Erro ao atualizar status da cotação",
+      error: error.message,
+    });
   }
 });
 
@@ -376,6 +374,7 @@ router.patch(
       const { cotacaoId, fornecedorId, itemId } = req.params;
       const { valor } = req.body;
 
+      // Verificar se os IDs são válidos
       if (
         !mongoose.Types.ObjectId.isValid(cotacaoId) ||
         !mongoose.Types.ObjectId.isValid(fornecedorId) ||
@@ -384,21 +383,23 @@ router.patch(
         return res.status(400).json({ message: "IDs inválidos" });
       }
 
+      // Buscar a cotação
       const cotacao = await Cotacao.findById(cotacaoId);
       if (!cotacao) {
         return res.status(404).json({ message: "Cotação não encontrada" });
       }
 
+      // Verificar se o fornecedor existe na cotação
       const fornecedor = cotacao.itensFornecedor.find(
         (f) => f.fornecedorId.toString() === fornecedorId
       );
-
       if (!fornecedor) {
         return res
           .status(404)
           .json({ message: "Fornecedor não encontrado na cotação" });
       }
 
+      // Verificar se o item existe para o fornecedor
       const item = fornecedor.itens.find((i) => i.itemId.toString() === itemId);
       if (!item) {
         return res
@@ -406,13 +407,16 @@ router.patch(
           .json({ message: "Item não encontrado para o fornecedor" });
       }
 
+      // Atualizar o valor do item
       item.valor = valor;
 
+      // Salvar a cotação atualizada
       await cotacao.save();
       res
         .status(200)
         .json({ message: "Valor atualizado com sucesso", cotacao });
     } catch (error) {
+      console.error("Erro ao atualizar valor:", error);
       res
         .status(500)
         .json({ message: "Erro ao atualizar valor", error: error.message });
