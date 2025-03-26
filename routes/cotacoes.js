@@ -361,7 +361,98 @@ router.patch("/:cotacaoId", async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Erro ao atualizar status da cotação", error: error.message });
+      .json({
+        message: "Erro ao atualizar status da cotação",
+        error: error.message,
+      });
+  }
+});
+
+// Atualizar valor de um item enviado por um fornecedor
+router.patch(
+  "/:cotacaoId/fornecedor/:fornecedorId/item/:itemId",
+  async (req, res) => {
+    try {
+      const { cotacaoId, fornecedorId, itemId } = req.params;
+      const { valor } = req.body;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+        !mongoose.Types.ObjectId.isValid(fornecedorId) ||
+        !mongoose.Types.ObjectId.isValid(itemId)
+      ) {
+        return res.status(400).json({ message: "IDs inválidos" });
+      }
+
+      const cotacao = await Cotacao.findById(cotacaoId);
+      if (!cotacao) {
+        return res.status(404).json({ message: "Cotação não encontrada" });
+      }
+
+      const fornecedor = cotacao.itensFornecedor.find(
+        (f) => f.fornecedorId.toString() === fornecedorId
+      );
+
+      if (!fornecedor) {
+        return res
+          .status(404)
+          .json({ message: "Fornecedor não encontrado na cotação" });
+      }
+
+      const item = fornecedor.itens.find((i) => i.itemId.toString() === itemId);
+      if (!item) {
+        return res
+          .status(404)
+          .json({ message: "Item não encontrado para o fornecedor" });
+      }
+
+      item.valor = valor;
+
+      await cotacao.save();
+      res
+        .status(200)
+        .json({ message: "Valor atualizado com sucesso", cotacao });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Erro ao atualizar valor", error: error.message });
+    }
+  }
+);
+
+// Calcular custo total da cotação
+router.get("/:cotacaoId/custo-total", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId).lean();
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    const totalCost = cotacao.itens.reduce((total, item) => {
+      const bestPrice = cotacao.itensFornecedor
+        .map((fornecedor) => {
+          const itemFornecedor = fornecedor.itens.find(
+            (i) => i.itemId.toString() === item._id.toString()
+          );
+          return itemFornecedor ? itemFornecedor.valor : null;
+        })
+        .filter((valor) => valor !== null)
+        .reduce((min, valor) => (valor < min ? valor : min), Infinity);
+
+      return total + (bestPrice || 0) * item.quantidade;
+    }, 0);
+
+    res.status(200).json({ totalCost });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Erro ao calcular custo total", error: error.message });
   }
 });
 

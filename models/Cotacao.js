@@ -49,6 +49,7 @@ const CotacaoSchema = new mongoose.Schema({
             prazoPagamento: String,
           },
         ],
+        prazoPagamento: String, // Adicionado para armazenar prazo de pagamento do fornecedor
       },
     ],
     default: [],
