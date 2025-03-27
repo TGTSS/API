@@ -59,6 +59,33 @@ const CotacaoSchema = new mongoose.Schema({
     nome: { type: String },
     descricao: { type: String },
   },
+  pagamento: {
+    prazo: { type: String },
+    forma: { type: String },
+    parcelas: { type: Number, default: 1 },
+    metodoPagamento: { type: String },
+    valorTotal: { type: Number },
+    descontos: { type: Number },
+  },
+  entrega: {
+    prazo: { type: String },
+    forma: { type: String },
+    endereco: {
+      rua: { type: String },
+      numero: { type: String },
+      complemento: { type: String },
+      cidade: { type: String },
+      estado: { type: String },
+      cep: { type: String },
+    },
+    rastreamento: { type: String },
+    custoEntrega: { type: Number },
+  },
+  observacoes: {
+    gerais: { type: String },
+    restricoes: { type: String },
+    requisitosEspeciais: { type: String },
+  },
 });
 
 const Cotacao = mongoose.model("Cotacao", CotacaoSchema);

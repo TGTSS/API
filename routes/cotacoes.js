@@ -465,4 +465,68 @@ router.get("/:cotacaoId/custo-total", async (req, res) => {
   }
 });
 
+// Rota para salvar informações detalhadas
+router.post("/:cotacaoId/detalhes", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+    const { pagamento, entrega, observacoes } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    cotacao.pagamento = pagamento || cotacao.pagamento;
+    cotacao.entrega = entrega || cotacao.entrega;
+    cotacao.observacoes = observacoes || cotacao.observacoes;
+
+    await cotacao.save();
+    res
+      .status(200)
+      .json({ message: "Informações detalhadas salvas com sucesso", cotacao });
+  } catch (error) {
+    console.error("Erro ao salvar informações detalhadas:", error);
+    res
+      .status(500)
+      .json({
+        message: "Erro ao salvar informações detalhadas",
+        error: error.message,
+      });
+  }
+});
+
+// Rota para obter informações detalhadas
+router.get("/:cotacaoId/detalhes", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId).lean();
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    res.status(200).json({
+      pagamento: cotacao.pagamento,
+      entrega: cotacao.entrega,
+      observacoes: cotacao.observacoes,
+    });
+  } catch (error) {
+    console.error("Erro ao obter informações detalhadas:", error);
+    res
+      .status(500)
+      .json({
+        message: "Erro ao obter informações detalhadas",
+        error: error.message,
+      });
+  }
+});
+
 export default router;
