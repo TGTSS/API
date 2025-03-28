@@ -15,7 +15,7 @@ const CotacaoSchema = new mongoose.Schema({
       {
         descricao: { type: String, required: true },
         quantidade: { type: Number, required: true, min: 1 },
-        unidade: { type: String, required: true },
+        unidade: { type: String, required: true, default: "UN" },
         valor: { type: Number, required: true, min: 0 },
       },
     ],

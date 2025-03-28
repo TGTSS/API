@@ -569,7 +569,11 @@ router.post("/:cotacaoId/itens", async (req, res) => {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    const novoItem = { descricao, quantidade, unidade, valor };
+    if (!descricao || quantidade <= 0 || valor <= 0) {
+      return res.status(400).json({ message: "Dados do item inválidos" });
+    }
+
+    const novoItem = { descricao, quantidade, unidade: unidade || "UN", valor };
     cotacao.itens.push(novoItem);
     await cotacao.save();
 
@@ -679,20 +683,18 @@ router.put("/:cotacaoId/itens/:itemId", async (req, res) => {
     const { descricao, quantidade, unidade, valor } = req.body;
 
     // Verificar se os IDs são válidos
-    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
-      return res.status(400).json({ message: "ID da cotação inválido" });
-    }
-    if (!mongoose.Types.ObjectId.isValid(itemId)) {
-      return res.status(400).json({ message: "ID do item inválido" });
+    if (
+      !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+      !mongoose.Types.ObjectId.isValid(itemId)
+    ) {
+      return res.status(400).json({ message: "IDs inválidos" });
     }
 
-    // Buscar a cotação
     const cotacao = await Cotacao.findById(cotacaoId);
     if (!cotacao) {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    // Verificar se o item existe na cotação
     const item = cotacao.itens.find((item) => item._id.toString() === itemId);
     if (!item) {
       return res
@@ -700,13 +702,12 @@ router.put("/:cotacaoId/itens/:itemId", async (req, res) => {
         .json({ message: "Item não encontrado na cotação" });
     }
 
-    // Atualizar os campos do item
     if (descricao !== undefined) item.descricao = descricao;
-    if (quantidade !== undefined) item.quantidade = quantidade;
+    if (quantidade !== undefined && quantidade > 0)
+      item.quantidade = quantidade;
     if (unidade !== undefined) item.unidade = unidade;
-    if (valor !== undefined) item.valor = valor;
+    if (valor !== undefined && valor > 0) item.valor = valor;
 
-    // Salvar a cotação atualizada
     await cotacao.save();
     res.status(200).json({ message: "Item atualizado com sucesso", item });
   } catch (error) {
