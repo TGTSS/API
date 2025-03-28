@@ -1006,6 +1006,96 @@ router.patch(
   }
 );
 
+// Atualizar desconto de um fornecedor
+router.patch(
+  "/:cotacaoId/fornecedor/:fornecedorId/desconto",
+  async (req, res) => {
+    try {
+      const { cotacaoId, fornecedorId } = req.params;
+      const { valor, tipo } = req.body;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+        !mongoose.Types.ObjectId.isValid(fornecedorId)
+      ) {
+        return res.status(400).json({ message: "IDs inválidos" });
+      }
+
+      const cotacao = await Cotacao.findById(cotacaoId);
+      if (!cotacao) {
+        return res.status(404).json({ message: "Cotação não encontrada" });
+      }
+
+      const fornecedor = cotacao.fornecedores.find(
+        (f) => f.fornecedorId.toString() === fornecedorId
+      );
+      if (!fornecedor) {
+        return res
+          .status(404)
+          .json({ message: "Fornecedor não encontrado na cotação" });
+      }
+
+      fornecedor.desconto = {
+        valor: parseFloat(valor) || 0,
+        tipo: tipo || "percentage",
+      };
+      await cotacao.save();
+
+      res
+        .status(200)
+        .json({ message: "Desconto atualizado com sucesso", fornecedor });
+    } catch (error) {
+      console.error("Erro ao atualizar desconto:", error);
+      res
+        .status(500)
+        .json({ message: "Erro ao atualizar desconto", error: error.message });
+    }
+  }
+);
+
+// Selecionar melhores preços para itens
+router.post("/:cotacaoId/selecionar-melhores-precos", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId).lean();
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    const selectedPrices = {};
+    cotacao.itens.forEach((item) => {
+      const bestPrice = cotacao.itensFornecedor
+        ?.map((fornecedor) => {
+          const itemFornecedor = fornecedor.itens.find(
+            (i) => i.itemId.toString() === item._id.toString()
+          );
+          return itemFornecedor ? itemFornecedor.valor : null;
+        })
+        .filter((valor) => valor !== null)
+        .reduce((min, valor) => (valor < min ? valor : min), Infinity);
+
+      if (bestPrice) {
+        selectedPrices[item._id] = bestPrice;
+      }
+    });
+
+    res.status(200).json({ selectedPrices });
+  } catch (error) {
+    console.error("Erro ao selecionar melhores preços:", error);
+    res
+      .status(500)
+      .json({
+        message: "Erro ao selecionar melhores preços",
+        error: error.message,
+      });
+  }
+});
+
 // Rota para atualizar progresso de uma cotação
 router.patch("/:cotacaoId/progresso", async (req, res) => {
   try {
