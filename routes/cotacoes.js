@@ -638,6 +638,23 @@ router.patch("/:cotacaoId/itens/:itemId", async (req, res) => {
         .json({ message: "Item não encontrado na cotação" });
     }
 
+    // Validar os campos recebidos
+    if (descricao !== undefined && typeof descricao !== "string") {
+      return res.status(400).json({ message: "Descrição inválida" });
+    }
+    if (
+      quantidade !== undefined &&
+      (typeof quantidade !== "number" || quantidade <= 0)
+    ) {
+      return res.status(400).json({ message: "Quantidade inválida" });
+    }
+    if (unidade !== undefined && typeof unidade !== "string") {
+      return res.status(400).json({ message: "Unidade inválida" });
+    }
+    if (valor !== undefined && (typeof valor !== "number" || valor <= 0)) {
+      return res.status(400).json({ message: "Valor inválido" });
+    }
+
     // Atualizar os campos do item
     if (descricao !== undefined) item.descricao = descricao;
     if (quantidade !== undefined) item.quantidade = quantidade;
@@ -652,6 +669,29 @@ router.patch("/:cotacaoId/itens/:itemId", async (req, res) => {
     res
       .status(500)
       .json({ message: "Erro ao atualizar item", error: error.message });
+  }
+});
+
+// Rota para listar itens de uma cotação
+router.get("/:cotacaoId/itens", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId).lean();
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    res.status(200).json(cotacao.itens);
+  } catch (error) {
+    console.error("Erro ao listar itens:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao listar itens", error: error.message });
   }
 });
 
@@ -915,12 +955,10 @@ router.post("/:cotacaoId/ordem-compra/:fornecedorId", async (req, res) => {
     });
 
     await cotacao.save();
-    res
-      .status(201)
-      .json({
-        message: "Ordem de compra gerada com sucesso",
-        ordem: { fornecedorId, itens, total, fornecedor },
-      });
+    res.status(201).json({
+      message: "Ordem de compra gerada com sucesso",
+      ordem: { fornecedorId, itens, total, fornecedor },
+    });
   } catch (error) {
     console.error("Erro ao gerar ordem de compra:", error);
     res
