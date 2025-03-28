@@ -951,6 +951,37 @@ router.get(
   }
 );
 
+// Rota para buscar descontos de fornecedores
+router.get("/:cotacaoId/descontos", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId).lean();
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    const descontos = cotacao.fornecedores.reduce((acc, fornecedor) => {
+      acc[fornecedor.fornecedorId] = fornecedor.desconto || {
+        value: 0,
+        type: "percentage",
+      };
+      return acc;
+    }, {});
+
+    res.status(200).json(descontos);
+  } catch (error) {
+    console.error("Erro ao buscar descontos:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao buscar descontos", error: error.message });
+  }
+});
+
 // Rota para atualizar informações de um fornecedor na cotação
 router.patch("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
   try {

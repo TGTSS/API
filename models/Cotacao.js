@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
 const ArquivoSchema = new mongoose.Schema({
-  nome: { type: String, required: true },
+  nome: { type: String },
   descricao: { type: String },
-  caminho: { type: String, required: true },
-  tamanho: { type: Number, required: true },
+  caminho: { type: String },
+  tamanho: { type: Number },
 });
 
 const CotacaoSchema = new mongoose.Schema({
@@ -45,7 +45,7 @@ const CotacaoSchema = new mongoose.Schema({
             condicaoPagamento: { type: String },
             prazoEntrega: { type: String },
             prazoPagamento: { type: String },
-            obra: { type: String }, // Adicionado para armazenar informações da obra
+            obra: { type: String },
           },
         ],
         desconto: {
