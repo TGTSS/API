@@ -13,10 +13,10 @@ const CotacaoSchema = new mongoose.Schema({
   itens: {
     type: [
       {
-        descricao: { type: String, required: true },
-        quantidade: { type: Number, required: true, min: 1 },
-        unidade: { type: String, required: true, default: "UN" },
-        valor: { type: Number, required: true, min: 0 },
+        descricao: { type: String,  },
+        quantidade: { type: Number,  min: 1 },
+        unidade: { type: String,  default: "UN" },
+        valor: { type: Number, min: 0 },
       },
     ],
     default: [],
@@ -24,9 +24,9 @@ const CotacaoSchema = new mongoose.Schema({
   arquivos: {
     type: [
       {
-        nome: { type: String, required: true },
+        nome: { type: String,  },
         descricao: { type: String },
-        caminho: { type: String, required: true }, // Caminho do arquivo no servidor
+        caminho: { type: String,  }, // Caminho do arquivo no servidor
         tamanho: { type: Number },
       },
     ],
@@ -78,29 +78,29 @@ const CotacaoSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  numero: { type: Number, required: true, unique: true }, // Atualizado para ser obrigatório e único
+  numero: { type: Number, , unique: true }, // Atualizado para ser obrigatório e único
   etapa: {
     nome: { type: String },
     descricao: { type: String },
   },
   pagamento: {
-    prazo: { type: String, required: true },
-    forma: { type: String, required: true },
-    parcelas: { type: Number, default: 1, min: 1, required: true },
-    metodoPagamento: { type: String, required: true },
+    prazo: { type: String,  },
+    forma: { type: String,  },
+    parcelas: { type: Number, default: 1, min: 1,  },
+    metodoPagamento: { type: String,  },
     valorTotal: { type: Number },
     descontos: { type: Number },
   },
   entrega: {
-    prazo: { type: String, required: true },
-    forma: { type: String, required: true },
+    prazo: { type: String,  },
+    forma: { type: String,  },
     endereco: {
-      rua: { type: String, required: true },
-      numero: { type: String, required: true },
+      rua: { type: String,  },
+      numero: { type: String,  },
       complemento: { type: String },
-      cidade: { type: String, required: true },
-      estado: { type: String, required: true },
-      cep: { type: String, required: true, match: /^\d{5}-?\d{3}$/ },
+      cidade: { type: String,  },
+      estado: { type: String,  },
+      cep: { type: String, , match: /^\d{5}-?\d{3}$/ },
     },
     rastreamento: { type: String },
     custoEntrega: { type: Number, min: 0 },
