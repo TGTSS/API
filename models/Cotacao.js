@@ -26,7 +26,7 @@ const CotacaoSchema = new mongoose.Schema({
       {
         nome: { type: String, required: true },
         descricao: { type: String },
-        caminho: { type: String, required: true },
+        caminho: { type: String, required: true }, // Caminho do arquivo no servidor
         tamanho: { type: Number },
       },
     ],
@@ -48,6 +48,7 @@ const CotacaoSchema = new mongoose.Schema({
             condicaoPagamento: { type: String },
             prazoEntrega: { type: String },
             prazoPagamento: { type: String },
+            obra: { type: String }, // Adicionado para armazenar informações da obra
           },
         ],
       },
@@ -108,6 +109,41 @@ const CotacaoSchema = new mongoose.Schema({
     gerais: { type: String },
     restricoes: { type: String },
     requisitosEspeciais: { type: String },
+  },
+  progresso: {
+    informacoes: { type: Boolean, default: false },
+    itens: { type: Boolean, default: false },
+    fornecedores: { type: Boolean, default: false },
+    custos: { type: Boolean, default: false },
+    arquivos: { type: Boolean, default: false },
+  },
+  ordensCompra: {
+    type: [
+      {
+        fornecedorId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Fornecedor",
+        },
+        itens: [
+          {
+            itemId: { type: mongoose.Schema.Types.ObjectId },
+            descricao: { type: String },
+            quantidade: { type: Number },
+            valor: { type: Number },
+            valorTotal: { type: Number },
+            unidade: { type: String },
+          },
+        ],
+        total: { type: Number },
+        fornecedor: {
+          nome: { type: String },
+          cnpj: { type: String },
+          telefone: { type: String },
+          email: { type: String },
+        },
+      },
+    ],
+    default: [],
   },
 });
 

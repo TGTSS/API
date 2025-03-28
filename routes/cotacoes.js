@@ -485,7 +485,8 @@ router.post("/:cotacaoId/detalhes", async (req, res) => {
       !pagamento ||
       !pagamento.prazo ||
       !pagamento.forma ||
-      !pagamento.metodoPagamento
+      !pagamento.metodoPagamento ||
+      !pagamento.parcelas
     ) {
       return res
         .status(400)
@@ -497,6 +498,10 @@ router.post("/:cotacaoId/detalhes", async (req, res) => {
       !entrega.prazo ||
       !entrega.forma ||
       !entrega.endereco ||
+      !entrega.endereco.rua ||
+      !entrega.endereco.numero ||
+      !entrega.endereco.cidade ||
+      !entrega.endereco.estado ||
       !entrega.endereco.cep
     ) {
       return res
@@ -703,6 +708,224 @@ router.delete("/:cotacaoId/arquivos/:arquivoId", async (req, res) => {
     res
       .status(500)
       .json({ message: "Erro ao remover arquivo", error: error.message });
+  }
+});
+
+// Rota para download de um arquivo da cotação
+router.get("/:cotacaoId/arquivos/:arquivoId/download", async (req, res) => {
+  try {
+    const { cotacaoId, arquivoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    const arquivo = cotacao.arquivos.find(
+      (arquivo) => arquivo._id.toString() === arquivoId
+    );
+
+    if (!arquivo) {
+      return res.status(404).json({ message: "Arquivo não encontrado" });
+    }
+
+    res.download(arquivo.caminho, arquivo.nome);
+  } catch (error) {
+    console.error("Erro ao baixar arquivo:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao baixar arquivo", error: error.message });
+  }
+});
+
+// Rota para buscar detalhes de um fornecedor específico
+router.get("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
+  try {
+    const { cotacaoId, fornecedorId } = req.params;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+      !mongoose.Types.ObjectId.isValid(fornecedorId)
+    ) {
+      return res.status(400).json({ message: "IDs inválidos" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId).lean();
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    const fornecedor = cotacao.fornecedores.find(
+      (f) => f.fornecedorId.toString() === fornecedorId
+    );
+
+    if (!fornecedor) {
+      return res
+        .status(404)
+        .json({ message: "Fornecedor não encontrado na cotação" });
+    }
+
+    res.status(200).json(fornecedor);
+  } catch (error) {
+    console.error("Erro ao buscar fornecedor:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao buscar fornecedor", error: error.message });
+  }
+});
+
+// Rota para atualizar informações de um fornecedor na cotação
+router.patch("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
+  try {
+    const { cotacaoId, fornecedorId } = req.params;
+    const { itens, prazoPagamento, prazoEntrega, desconto, condicaoPagamento } =
+      req.body;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+      !mongoose.Types.ObjectId.isValid(fornecedorId)
+    ) {
+      return res.status(400).json({ message: "IDs inválidos" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    const fornecedor = cotacao.fornecedores.find(
+      (f) => f.fornecedorId.toString() === fornecedorId
+    );
+
+    if (!fornecedor) {
+      return res
+        .status(404)
+        .json({ message: "Fornecedor não encontrado na cotação" });
+    }
+
+    if (itens) fornecedor.itens = itens;
+    if (prazoPagamento) fornecedor.prazoPagamento = prazoPagamento;
+    if (prazoEntrega) fornecedor.prazoEntrega = prazoEntrega;
+    if (desconto) fornecedor.desconto = desconto;
+    if (condicaoPagamento) fornecedor.condicaoPagamento = condicaoPagamento;
+
+    await cotacao.save();
+    res.status(200).json({ message: "Fornecedor atualizado com sucesso" });
+  } catch (error) {
+    console.error("Erro ao atualizar fornecedor:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao atualizar fornecedor", error: error.message });
+  }
+});
+
+// Rota para atualizar progresso de uma cotação
+router.patch("/:cotacaoId/progresso", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+    const { progresso } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    cotacao.progresso = progresso;
+    await cotacao.save();
+
+    res
+      .status(200)
+      .json({ message: "Progresso atualizado com sucesso", cotacao });
+  } catch (error) {
+    console.error("Erro ao atualizar progresso:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao atualizar progresso", error: error.message });
+  }
+});
+
+// Rota para enviar cotação para fornecedores
+router.patch("/:cotacaoId/enviar", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    if (cotacao.status !== "Em cotação") {
+      return res
+        .status(400)
+        .json({ message: "Cotação não está no status correto para envio" });
+    }
+
+    cotacao.status = "Enviada para fornecedores";
+    await cotacao.save();
+
+    res.status(200).json({ message: "Cotação enviada com sucesso", cotacao });
+  } catch (error) {
+    console.error("Erro ao enviar cotação:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao enviar cotação", error: error.message });
+  }
+});
+
+// Rota para gerar ordens de compra
+router.post("/:cotacaoId/ordem-compra/:fornecedorId", async (req, res) => {
+  try {
+    const { cotacaoId, fornecedorId } = req.params;
+    const { itens, total, fornecedor } = req.body;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+      !mongoose.Types.ObjectId.isValid(fornecedorId)
+    ) {
+      return res.status(400).json({ message: "IDs inválidos" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    // Adicionar a ordem de compra à cotação
+    if (!cotacao.ordensCompra) {
+      cotacao.ordensCompra = [];
+    }
+
+    cotacao.ordensCompra.push({
+      fornecedorId,
+      itens,
+      total,
+      fornecedor,
+    });
+
+    await cotacao.save();
+    res
+      .status(201)
+      .json({
+        message: "Ordem de compra gerada com sucesso",
+        ordem: { fornecedorId, itens, total, fornecedor },
+      });
+  } catch (error) {
+    console.error("Erro ao gerar ordem de compra:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao gerar ordem de compra", error: error.message });
   }
 });
 
