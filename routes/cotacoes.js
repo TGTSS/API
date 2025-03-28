@@ -855,6 +855,29 @@ router.get("/:cotacaoId/arquivos/:arquivoId/download", async (req, res) => {
   }
 });
 
+// Rota para listar arquivos de uma cotação
+router.get("/:cotacaoId/arquivos", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId).lean();
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    res.status(200).json(cotacao.arquivos || []);
+  } catch (error) {
+    console.error("Erro ao buscar arquivos:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao buscar arquivos", error: error.message });
+  }
+});
+
 // Rota para buscar detalhes de um fornecedor específico
 router.get("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
   try {
