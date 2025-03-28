@@ -465,7 +465,7 @@ router.get("/:cotacaoId/custo-total", async (req, res) => {
   }
 });
 
-// Rota para salvar informações detalhadas
+// Rota para salvar informações detalhadas com validação
 router.post("/:cotacaoId/detalhes", async (req, res) => {
   try {
     const { cotacaoId } = req.params;
@@ -480,8 +480,32 @@ router.post("/:cotacaoId/detalhes", async (req, res) => {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    cotacao.pagamento = pagamento || cotacao.pagamento;
-    cotacao.entrega = entrega || cotacao.entrega;
+    // Validações adicionais
+    if (
+      !pagamento ||
+      !pagamento.prazo ||
+      !pagamento.forma ||
+      !pagamento.metodoPagamento
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Informações de pagamento incompletas" });
+    }
+
+    if (
+      !entrega ||
+      !entrega.prazo ||
+      !entrega.forma ||
+      !entrega.endereco ||
+      !entrega.endereco.cep
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Informações de entrega incompletas" });
+    }
+
+    cotacao.pagamento = pagamento;
+    cotacao.entrega = entrega;
     cotacao.observacoes = observacoes || cotacao.observacoes;
 
     await cotacao.save();
