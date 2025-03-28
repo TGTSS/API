@@ -914,6 +914,43 @@ router.get("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
   }
 });
 
+// Rota para buscar desconto de um fornecedor específico
+router.get(
+  "/:cotacaoId/fornecedor/:fornecedorId/desconto",
+  async (req, res) => {
+    try {
+      const { cotacaoId, fornecedorId } = req.params;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+        !mongoose.Types.ObjectId.isValid(fornecedorId)
+      ) {
+        return res.status(400).json({ message: "IDs inválidos" });
+      }
+
+      const cotacao = await Cotacao.findById(cotacaoId).lean();
+      if (!cotacao) {
+        return res.status(404).json({ message: "Cotação não encontrada" });
+      }
+
+      const fornecedor = cotacao.fornecedores.find(
+        (f) => f.fornecedorId.toString() === fornecedorId
+      );
+
+      if (!fornecedor || !fornecedor.desconto) {
+        return res.status(404).json({ message: "Desconto não encontrado" });
+      }
+
+      res.status(200).json(fornecedor.desconto);
+    } catch (error) {
+      console.error("Erro ao buscar desconto:", error);
+      res
+        .status(500)
+        .json({ message: "Erro ao buscar desconto", error: error.message });
+    }
+  }
+);
+
 // Rota para atualizar informações de um fornecedor na cotação
 router.patch("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
   try {
