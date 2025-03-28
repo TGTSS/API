@@ -514,12 +514,10 @@ router.post("/:cotacaoId/detalhes", async (req, res) => {
       .json({ message: "Informações detalhadas salvas com sucesso", cotacao });
   } catch (error) {
     console.error("Erro ao salvar informações detalhadas:", error);
-    res
-      .status(500)
-      .json({
-        message: "Erro ao salvar informações detalhadas",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Erro ao salvar informações detalhadas",
+      error: error.message,
+    });
   }
 });
 
@@ -544,12 +542,122 @@ router.get("/:cotacaoId/detalhes", async (req, res) => {
     });
   } catch (error) {
     console.error("Erro ao obter informações detalhadas:", error);
+    res.status(500).json({
+      message: "Erro ao obter informações detalhadas",
+      error: error.message,
+    });
+  }
+});
+
+// Rota para adicionar um item à cotação
+router.post("/:cotacaoId/itens", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+    const { descricao, quantidade, unidade, valor } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    const novoItem = { descricao, quantidade, unidade, valor };
+    cotacao.itens.push(novoItem);
+    await cotacao.save();
+
+    res.status(201).json(novoItem);
+  } catch (error) {
+    console.error("Erro ao adicionar item:", error);
     res
       .status(500)
-      .json({
-        message: "Erro ao obter informações detalhadas",
-        error: error.message,
-      });
+      .json({ message: "Erro ao adicionar item", error: error.message });
+  }
+});
+
+// Rota para excluir um item da cotação
+router.delete("/:cotacaoId/itens/:itemId", async (req, res) => {
+  try {
+    const { cotacaoId, itemId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    cotacao.itens = cotacao.itens.filter(
+      (item) => item._id.toString() !== itemId
+    );
+    await cotacao.save();
+
+    res.status(200).json({ message: "Item removido com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover item:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao remover item", error: error.message });
+  }
+});
+
+// Rota para adicionar um arquivo à cotação
+router.post("/:cotacaoId/arquivos", async (req, res) => {
+  try {
+    const { cotacaoId } = req.params;
+    const { nome, descricao, caminho, tamanho } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    const novoArquivo = { nome, descricao, caminho, tamanho };
+    cotacao.arquivos.push(novoArquivo);
+    await cotacao.save();
+
+    res.status(201).json(novoArquivo);
+  } catch (error) {
+    console.error("Erro ao adicionar arquivo:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao adicionar arquivo", error: error.message });
+  }
+});
+
+// Rota para excluir um arquivo da cotação
+router.delete("/:cotacaoId/arquivos/:arquivoId", async (req, res) => {
+  try {
+    const { cotacaoId, arquivoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    cotacao.arquivos = cotacao.arquivos.filter(
+      (arquivo) => arquivo._id.toString() !== arquivoId
+    );
+    await cotacao.save();
+
+    res.status(200).json({ message: "Arquivo removido com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover arquivo:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao remover arquivo", error: error.message });
   }
 });
 

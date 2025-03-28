@@ -13,10 +13,21 @@ const CotacaoSchema = new mongoose.Schema({
   itens: {
     type: [
       {
-        _id: mongoose.Schema.Types.ObjectId,
-        descricao: String, // Atualizado para "descricao"
-        quantidade: Number, // Atualizado para "quantidade"
-        valor: Number, // Atualizado para "valor"
+        descricao: { type: String, required: true },
+        quantidade: { type: Number, required: true, min: 1 },
+        unidade: { type: String, required: true },
+        valor: { type: Number, required: true, min: 0 },
+      },
+    ],
+    default: [],
+  },
+  arquivos: {
+    type: [
+      {
+        nome: { type: String, required: true },
+        descricao: { type: String },
+        caminho: { type: String, required: true },
+        tamanho: { type: Number },
       },
     ],
     default: [],
@@ -24,9 +35,21 @@ const CotacaoSchema = new mongoose.Schema({
   fornecedores: {
     type: [
       {
-        fornecedorId: mongoose.Schema.Types.ObjectId,
-        nome: String,
-        telefone: String,
+        fornecedorId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Fornecedor",
+        },
+        itens: [
+          {
+            itemId: { type: mongoose.Schema.Types.ObjectId },
+            valor: { type: Number },
+            marca: { type: String },
+            desconto: { type: Number },
+            condicaoPagamento: { type: String },
+            prazoEntrega: { type: String },
+            prazoPagamento: { type: String },
+          },
+        ],
       },
     ],
     default: [],
