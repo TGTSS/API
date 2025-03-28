@@ -605,6 +605,51 @@ router.delete("/:cotacaoId/itens/:itemId", async (req, res) => {
   }
 });
 
+// Rota para atualizar um item específico da cotação
+router.patch("/:cotacaoId/itens/:itemId", async (req, res) => {
+  try {
+    const { cotacaoId, itemId } = req.params;
+    const { descricao, quantidade, unidade, valor } = req.body;
+
+    // Verificar se os IDs são válidos
+    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+      return res.status(400).json({ message: "ID da cotação inválido" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(itemId)) {
+      return res.status(400).json({ message: "ID do item inválido" });
+    }
+
+    // Buscar a cotação
+    const cotacao = await Cotacao.findById(cotacaoId);
+    if (!cotacao) {
+      return res.status(404).json({ message: "Cotação não encontrada" });
+    }
+
+    // Verificar se o item existe na cotação
+    const item = cotacao.itens.find((item) => item._id.toString() === itemId);
+    if (!item) {
+      return res
+        .status(404)
+        .json({ message: "Item não encontrado na cotação" });
+    }
+
+    // Atualizar os campos do item
+    if (descricao !== undefined) item.descricao = descricao;
+    if (quantidade !== undefined) item.quantidade = quantidade;
+    if (unidade !== undefined) item.unidade = unidade;
+    if (valor !== undefined) item.valor = valor;
+
+    // Salvar a cotação atualizada
+    await cotacao.save();
+    res.status(200).json({ message: "Item atualizado com sucesso", item });
+  } catch (error) {
+    console.error("Erro ao atualizar item:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao atualizar item", error: error.message });
+  }
+});
+
 // Rota para adicionar um arquivo à cotação
 router.post("/:cotacaoId/arquivos", async (req, res) => {
   try {
