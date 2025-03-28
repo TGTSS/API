@@ -51,6 +51,14 @@ const CotacaoSchema = new mongoose.Schema({
             obra: { type: String }, // Adicionado para armazenar informações da obra
           },
         ],
+        desconto: {
+          value: { type: Number, default: 0 },
+          type: {
+            type: String,
+            enum: ["percentage", "fixed"],
+            default: "percentage",
+          },
+        },
       },
     ],
     default: [],

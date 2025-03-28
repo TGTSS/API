@@ -909,6 +909,53 @@ router.patch("/:cotacaoId/fornecedores/:fornecedorId", async (req, res) => {
   }
 });
 
+// Atualizar desconto de um fornecedor
+router.patch(
+  "/:cotacaoId/fornecedores/:fornecedorId/desconto",
+  async (req, res) => {
+    try {
+      const { cotacaoId, fornecedorId } = req.params;
+      const { value, type } = req.body;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+        !mongoose.Types.ObjectId.isValid(fornecedorId)
+      ) {
+        return res.status(400).json({ message: "IDs inválidos" });
+      }
+
+      const cotacao = await Cotacao.findById(cotacaoId);
+      if (!cotacao) {
+        return res.status(404).json({ message: "Cotação não encontrada" });
+      }
+
+      const fornecedor = cotacao.fornecedores.find(
+        (f) => f.fornecedorId.toString() === fornecedorId
+      );
+      if (!fornecedor) {
+        return res
+          .status(404)
+          .json({ message: "Fornecedor não encontrado na cotação" });
+      }
+
+      fornecedor.desconto = {
+        value: parseFloat(value) || 0,
+        type: type || "percentage",
+      };
+      await cotacao.save();
+
+      res
+        .status(200)
+        .json({ message: "Desconto atualizado com sucesso", fornecedor });
+    } catch (error) {
+      console.error("Erro ao atualizar desconto:", error);
+      res
+        .status(500)
+        .json({ message: "Erro ao atualizar desconto", error: error.message });
+    }
+  }
+);
+
 // Rota para atualizar progresso de uma cotação
 router.patch("/:cotacaoId/progresso", async (req, res) => {
   try {
@@ -970,7 +1017,7 @@ router.patch("/:cotacaoId/enviar", async (req, res) => {
   }
 });
 
-// Rota para gerar ordens de compra
+// Gerar ordens de compra
 router.post("/:cotacaoId/ordem-compra/:fornecedorId", async (req, res) => {
   try {
     const { cotacaoId, fornecedorId } = req.params;
@@ -988,23 +1035,15 @@ router.post("/:cotacaoId/ordem-compra/:fornecedorId", async (req, res) => {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    // Adicionar a ordem de compra à cotação
-    if (!cotacao.ordensCompra) {
-      cotacao.ordensCompra = [];
-    }
-
-    cotacao.ordensCompra.push({
-      fornecedorId,
-      itens,
-      total,
-      fornecedor,
-    });
-
+    cotacao.ordensCompra.push({ fornecedorId, itens, total, fornecedor });
     await cotacao.save();
-    res.status(201).json({
-      message: "Ordem de compra gerada com sucesso",
-      ordem: { fornecedorId, itens, total, fornecedor },
-    });
+
+    res
+      .status(201)
+      .json({
+        message: "Ordem de compra gerada com sucesso",
+        ordem: { fornecedorId, itens, total, fornecedor },
+      });
   } catch (error) {
     console.error("Erro ao gerar ordem de compra:", error);
     res
