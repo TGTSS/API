@@ -1057,8 +1057,8 @@ router.patch(
       }
 
       fornecedor.desconto = {
-        valor: parseFloat(valor) || 0,
-        tipo: tipo || "percentage",
+        value: parseFloat(valor) || 0,
+        type: tipo || "percentage",
       };
       await cotacao.save();
 
