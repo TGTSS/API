@@ -1,5 +1,12 @@
 import mongoose from "mongoose";
 
+const ArquivoSchema = new mongoose.Schema({
+  nome: { type: String, required: true },
+  descricao: { type: String },
+  caminho: { type: String, required: true },
+  tamanho: { type: Number, required: true },
+});
+
 const CotacaoSchema = new mongoose.Schema({
   solicitacaoId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -21,17 +28,7 @@ const CotacaoSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  arquivos: {
-    type: [
-      {
-        nome: { type: String },
-        descricao: { type: String },
-        caminho: { type: String }, // Caminho do arquivo no servidor
-        tamanho: { type: Number },
-      },
-    ],
-    default: [],
-  },
+  arquivos: [ArquivoSchema],
   fornecedores: {
     type: [
       {

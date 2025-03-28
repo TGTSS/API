@@ -2,8 +2,21 @@ import express, { Router } from "express";
 import Cotacao from "../models/Cotacao.js";
 import Solicitacao from "../models/Solicitacao.js";
 import mongoose from "mongoose";
+import multer from "multer";
+import path from "path";
 
 const router = express.Router();
+
+// Configuração do multer para upload de arquivos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Diretório onde os arquivos serão salvos
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+const upload = multer({ storage });
 
 // Rota para criar uma nova cotação
 router.post("/", async (req, res) => {
@@ -742,32 +755,46 @@ router.get("/:cotacaoId/itens", async (req, res) => {
 });
 
 // Rota para adicionar um arquivo à cotação
-router.post("/:cotacaoId/arquivos", async (req, res) => {
-  try {
-    const { cotacaoId } = req.params;
-    const { nome, descricao, caminho, tamanho } = req.body;
+router.post(
+  "/:cotacaoId/arquivos",
+  upload.single("arquivo"),
+  async (req, res) => {
+    try {
+      const { cotacaoId } = req.params;
+      const { nome, descricao } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
-      return res.status(400).json({ message: "ID da cotação inválido" });
+      if (!mongoose.Types.ObjectId.isValid(cotacaoId)) {
+        return res.status(400).json({ message: "ID da cotação inválido" });
+      }
+
+      const cotacao = await Cotacao.findById(cotacaoId);
+      if (!cotacao) {
+        return res.status(404).json({ message: "Cotação não encontrada" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "Arquivo não enviado" });
+      }
+
+      const novoArquivo = {
+        nome,
+        descricao,
+        caminho: req.file.path,
+        tamanho: req.file.size,
+      };
+
+      cotacao.arquivos.push(novoArquivo);
+      await cotacao.save();
+
+      res.status(201).json(novoArquivo);
+    } catch (error) {
+      console.error("Erro ao adicionar arquivo:", error);
+      res
+        .status(500)
+        .json({ message: "Erro ao adicionar arquivo", error: error.message });
     }
-
-    const cotacao = await Cotacao.findById(cotacaoId);
-    if (!cotacao) {
-      return res.status(404).json({ message: "Cotação não encontrada" });
-    }
-
-    const novoArquivo = { nome, descricao, caminho, tamanho };
-    cotacao.arquivos.push(novoArquivo);
-    await cotacao.save();
-
-    res.status(201).json(novoArquivo);
-  } catch (error) {
-    console.error("Erro ao adicionar arquivo:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao adicionar arquivo", error: error.message });
   }
-});
+);
 
 // Rota para excluir um arquivo da cotação
 router.delete("/:cotacaoId/arquivos/:arquivoId", async (req, res) => {
@@ -819,7 +846,7 @@ router.get("/:cotacaoId/arquivos/:arquivoId/download", async (req, res) => {
       return res.status(404).json({ message: "Arquivo não encontrado" });
     }
 
-    res.download(arquivo.caminho, arquivo.nome);
+    res.download(path.resolve(arquivo.caminho), arquivo.nome);
   } catch (error) {
     console.error("Erro ao baixar arquivo:", error);
     res
@@ -1038,12 +1065,10 @@ router.post("/:cotacaoId/ordem-compra/:fornecedorId", async (req, res) => {
     cotacao.ordensCompra.push({ fornecedorId, itens, total, fornecedor });
     await cotacao.save();
 
-    res
-      .status(201)
-      .json({
-        message: "Ordem de compra gerada com sucesso",
-        ordem: { fornecedorId, itens, total, fornecedor },
-      });
+    res.status(201).json({
+      message: "Ordem de compra gerada com sucesso",
+      ordem: { fornecedorId, itens, total, fornecedor },
+    });
   } catch (error) {
     console.error("Erro ao gerar ordem de compra:", error);
     res
