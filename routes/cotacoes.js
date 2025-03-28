@@ -965,53 +965,6 @@ router.patch(
   async (req, res) => {
     try {
       const { cotacaoId, fornecedorId } = req.params;
-      const { value, type } = req.body;
-
-      if (
-        !mongoose.Types.ObjectId.isValid(cotacaoId) ||
-        !mongoose.Types.ObjectId.isValid(fornecedorId)
-      ) {
-        return res.status(400).json({ message: "IDs inválidos" });
-      }
-
-      const cotacao = await Cotacao.findById(cotacaoId);
-      if (!cotacao) {
-        return res.status(404).json({ message: "Cotação não encontrada" });
-      }
-
-      const fornecedor = cotacao.fornecedores.find(
-        (f) => f.fornecedorId.toString() === fornecedorId
-      );
-      if (!fornecedor) {
-        return res
-          .status(404)
-          .json({ message: "Fornecedor não encontrado na cotação" });
-      }
-
-      fornecedor.desconto = {
-        value: parseFloat(value) || 0,
-        type: type || "percentage",
-      };
-      await cotacao.save();
-
-      res
-        .status(200)
-        .json({ message: "Desconto atualizado com sucesso", fornecedor });
-    } catch (error) {
-      console.error("Erro ao atualizar desconto:", error);
-      res
-        .status(500)
-        .json({ message: "Erro ao atualizar desconto", error: error.message });
-    }
-  }
-);
-
-// Atualizar desconto de um fornecedor
-router.patch(
-  "/:cotacaoId/fornecedor/:fornecedorId/desconto",
-  async (req, res) => {
-    try {
-      const { cotacaoId, fornecedorId } = req.params;
       const { valor, tipo } = req.body;
 
       if (
@@ -1087,12 +1040,10 @@ router.post("/:cotacaoId/selecionar-melhores-precos", async (req, res) => {
     res.status(200).json({ selectedPrices });
   } catch (error) {
     console.error("Erro ao selecionar melhores preços:", error);
-    res
-      .status(500)
-      .json({
-        message: "Erro ao selecionar melhores preços",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Erro ao selecionar melhores preços",
+      error: error.message,
+    });
   }
 });
 
