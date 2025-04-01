@@ -863,4 +863,176 @@ router.get("/:id/pagamentos", async (req, res) => {
   }
 });
 
+// Rota para criar uma nova receita
+router.post("/:id/receita", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const novaReceita = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findByIdAndUpdate(
+      id,
+      { $push: { receitas: novaReceita } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.status(201).json(novaReceita);
+  } catch (error) {
+    console.error("Erro ao criar receita:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar um novo pagamento
+router.post("/:id/pagamentos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const novoPagamento = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findByIdAndUpdate(
+      id,
+      { $push: { pagamentos: novoPagamento } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.status(201).json(novoPagamento);
+  } catch (error) {
+    console.error("Erro ao criar pagamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para editar uma receita
+router.put("/:id/receita/:receitaId", async (req, res) => {
+  try {
+    const { id, receitaId } = req.params;
+    const receitaAtualizada = req.body;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(receitaId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findOneAndUpdate(
+      { _id: id, "receitas._id": receitaId },
+      { $set: { "receitas.$": receitaAtualizada } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Receita não encontrada" });
+    }
+
+    res.status(200).json(receitaAtualizada);
+  } catch (error) {
+    console.error("Erro ao editar receita:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para editar um pagamento
+router.put("/:id/pagamentos/:pagamentoId", async (req, res) => {
+  try {
+    const { id, pagamentoId } = req.params;
+    const pagamentoAtualizado = req.body;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(pagamentoId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findOneAndUpdate(
+      { _id: id, "pagamentos._id": pagamentoId },
+      { $set: { "pagamentos.$": pagamentoAtualizado } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Pagamento não encontrado" });
+    }
+
+    res.status(200).json(pagamentoAtualizado);
+  } catch (error) {
+    console.error("Erro ao editar pagamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para excluir uma receita
+router.delete("/:id/receita/:receitaId", async (req, res) => {
+  try {
+    const { id, receitaId } = req.params;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(receitaId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findByIdAndUpdate(
+      id,
+      { $pull: { receitas: { _id: receitaId } } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Receita não encontrada" });
+    }
+
+    res.status(200).json({ message: "Receita excluída com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir receita:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para excluir um pagamento
+router.delete("/:id/pagamentos/:pagamentoId", async (req, res) => {
+  try {
+    const { id, pagamentoId } = req.params;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(pagamentoId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findByIdAndUpdate(
+      id,
+      { $pull: { pagamentos: { _id: pagamentoId } } },
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Pagamento não encontrado" });
+    }
+
+    res.status(200).json({ message: "Pagamento excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir pagamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
