@@ -823,4 +823,44 @@ router.get("/:id/orcamento/etapas", async (req, res) => {
   }
 });
 
+// Rota para listar receitas de uma obra
+router.get("/:id/receitas", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id).select("receitas");
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.json(obra.receitas);
+  } catch (error) {
+    console.error("Erro ao buscar receitas:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar pagamentos de uma obra
+router.get("/:id/pagamentos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id).select("pagamentos");
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.json(obra.pagamentos);
+  } catch (error) {
+    console.error("Erro ao buscar pagamentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
