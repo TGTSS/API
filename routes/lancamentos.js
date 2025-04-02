@@ -18,9 +18,9 @@ router.post("/:id/:tipo", async (req, res) => {
     novoLancamento.id = new mongoose.Types.ObjectId(); // Gerar um novo ID para o lançamento
 
     if (tipo === "receita") {
-      obra.lancamentos.receitas.push(novoLancamento);
+      obra.receitas.push(novoLancamento);
     } else if (tipo === "pagamento") {
-      obra.lancamentos.pagamentos.push(novoLancamento);
+      obra.pagamentos.push(novoLancamento);
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
@@ -46,21 +46,21 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
 
     let lancamentoIndex;
     if (tipo === "receita") {
-      lancamentoIndex = obra.lancamentos.receitas.findIndex(
+      lancamentoIndex = obra.receitas.findIndex(
         (item) => item.id.toString() === lancamentoId
       );
       if (lancamentoIndex === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
-      obra.lancamentos.receitas[lancamentoIndex] = lancamentoEditado;
+      obra.receitas[lancamentoIndex] = lancamentoEditado;
     } else if (tipo === "pagamento") {
-      lancamentoIndex = obra.lancamentos.pagamentos.findIndex(
+      lancamentoIndex = obra.pagamentos.findIndex(
         (item) => item.id.toString() === lancamentoId
       );
       if (lancamentoIndex === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
-      obra.lancamentos.pagamentos[lancamentoIndex] = lancamentoEditado;
+      obra.pagamentos[lancamentoIndex] = lancamentoEditado;
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
@@ -69,6 +69,36 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
     res.json(lancamentoEditado);
   } catch (error) {
     console.error("Erro ao editar lançamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para excluir um lançamento de receita ou pagamento
+router.delete("/:id/:tipo/:lancamentoId", async (req, res) => {
+  try {
+    const { id, tipo, lancamentoId } = req.params;
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    if (tipo === "receita") {
+      obra.receitas = obra.receitas.filter(
+        (item) => item.id.toString() !== lancamentoId
+      );
+    } else if (tipo === "pagamento") {
+      obra.pagamentos = obra.pagamentos.filter(
+        (item) => item.id.toString() !== lancamentoId
+      );
+    } else {
+      return res.status(400).json({ message: "Tipo de lançamento inválido" });
+    }
+
+    await obra.save();
+    res.status(200).json({ message: "Lançamento excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir lançamento:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -99,6 +129,41 @@ router.get("/:id/pagamentos", async (req, res) => {
     res.json(obra.lancamentos.pagamentos);
   } catch (error) {
     console.error("Erro ao buscar pagamentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para obter todos os lançamentos (receitas e pagamentos) de uma obra
+router.get("/:id/lancamentos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const obra = await Obra.findById(id).lean();
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+    const lancamentos = {
+      receitas: obra.receitas,
+      pagamentos: obra.pagamentos,
+    };
+    res.json(lancamentos);
+  } catch (error) {
+    console.error("Erro ao buscar lançamentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para obter todos os lançamentos (receitas e pagamentos) de todas as obras
+router.get("/lancamentos", async (req, res) => {
+  try {
+    const obras = await Obra.find().lean();
+    const todosLancamentos = obras.map((obra) => ({
+      obraId: obra._id,
+      receitas: obra.receitas,
+      pagamentos: obra.pagamentos,
+    }));
+    res.json(todosLancamentos);
+  } catch (error) {
+    console.error("Erro ao buscar lançamentos de todas as obras:", error);
     res.status(500).json({ message: error.message });
   }
 });
