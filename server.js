@@ -37,6 +37,7 @@ import Etapa from "./models/Etapa.js"; // Adicionado
 import Solicitacao from "./models/Solicitacao.js"; // Adicionado
 import cotacoesRouter from "./routes/cotacoes.js";
 import ordensCompraRouter from "./routes/ordensCompra.js"; // Adicionado
+import transacoesIndependentesRoutes from "./routes/transacoesIndependentes.js";
 
 dotenv.config();
 
@@ -1055,6 +1056,7 @@ app.use("/api/diarios", diariosRouter);
 app.use("/api/orcamentos", orcamentosRouter);
 app.use("/api/cotacoes", cotacoesRouter);
 app.use("/api/ordens-compra", ordensCompraRouter); // Adicionado
+app.use("/api/lancamentos/independentes", transacoesIndependentesRoutes);
 
 // Emitir evento de atualização de recibos
 const emitirAtualizacaoRecibos = async () => {
