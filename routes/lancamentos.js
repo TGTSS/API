@@ -104,14 +104,14 @@ router.delete("/:id/:tipo/:lancamentoId", async (req, res) => {
 });
 
 // Rota para obter todos os lançamentos de receita de uma obra
-router.get("/:id/receita", async (req, res) => {
+router.get("/:id/receitas", async (req, res) => {
   try {
     const { id } = req.params;
     const obra = await Obra.findById(id).lean();
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
-    res.json(obra.lancamentos.receitas);
+    res.json(obra.receitas);
   } catch (error) {
     console.error("Erro ao buscar receitas:", error);
     res.status(500).json({ message: error.message });
@@ -126,7 +126,7 @@ router.get("/:id/pagamentos", async (req, res) => {
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
-    res.json(obra.lancamentos.pagamentos);
+    res.json(obra.pagamentos);
   } catch (error) {
     console.error("Erro ao buscar pagamentos:", error);
     res.status(500).json({ message: error.message });

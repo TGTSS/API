@@ -11,31 +11,35 @@ const ContatoSchema = new mongoose.Schema({
 const ReceitaSchema = new mongoose.Schema({
   id: {
     type: mongoose.Schema.Types.ObjectId,
-    default: new mongoose.Types.ObjectId(),
+    default: () => new mongoose.Types.ObjectId(), // Corrigido para gerar um novo ID
   },
-  vencimento: { type: String },
+  vencimento: { type: Date }, // Alterado para Date
   valor: { type: Number },
-  recebido: { type: Number },
+  recebido: { type: Number, default: 0 }, // Adicionado valor padrão
   descricao: { type: String },
   categoria: { type: String },
   centroCusto: { type: String },
   clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" },
-  dataQuitacao: { type: String },
+  dataQuitacao: { type: Date }, // Alterado para Date
+  formaPagamento: { type: String }, // Novo campo
+  status: { type: String, enum: ["pendente", "recebido", "cancelado"] }, // Novo campo
 });
 
 const PagamentoSchema = new mongoose.Schema({
   id: {
     type: mongoose.Schema.Types.ObjectId,
-    default: new mongoose.Types.ObjectId(),
+    default: () => new mongoose.Types.ObjectId(), // Corrigido para gerar um novo ID
   },
-  vencimento: { type: String },
+  vencimento: { type: Date }, // Alterado para Date
   valor: { type: Number },
-  pago: { type: Number },
+  pago: { type: Number, default: 0 }, // Adicionado valor padrão
   descricao: { type: String },
   categoria: { type: String },
   centroCusto: { type: String },
-  clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" },
-  dataQuitacao: { type: String },
+  fornecedorId: { type: mongoose.Schema.Types.ObjectId, ref: "Fornecedor" }, // Alterado para fornecedor
+  dataQuitacao: { type: Date }, // Alterado para Date
+  formaPagamento: { type: String }, // Novo campo
+  status: { type: String, enum: ["pendente", "pago", "cancelado"] }, // Novo campo
 });
 
 const DocumentoSchema = new mongoose.Schema({

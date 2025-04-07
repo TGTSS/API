@@ -864,7 +864,7 @@ router.get("/:id/pagamentos", async (req, res) => {
 });
 
 // Rota para criar uma nova receita
-router.post("/:id/receita", async (req, res) => {
+router.post("/:id/receitas", async (req, res) => {
   try {
     const { id } = req.params;
     const novaReceita = req.body;
@@ -918,7 +918,7 @@ router.post("/:id/pagamentos", async (req, res) => {
 });
 
 // Rota para editar uma receita
-router.put("/:id/receita/:receitaId", async (req, res) => {
+router.put("/:id/receitas/:receitaId", async (req, res) => {
   try {
     const { id, receitaId } = req.params;
     const receitaAtualizada = req.body;
@@ -978,7 +978,7 @@ router.put("/:id/pagamentos/:pagamentoId", async (req, res) => {
 });
 
 // Rota para excluir uma receita
-router.delete("/:id/receita/:receitaId", async (req, res) => {
+router.delete("/:id/receitas/:receitaId", async (req, res) => {
   try {
     const { id, receitaId } = req.params;
 
@@ -1032,6 +1032,102 @@ router.delete("/:id/pagamentos/:pagamentoId", async (req, res) => {
   } catch (error) {
     console.error("Erro ao excluir pagamento:", error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para duplicar uma obra
+router.post("/:id/duplicar", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { selectedData } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id)
+      .populate("cliente")
+      .populate("tipo")
+      .populate("quemPaga")
+      .populate("conta");
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const duplicateData = {
+      nome: selectedData.informacoesGerais ? `Cópia de ${obra.nome}` : "",
+      areaConstruida: selectedData.informacoesGerais
+        ? obra.areaConstruida
+        : null,
+      areaTerreno: selectedData.informacoesGerais ? obra.areaTerreno : null,
+      numeroPavimentos: selectedData.informacoesGerais
+        ? obra.numeroPavimentos
+        : null,
+      numeroUnidades: selectedData.informacoesGerais
+        ? obra.numeroUnidades
+        : null,
+      status: "Em andamento",
+      codigoObras: selectedData.informacoesGerais ? obra.codigoObras : null,
+      art: selectedData.informacoesGerais ? obra.art : null,
+      ceiCno: selectedData.informacoesGerais ? obra.ceiCno : null,
+      dataInicio: null,
+      previsaoTermino: null,
+      dataPrevisao: new Date().toISOString(),
+
+      // Responsáveis
+      responsavelTecnico: selectedData.responsaveis
+        ? obra.responsavelTecnico
+        : null,
+      responsavelObra: selectedData.responsaveis ? obra.responsavelObra : null,
+      arquiteto: selectedData.responsaveis ? obra.arquiteto : null,
+
+      // Endereço
+      endereco: selectedData.endereco ? obra.endereco : null,
+      mapPosition: selectedData.endereco ? obra.mapPosition : null,
+
+      // Orçamento
+      orcamento: selectedData.orcamento
+        ? {
+            ...obra.orcamento,
+            dataCriacao: new Date().toISOString(),
+            dataAtualizacao: new Date().toISOString(),
+            stages: obra.orcamento?.stages?.map((stage) => ({
+              ...stage,
+              _id: undefined, // Remover ID para criar novo
+            })),
+          }
+        : null,
+
+      // Etapas
+      etapas: selectedData.etapas
+        ? obra.etapas?.map((etapa) => ({
+            ...etapa,
+            _id: undefined, // Remover ID para criar novo
+          }))
+        : [],
+
+      // Documentos
+      documentos: selectedData.documentos ? obra.documentos : [],
+
+      // Relacionamentos
+      cliente: obra.cliente?._id || obra.cliente,
+      tipo: obra.tipo?._id || obra.tipo,
+      quemPaga: obra.quemPaga?._id || obra.quemPaga,
+      conta: obra.conta?._id || obra.conta,
+
+      // Configurações
+      visivelPara: "Todos os Usuários",
+      progresso: 0,
+    };
+
+    const novaObra = new Obra(duplicateData);
+    const savedObra = await novaObra.save();
+
+    res.status(201).json(savedObra);
+  } catch (error) {
+    console.error("Erro ao duplicar obra:", error);
+    res.status(500).json({ message: "Erro ao duplicar obra" });
   }
 });
 
