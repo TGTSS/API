@@ -180,6 +180,18 @@ const ObraSchema = new mongoose.Schema({
   pagamentos: [PagamentoSchema],
   mapPosition: {
     type: [Number], // [latitude, longitude]
+    validate: {
+      validator: function (value) {
+        // Verifica se o array contém exatamente dois números válidos
+        return (
+          Array.isArray(value) &&
+          value.length === 2 &&
+          value.every((num) => typeof num === "number" && !isNaN(num))
+        );
+      },
+      message:
+        "mapPosition deve conter exatamente dois números válidos [latitude, longitude].",
+    },
     index: "2dsphere",
   },
   etapas: [{ type: mongoose.Schema.Types.ObjectId, ref: "Etapa" }],
@@ -258,6 +270,25 @@ ObraSchema.pre("save", async function (next) {
       .toString()
       .padStart(2, "0")}`;
   }
+
+  // Validar mapPosition
+  if (this.mapPosition && this.mapPosition.some((value) => value === null)) {
+    this.mapPosition = undefined; // Remove o campo se contiver valores inválidos
+  }
+
+  next();
+});
+
+ObraSchema.pre("findOneAndUpdate", function (next) {
+  const update = this.getUpdate();
+
+  // Validar mapPosition no update
+  if (update.$set && update.$set.mapPosition) {
+    if (update.$set.mapPosition.some((value) => value === null)) {
+      update.$set.mapPosition = undefined; // Remove o campo se contiver valores inválidos
+    }
+  }
+
   next();
 });
 

@@ -371,6 +371,13 @@ router.put("/:id", async (req, res) => {
       return res.status(400).json({ message: "ID inválido" });
     }
 
+    // Validar mapPosition
+    if (mapPosition && mapPosition.some((value) => value === null)) {
+      return res.status(400).json({
+        message: "mapPosition deve conter exatamente dois números válidos.",
+      });
+    }
+
     const updatedObra = await Obra.findByIdAndUpdate(
       id,
       {
