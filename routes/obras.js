@@ -1131,4 +1131,49 @@ router.post("/:id/duplicar", async (req, res) => {
   }
 });
 
+// Rota para criar um novo registro diário
+router.post("/:id/registros-diarios", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { registro } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const novoRegistro = {
+      data: registro.data,
+      clima: registro.clima,
+      titulo: registro.titulo,
+      descricao: registro.descricao,
+      fotos: registro.fotos || [],
+      etapas: registro.etapas || [],
+      maoDeObra: registro.maoDeObra || [],
+      equipamentos: registro.equipamentos || [],
+      ocorrencias: {
+        descricao: registro.ocorrencias?.descricao || "",
+        tipo: registro.ocorrencias?.tipo || "",
+        gravidade: registro.ocorrencias?.gravidade || "",
+      },
+    };
+
+    obra.registrosDiarios.push(novoRegistro);
+
+    const savedObra = await obra.save();
+    res.status(201).json({
+      message: "Registro diário criado com sucesso",
+      registro:
+        savedObra.registrosDiarios[savedObra.registrosDiarios.length - 1],
+    });
+  } catch (error) {
+    console.error("Erro ao criar registro diário:", error);
+    res.status(500).json({ message: "Erro interno ao criar registro diário" });
+  }
+});
+
 export default router;

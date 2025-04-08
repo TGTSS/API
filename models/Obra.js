@@ -113,6 +113,26 @@ const RegistroDiarioSchema = new mongoose.Schema({
       ],
     },
   ],
+  maoDeObra: [
+    {
+      tipo: { type: String },
+      quantidade: { type: Number },
+      outroTipo: { type: String }, // Para tipos personalizados
+    },
+  ],
+  equipamentos: [
+    {
+      tipo: { type: String },
+      quantidade: { type: Number },
+      horasUso: { type: Number },
+      outroTipo: { type: String }, // Para tipos personalizados
+    },
+  ],
+  ocorrencias: {
+    descricao: { type: String },
+    tipo: { type: String },
+    gravidade: { type: String },
+  },
 });
 
 const ObraSchema = new mongoose.Schema({
