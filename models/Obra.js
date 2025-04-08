@@ -136,7 +136,7 @@ const RegistroDiarioSchema = new mongoose.Schema({
 });
 
 const ObraSchema = new mongoose.Schema({
-  nome: { type: String, required: true }, // Campo obrigatório
+  nome: { type: String }, // Campo obrigatório
   status: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "StatusObra",
