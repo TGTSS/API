@@ -339,47 +339,64 @@ router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const {
+      nome,
       status,
       tipo,
+      cliente,
+      codigoObras,
+      art,
+      responsavelTecnico,
+      responsavelObra,
+      arquiteto,
+      ceiCno,
+      areaConstruida,
+      areaTerreno,
+      numeroPavimentos,
+      numeroUnidades,
+      endereco,
       quemPaga,
       conta,
-      cliente,
-      mapPosition,
+      comentario,
       visivelPara,
+      contatos,
+      mapPosition,
       contatoPrincipal,
       documentos,
       dataInicio,
       previsaoTermino,
       imagem,
-      ...rest
     } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
 
     const updatedObra = await Obra.findByIdAndUpdate(
       id,
       {
-        ...rest,
-        status: mongoose.Types.ObjectId.isValid(status)
-          ? mongoose.Types.ObjectId(status)
-          : null,
-        tipo: mongoose.Types.ObjectId.isValid(tipo)
-          ? mongoose.Types.ObjectId(tipo)
-          : null,
-        quemPaga: mongoose.Types.ObjectId.isValid(quemPaga)
-          ? mongoose.Types.ObjectId(quemPaga)
-          : null,
-        conta: mongoose.Types.ObjectId.isValid(conta)
-          ? mongoose.Types.ObjectId(conta)
-          : null,
-        cliente: mongoose.Types.ObjectId.isValid(cliente)
-          ? mongoose.Types.ObjectId(cliente)
-          : null,
-        mapPosition: mapPosition,
+        nome,
+        status,
+        tipo,
+        cliente,
+        codigoObras,
+        art,
+        responsavelTecnico,
+        responsavelObra,
+        arquiteto,
+        ceiCno,
+        areaConstruida,
+        areaTerreno,
+        numeroPavimentos,
+        numeroUnidades,
+        endereco,
+        quemPaga,
+        conta,
+        comentario,
         visivelPara,
+        contatos,
+        mapPosition,
         contatoPrincipal,
-        documentos: documentos.map((doc) => ({
-          nome: doc.nome,
-          arquivo: doc.arquivo,
-        })),
+        documentos,
         dataInicio,
         previsaoTermino,
         imagem,
@@ -390,10 +407,11 @@ router.put("/:id", async (req, res) => {
     if (!updatedObra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
-    res.json(updatedObra);
+
+    res.status(200).json(updatedObra);
   } catch (error) {
     console.error("Erro ao atualizar obra:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Erro interno ao atualizar obra" });
   }
 });
 

@@ -136,16 +136,18 @@ const RegistroDiarioSchema = new mongoose.Schema({
 });
 
 const ObraSchema = new mongoose.Schema({
-  nome: { type: String },
+  nome: { type: String, required: true }, // Campo obrigatório
   status: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "StatusObra",
+    required: true, // Campo obrigatório
   },
   codigo: { type: String, unique: true },
   codigoObras: { type: String },
   tipo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "TipoObra",
+    required: true, // Campo obrigatório
   },
   art: { type: String },
   responsavelTecnico: { type: String },
@@ -171,6 +173,7 @@ const ObraSchema = new mongoose.Schema({
   cliente: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cliente",
+    required: true, // Campo obrigatório
   },
   contatos: [ContatoSchema],
   receitas: [ReceitaSchema],
