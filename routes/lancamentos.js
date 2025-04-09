@@ -102,20 +102,32 @@ router.delete("/:id/:tipo/:lancamentoId", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
+    let lancamentoRemovido;
     if (tipo === "receita") {
-      obra.receitas = obra.receitas.filter(
-        (item) => item.id.toString() !== lancamentoId
+      const index = obra.receitas.findIndex(
+        (item) => item.id.toString() === lancamentoId
       );
+      if (index === -1) {
+        return res.status(404).json({ message: "Lançamento não encontrado" });
+      }
+      lancamentoRemovido = obra.receitas.splice(index, 1);
     } else if (tipo === "pagamento") {
-      obra.pagamentos = obra.pagamentos.filter(
-        (item) => item.id.toString() !== lancamentoId
+      const index = obra.pagamentos.findIndex(
+        (item) => item.id.toString() === lancamentoId
       );
+      if (index === -1) {
+        return res.status(404).json({ message: "Lançamento não encontrado" });
+      }
+      lancamentoRemovido = obra.pagamentos.splice(index, 1);
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
 
     await obra.save();
-    res.status(200).json({ message: "Lançamento excluído com sucesso" });
+    res.status(200).json({
+      message: "Lançamento excluído com sucesso",
+      lancamento: lancamentoRemovido,
+    });
   } catch (error) {
     console.error("Erro ao excluir lançamento:", error);
     res.status(500).json({ message: error.message });
