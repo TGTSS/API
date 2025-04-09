@@ -157,7 +157,7 @@ router.put(
 );
 
 // Rota para excluir um lançamento de receita ou pagamento
-router.delete("/:id/:tipo/:lancamentoId", async (req, res) => {
+router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
   try {
     const { id, tipo, lancamentoId } = req.params;
     const obra = await Obra.findById(id);
@@ -165,6 +165,38 @@ router.delete("/:id/:tipo/:lancamentoId", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
+    // Se não tiver tipo e lancamentoId, assume que o id é o lancamentoId
+    if (!tipo && !lancamentoId) {
+      // Procura em receitas e pagamentos
+      const receitaIndex = obra.receitas.findIndex(
+        (item) => item.id.toString() === id
+      );
+      const pagamentoIndex = obra.pagamentos.findIndex(
+        (item) => item.id.toString() === id
+      );
+
+      if (receitaIndex !== -1) {
+        const lancamentoRemovido = obra.receitas.splice(receitaIndex, 1);
+        await obra.save();
+        return res.status(200).json({
+          message: "Lançamento excluído com sucesso",
+          lancamento: lancamentoRemovido,
+        });
+      }
+
+      if (pagamentoIndex !== -1) {
+        const lancamentoRemovido = obra.pagamentos.splice(pagamentoIndex, 1);
+        await obra.save();
+        return res.status(200).json({
+          message: "Lançamento excluído com sucesso",
+          lancamento: lancamentoRemovido,
+        });
+      }
+
+      return res.status(404).json({ message: "Lançamento não encontrado" });
+    }
+
+    // Se tiver tipo e lancamentoId, usa a lógica original
     let lancamentoRemovido;
     if (tipo === "receita") {
       const index = obra.receitas.findIndex(
