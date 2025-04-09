@@ -132,35 +132,75 @@ router.put(
         return res.status(404).json({ message: "Obra não encontrada" });
       }
 
+      // Função para converter valor monetário para número
+      const parseValorMonetario = (valor) => {
+        if (typeof valor === "string") {
+          // Remove R$, pontos e espaços, substitui vírgula por ponto
+          return parseFloat(
+            valor.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()
+          );
+        }
+        return parseFloat(valor);
+      };
+
       const lancamentoEditado = {
-        ...req.body,
-        valor: parseFloat(req.body.valor),
-        valorRecebido:
-          tipo === "receita"
-            ? parseFloat(req.body.valorRecebido || 0)
-            : undefined,
-        valorPago:
-          tipo === "pagamento"
-            ? parseFloat(req.body.valorPago || 0)
-            : undefined,
+        descricao: req.body.descricao,
+        valor: parseValorMonetario(req.body.valorNumerico || req.body.valor),
         data: new Date(req.body.data),
+        status: req.body.status,
+        categoria: req.body.categoria,
+        centroCusto: req.body.centroCusto,
         dataVencimento: req.body.dataVencimento
           ? new Date(req.body.dataVencimento)
           : undefined,
-        anexos: req.files
-          ? req.files.map((file) => ({
-              nome: file.originalname,
-              tipo: file.mimetype,
-              tamanho: file.size,
-              caminho: file.path,
-            }))
-          : [],
+        formaPagamento: req.body.formaPagamento,
+        documento: req.body.documento,
       };
+
+      // Adicionar novos anexos se houver
+      if (req.files && req.files.length > 0) {
+        const novosAnexos = req.files.map((file) => ({
+          nome: file.originalname,
+          tipo: file.mimetype,
+          tamanho: file.size,
+          caminho: file.path,
+        }));
+        lancamentoEditado.anexos = novosAnexos;
+      }
+
+      // Campos específicos para cada tipo
+      if (tipo === "receita") {
+        lancamentoEditado.valorRecebido = parseValorMonetario(
+          req.body.valorRecebido || 0
+        );
+        lancamentoEditado.beneficiario = req.body.beneficiario
+          ? new mongoose.Types.ObjectId(req.body.beneficiario)
+          : undefined;
+      } else if (tipo === "pagamento") {
+        lancamentoEditado.valorPago = parseValorMonetario(
+          req.body.valorPago || 0
+        );
+        lancamentoEditado.beneficiario = req.body.beneficiario
+          ? new mongoose.Types.ObjectId(req.body.beneficiario)
+          : undefined;
+        lancamentoEditado.beneficiarioTipo = req.body.beneficiarioTipo;
+      }
+
+      // Validar campos obrigatórios
+      if (
+        !lancamentoEditado.descricao ||
+        !lancamentoEditado.valor ||
+        !lancamentoEditado.data
+      ) {
+        return res
+          .status(400)
+          .json({ message: "Campos obrigatórios não preenchidos" });
+      }
 
       let lancamentoIndex;
       if (tipo === "receita") {
         lancamentoIndex = obra.receitas.findIndex(
-          (item) => item.id.toString() === lancamentoId
+          (item) => item._id.toString() === lancamentoId
         );
         if (lancamentoIndex === -1) {
           return res.status(404).json({ message: "Lançamento não encontrado" });
@@ -171,7 +211,7 @@ router.put(
         };
       } else if (tipo === "pagamento") {
         lancamentoIndex = obra.pagamentos.findIndex(
-          (item) => item.id.toString() === lancamentoId
+          (item) => item._id.toString() === lancamentoId
         );
         if (lancamentoIndex === -1) {
           return res.status(404).json({ message: "Lançamento não encontrado" });
