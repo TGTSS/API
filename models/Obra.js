@@ -11,18 +11,24 @@ const ContatoSchema = new mongoose.Schema({
 const ReceitaSchema = new mongoose.Schema({
   id: {
     type: mongoose.Schema.Types.ObjectId,
-    default: () => new mongoose.Types.ObjectId(), // Corrigido para gerar um novo ID
+    default: () => new mongoose.Types.ObjectId(),
   },
-  vencimento: { type: Date }, // Alterado para Date
-  valor: { type: Number },
-  recebido: { type: Number, default: 0 }, // Adicionado valor padrão
-  descricao: { type: String },
+  descricao: { type: String, required: true },
+  valor: { type: Number, required: true },
+  valorRecebido: { type: Number, default: 0 },
+  tipo: { type: String, default: "receita" },
+  data: { type: Date, default: Date.now },
+  status: {
+    type: String,
+    enum: ["pendente", "recebido", "atrasado"],
+    default: "pendente",
+  },
   categoria: { type: String },
   centroCusto: { type: String },
-  clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" },
-  dataQuitacao: { type: Date }, // Alterado para Date
-  formaPagamento: { type: String }, // Novo campo
-  status: { type: String, enum: ["pendente", "recebido", "cancelado"] }, // Novo campo
+  dataVencimento: { type: Date },
+  formaPagamento: { type: String },
+  beneficiario: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" },
+  documento: { type: String },
   anexos: [
     {
       nome: { type: String },
@@ -30,33 +36,37 @@ const ReceitaSchema = new mongoose.Schema({
       tamanho: { type: Number },
       caminho: { type: String },
     },
-  ], // Novo campo para anexos
-  beneficiario: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" }, // Novo campo
-  documento: { type: String }, // Novo campo
-  valorRecebido: { type: Number, default: 0 }, // Adicionado para controle de valores recebidos
-  dataCriacao: { type: Date, default: Date.now }, // Novo campo
-  dataAtualizacao: { type: Date, default: Date.now }, // Novo campo
-  usuario: { type: String }, // Novo campo para rastrear o usuário
-  observacoes: { type: String }, // Novo campo
-  numeroDocumento: { type: String }, // Novo campo
-  parcelas: { type: Number, default: 1 }, // Novo campo
+  ],
 });
 
 const PagamentoSchema = new mongoose.Schema({
   id: {
     type: mongoose.Schema.Types.ObjectId,
-    default: () => new mongoose.Types.ObjectId(), // Corrigido para gerar um novo ID
+    default: () => new mongoose.Types.ObjectId(),
   },
-  vencimento: { type: Date }, // Alterado para Date
-  valor: { type: Number },
-  pago: { type: Number, default: 0 }, // Adicionado valor padrão
-  descricao: { type: String },
+  descricao: { type: String, required: true },
+  valor: { type: Number, required: true },
+  valorPago: { type: Number, default: 0 },
+  tipo: { type: String, default: "pagamento" },
+  data: { type: Date, default: Date.now },
+  status: {
+    type: String,
+    enum: ["pendente", "pago", "atrasado"],
+    default: "pendente",
+  },
   categoria: { type: String },
   centroCusto: { type: String },
-  fornecedorId: { type: mongoose.Schema.Types.ObjectId, ref: "Fornecedor" }, // Alterado para fornecedor
-  dataQuitacao: { type: Date }, // Alterado para Date
-  formaPagamento: { type: String }, // Novo campo
-  status: { type: String, enum: ["pendente", "pago", "cancelado"] }, // Novo campo
+  dataVencimento: { type: Date },
+  formaPagamento: { type: String },
+  beneficiario: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "beneficiarioTipo",
+  },
+  beneficiarioTipo: {
+    type: String,
+    enum: ["Fornecedor", "Funcionario"],
+  },
+  documento: { type: String },
   anexos: [
     {
       nome: { type: String },
@@ -64,23 +74,7 @@ const PagamentoSchema = new mongoose.Schema({
       tamanho: { type: Number },
       caminho: { type: String },
     },
-  ], // Novo campo para anexos
-  beneficiario: {
-    type: mongoose.Schema.Types.ObjectId,
-    refPath: "beneficiarioTipo",
-  }, // Novo campo
-  beneficiarioTipo: {
-    type: String,
-    enum: ["Fornecedor", "Funcionario"],
-  }, // Novo campo para diferenciar tipos de beneficiários
-  documento: { type: String }, // Novo campo
-  valorPago: { type: Number, default: 0 }, // Adicionado para controle de valores pagos
-  dataCriacao: { type: Date, default: Date.now }, // Novo campo
-  dataAtualizacao: { type: Date, default: Date.now }, // Novo campo
-  usuario: { type: String }, // Novo campo para rastrear o usuário
-  observacoes: { type: String }, // Novo campo
-  numeroDocumento: { type: String }, // Novo campo
-  parcelas: { type: Number, default: 1 }, // Novo campo
+  ],
 });
 
 const DocumentoSchema = new mongoose.Schema({

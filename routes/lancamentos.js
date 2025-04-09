@@ -1,32 +1,71 @@
 import express from "express";
 import mongoose from "mongoose";
 import Obra from "../models/Obra.js";
+import multer from "multer";
+import path from "path";
 
 const router = express.Router();
 
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: function (req, file, cb) {
+    const filetypes = /jpeg|jpg|png|pdf/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error("Apenas arquivos PDF, JPEG e PNG são permitidos"));
+  },
+});
+
 // Rota para adicionar um novo lançamento de receita ou pagamento
-router.post("/:id/:tipo", async (req, res) => {
+router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
   try {
     const { id, tipo } = req.params;
-    const novoLancamento = req.body;
-
     const obra = await Obra.findById(id);
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    novoLancamento.id = new mongoose.Types.ObjectId(); // Gerar um novo ID para o lançamento
-    novoLancamento.dataCriacao = new Date();
-    novoLancamento.dataAtualizacao = new Date();
-
-    if (req.files) {
-      novoLancamento.anexos = req.files.map((file) => ({
-        nome: file.originalname,
-        tipo: file.mimetype,
-        tamanho: file.size,
-        caminho: file.path,
-      }));
-    }
+    const novoLancamento = {
+      ...req.body,
+      id: new mongoose.Types.ObjectId(),
+      tipo: tipo,
+      valor: parseFloat(req.body.valor),
+      valorRecebido:
+        tipo === "receita"
+          ? parseFloat(req.body.valorRecebido || 0)
+          : undefined,
+      valorPago:
+        tipo === "pagamento" ? parseFloat(req.body.valorPago || 0) : undefined,
+      data: new Date(req.body.data),
+      dataVencimento: req.body.dataVencimento
+        ? new Date(req.body.dataVencimento)
+        : undefined,
+      anexos: req.files
+        ? req.files.map((file) => ({
+            nome: file.originalname,
+            tipo: file.mimetype,
+            tamanho: file.size,
+            caminho: file.path,
+          }))
+        : [],
+    };
 
     if (tipo === "receita") {
       obra.receitas.push(novoLancamento);
@@ -45,58 +84,82 @@ router.post("/:id/:tipo", async (req, res) => {
 });
 
 // Rota para editar um lançamento de receita ou pagamento
-router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
-  try {
-    const { id, tipo, lancamentoId } = req.params;
-    const lancamentoEditado = req.body;
-
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    let lancamentoIndex;
-    if (tipo === "receita") {
-      lancamentoIndex = obra.receitas.findIndex(
-        (item) => item.id.toString() === lancamentoId
-      );
-      if (lancamentoIndex === -1) {
-        return res.status(404).json({ message: "Lançamento não encontrado" });
+router.put(
+  "/:id/:tipo/:lancamentoId",
+  upload.array("anexos"),
+  async (req, res) => {
+    try {
+      const { id, tipo, lancamentoId } = req.params;
+      const obra = await Obra.findById(id);
+      if (!obra) {
+        return res.status(404).json({ message: "Obra não encontrada" });
       }
-      obra.receitas[lancamentoIndex] = {
-        ...obra.receitas[lancamentoIndex],
-        ...lancamentoEditado,
-        dataAtualizacao: new Date(),
-      };
-    } else if (tipo === "pagamento") {
-      lancamentoIndex = obra.pagamentos.findIndex(
-        (item) => item.id.toString() === lancamentoId
-      );
-      if (lancamentoIndex === -1) {
-        return res.status(404).json({ message: "Lançamento não encontrado" });
-      }
-      obra.pagamentos[lancamentoIndex] = {
-        ...obra.pagamentos[lancamentoIndex],
-        ...lancamentoEditado,
-        dataAtualizacao: new Date(),
-      };
-    } else {
-      return res.status(400).json({ message: "Tipo de lançamento inválido" });
-    }
 
-    await obra.save();
-    res.json(lancamentoEditado);
-  } catch (error) {
-    console.error("Erro ao editar lançamento:", error);
-    res.status(500).json({ message: error.message });
+      const lancamentoEditado = {
+        ...req.body,
+        valor: parseFloat(req.body.valor),
+        valorRecebido:
+          tipo === "receita"
+            ? parseFloat(req.body.valorRecebido || 0)
+            : undefined,
+        valorPago:
+          tipo === "pagamento"
+            ? parseFloat(req.body.valorPago || 0)
+            : undefined,
+        data: new Date(req.body.data),
+        dataVencimento: req.body.dataVencimento
+          ? new Date(req.body.dataVencimento)
+          : undefined,
+        anexos: req.files
+          ? req.files.map((file) => ({
+              nome: file.originalname,
+              tipo: file.mimetype,
+              tamanho: file.size,
+              caminho: file.path,
+            }))
+          : [],
+      };
+
+      let lancamentoIndex;
+      if (tipo === "receita") {
+        lancamentoIndex = obra.receitas.findIndex(
+          (item) => item.id.toString() === lancamentoId
+        );
+        if (lancamentoIndex === -1) {
+          return res.status(404).json({ message: "Lançamento não encontrado" });
+        }
+        obra.receitas[lancamentoIndex] = {
+          ...obra.receitas[lancamentoIndex],
+          ...lancamentoEditado,
+        };
+      } else if (tipo === "pagamento") {
+        lancamentoIndex = obra.pagamentos.findIndex(
+          (item) => item.id.toString() === lancamentoId
+        );
+        if (lancamentoIndex === -1) {
+          return res.status(404).json({ message: "Lançamento não encontrado" });
+        }
+        obra.pagamentos[lancamentoIndex] = {
+          ...obra.pagamentos[lancamentoIndex],
+          ...lancamentoEditado,
+        };
+      } else {
+        return res.status(400).json({ message: "Tipo de lançamento inválido" });
+      }
+
+      await obra.save();
+      res.json(lancamentoEditado);
+    } catch (error) {
+      console.error("Erro ao editar lançamento:", error);
+      res.status(500).json({ message: error.message });
+    }
   }
-});
+);
 
 // Rota para excluir um lançamento de receita ou pagamento
 router.delete("/:id/:tipo/:lancamentoId", async (req, res) => {
   try {
     const { id, tipo, lancamentoId } = req.params;
-
     const obra = await Obra.findById(id);
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });

@@ -892,10 +892,19 @@ router.get("/:id/pagamentos", async (req, res) => {
 router.post("/:id/receitas", async (req, res) => {
   try {
     const { id } = req.params;
-    const novaReceita = req.body;
+    const novaReceita = {
+      ...req.body,
+      dataCriacao: new Date(),
+      dataAtualizacao: new Date(),
+    };
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
+    if (req.files) {
+      novaReceita.anexos = req.files.map((file) => ({
+        nome: file.originalname,
+        tipo: file.mimetype,
+        tamanho: file.size,
+        caminho: file.path,
+      }));
     }
 
     const obra = await Obra.findByIdAndUpdate(
@@ -919,10 +928,19 @@ router.post("/:id/receitas", async (req, res) => {
 router.post("/:id/pagamentos", async (req, res) => {
   try {
     const { id } = req.params;
-    const novoPagamento = req.body;
+    const novoPagamento = {
+      ...req.body,
+      dataCriacao: new Date(),
+      dataAtualizacao: new Date(),
+    };
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
+    if (req.files) {
+      novoPagamento.anexos = req.files.map((file) => ({
+        nome: file.originalname,
+        tipo: file.mimetype,
+        tamanho: file.size,
+        caminho: file.path,
+      }));
     }
 
     const obra = await Obra.findByIdAndUpdate(
