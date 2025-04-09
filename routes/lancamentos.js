@@ -52,25 +52,19 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
     };
 
     const novoLancamento = {
-      ...req.body,
-      _id: new mongoose.Types.ObjectId(),
-      tipo: tipo,
+      id: new mongoose.Types.ObjectId(),
+      descricao: req.body.descricao,
       valor: parseValorMonetario(req.body.valorNumerico || req.body.valor),
-      valorRecebido:
-        tipo === "receita"
-          ? parseValorMonetario(req.body.valorRecebido || 0)
-          : undefined,
-      valorPago:
-        tipo === "pagamento"
-          ? parseValorMonetario(req.body.valorPago || 0)
-          : undefined,
+      tipo: tipo,
       data: new Date(req.body.data),
+      status: req.body.status || "pendente",
+      categoria: req.body.categoria,
+      centroCusto: req.body.centroCusto,
       dataVencimento: req.body.dataVencimento
         ? new Date(req.body.dataVencimento)
         : undefined,
-      beneficiario: req.body.beneficiario
-        ? new mongoose.Types.ObjectId(req.body.beneficiario)
-        : undefined,
+      formaPagamento: req.body.formaPagamento,
+      documento: req.body.documento,
       anexos: req.files
         ? req.files.map((file) => ({
             nome: file.originalname,
@@ -81,12 +75,26 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
         : [],
     };
 
+    // Campos específicos para cada tipo
+    if (tipo === "receita") {
+      novoLancamento.valorRecebido = 0;
+      novoLancamento.beneficiario = req.body.beneficiario
+        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+        : undefined;
+    } else if (tipo === "pagamento") {
+      novoLancamento.valorPago = 0;
+      novoLancamento.beneficiario = req.body.beneficiario
+        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+        : undefined;
+      novoLancamento.beneficiarioTipo = req.body.beneficiarioTipo;
+    } else {
+      return res.status(400).json({ message: "Tipo de lançamento inválido" });
+    }
+
     if (tipo === "receita") {
       obra.receitas.push(novoLancamento);
     } else if (tipo === "pagamento") {
       obra.pagamentos.push(novoLancamento);
-    } else {
-      return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
 
     await obra.save();
