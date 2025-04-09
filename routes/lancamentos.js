@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: function (req, file, cb) {
     const filetypes = /jpeg|jpg|png|pdf/;
     const mimetype = filetypes.test(file.mimetype);
@@ -38,6 +38,19 @@ const upload = multer({
     }
     cb(new Error("Apenas arquivos PDF, JPEG e PNG são permitidos"));
   },
+});
+
+// Adicionar middleware para capturar erros do multer
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        message: "O arquivo é muito grande. O tamanho máximo permitido é 10MB.",
+      });
+    }
+    return res.status(400).json({ message: err.message });
+  }
+  next(err);
 });
 
 // Rota para adicionar um novo lançamento de receita ou pagamento
