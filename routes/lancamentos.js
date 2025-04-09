@@ -45,8 +45,10 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
     // Função para converter valor monetário para número
     const parseValorMonetario = (valor) => {
       if (typeof valor === "string") {
-        // Remove R$, espaços e substitui vírgula por ponto
-        return parseFloat(valor.replace("R$", "").trim().replace(",", "."));
+        // Remove R$, pontos e espaços, substitui vírgula por ponto
+        return parseFloat(
+          valor.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()
+        );
       }
       return parseFloat(valor);
     };
@@ -77,18 +79,31 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
 
     // Campos específicos para cada tipo
     if (tipo === "receita") {
-      novoLancamento.valorRecebido = 0;
+      novoLancamento.valorRecebido = parseValorMonetario(
+        req.body.valorRecebido || 0
+      );
       novoLancamento.beneficiario = req.body.beneficiario
         ? new mongoose.Types.ObjectId(req.body.beneficiario)
         : undefined;
     } else if (tipo === "pagamento") {
-      novoLancamento.valorPago = 0;
+      novoLancamento.valorPago = parseValorMonetario(req.body.valorPago || 0);
       novoLancamento.beneficiario = req.body.beneficiario
         ? new mongoose.Types.ObjectId(req.body.beneficiario)
         : undefined;
       novoLancamento.beneficiarioTipo = req.body.beneficiarioTipo;
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
+    }
+
+    // Validar campos obrigatórios
+    if (
+      !novoLancamento.descricao ||
+      !novoLancamento.valor ||
+      !novoLancamento.data
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Campos obrigatórios não preenchidos" });
     }
 
     if (tipo === "receita") {
