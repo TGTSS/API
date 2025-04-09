@@ -16,6 +16,8 @@ router.post("/:id/:tipo", async (req, res) => {
     }
 
     novoLancamento.id = new mongoose.Types.ObjectId(); // Gerar um novo ID para o lançamento
+    novoLancamento.dataCriacao = new Date();
+    novoLancamento.dataAtualizacao = new Date();
 
     if (req.files) {
       novoLancamento.anexos = req.files.map((file) => ({
@@ -64,6 +66,7 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
       obra.receitas[lancamentoIndex] = {
         ...obra.receitas[lancamentoIndex],
         ...lancamentoEditado,
+        dataAtualizacao: new Date(),
       };
     } else if (tipo === "pagamento") {
       lancamentoIndex = obra.pagamentos.findIndex(
@@ -75,6 +78,7 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
       obra.pagamentos[lancamentoIndex] = {
         ...obra.pagamentos[lancamentoIndex],
         ...lancamentoEditado,
+        dataAtualizacao: new Date(),
       };
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });

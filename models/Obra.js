@@ -33,6 +33,13 @@ const ReceitaSchema = new mongoose.Schema({
   ], // Novo campo para anexos
   beneficiario: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" }, // Novo campo
   documento: { type: String }, // Novo campo
+  valorRecebido: { type: Number, default: 0 }, // Adicionado para controle de valores recebidos
+  dataCriacao: { type: Date, default: Date.now }, // Novo campo
+  dataAtualizacao: { type: Date, default: Date.now }, // Novo campo
+  usuario: { type: String }, // Novo campo para rastrear o usuário
+  observacoes: { type: String }, // Novo campo
+  numeroDocumento: { type: String }, // Novo campo
+  parcelas: { type: Number, default: 1 }, // Novo campo
 });
 
 const PagamentoSchema = new mongoose.Schema({
@@ -67,6 +74,13 @@ const PagamentoSchema = new mongoose.Schema({
     enum: ["Fornecedor", "Funcionario"],
   }, // Novo campo para diferenciar tipos de beneficiários
   documento: { type: String }, // Novo campo
+  valorPago: { type: Number, default: 0 }, // Adicionado para controle de valores pagos
+  dataCriacao: { type: Date, default: Date.now }, // Novo campo
+  dataAtualizacao: { type: Date, default: Date.now }, // Novo campo
+  usuario: { type: String }, // Novo campo para rastrear o usuário
+  observacoes: { type: String }, // Novo campo
+  numeroDocumento: { type: String }, // Novo campo
+  parcelas: { type: Number, default: 1 }, // Novo campo
 });
 
 const DocumentoSchema = new mongoose.Schema({
