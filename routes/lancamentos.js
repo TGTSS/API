@@ -72,6 +72,7 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
     const {
       descricao,
       valor,
+      valorNumerico,
       data,
       status,
       categoria,
@@ -83,10 +84,29 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
       documento,
     } = req.body;
 
+    // Validar campos obrigatórios
+    if (!descricao || !valorNumerico || !data) {
+      return res.status(400).json({
+        message: "Campos obrigatórios não preenchidos",
+        details: {
+          descricao: !descricao,
+          valor: !valorNumerico,
+          data: !data,
+        },
+      });
+    }
+
+    // Validar beneficiarioTipo para pagamentos
+    if (tipo === "pagamento" && !beneficiarioTipo) {
+      return res.status(400).json({
+        message: "Tipo de beneficiário é obrigatório para pagamentos",
+      });
+    }
+
     const novoLancamento = {
       id: new mongoose.Types.ObjectId(),
       descricao,
-      valor: parseValorMonetario(valor),
+      valor: parseValorMonetario(valorNumerico || valor),
       tipo,
       data: new Date(data),
       status: status || "pendente",
@@ -105,38 +125,21 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
         : [],
     };
 
-    // Campos específicos para cada tipo
+    // Adicionar campos específicos para cada tipo
     if (tipo === "receita") {
       novoLancamento.valorRecebido = 0;
-      novoLancamento.beneficiario = beneficiario
-        ? new mongoose.Types.ObjectId(beneficiario)
-        : undefined;
+      if (beneficiario) {
+        novoLancamento.beneficiario = new mongoose.Types.ObjectId(beneficiario);
+      }
     } else if (tipo === "pagamento") {
       novoLancamento.valorPago = 0;
-      novoLancamento.beneficiario = beneficiario
-        ? new mongoose.Types.ObjectId(beneficiario)
-        : undefined;
-      novoLancamento.beneficiarioTipo = beneficiarioTipo;
-    } else {
-      return res.status(400).json({ message: "Tipo de lançamento inválido" });
+      if (beneficiario) {
+        novoLancamento.beneficiario = new mongoose.Types.ObjectId(beneficiario);
+        novoLancamento.beneficiarioTipo = beneficiarioTipo;
+      }
     }
 
-    // Validar campos obrigatórios
-    if (
-      !novoLancamento.descricao ||
-      !novoLancamento.valor ||
-      !novoLancamento.data
-    ) {
-      return res.status(400).json({
-        message: "Campos obrigatórios não preenchidos",
-        details: {
-          descricao: !novoLancamento.descricao,
-          valor: !novoLancamento.valor,
-          data: !novoLancamento.data,
-        },
-      });
-    }
-
+    // Adicionar o lançamento ao array correto
     if (tipo === "receita") {
       obra.receitas.push(novoLancamento);
     } else if (tipo === "pagamento") {
@@ -148,8 +151,8 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
   } catch (error) {
     console.error("Erro ao adicionar lançamento:", error);
     res.status(500).json({
-      message: error.message,
-      details: error,
+      message: "Erro ao adicionar lançamento",
+      error: error.message,
     });
   }
 });
