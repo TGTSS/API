@@ -169,10 +169,10 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
     if (!tipo && !lancamentoId) {
       // Procura em receitas e pagamentos
       const receitaIndex = obra.receitas.findIndex(
-        (item) => item.id.toString() === id
+        (item) => item._id.toString() === id
       );
       const pagamentoIndex = obra.pagamentos.findIndex(
-        (item) => item.id.toString() === id
+        (item) => item._id.toString() === id
       );
 
       if (receitaIndex !== -1) {
@@ -200,7 +200,7 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
     let lancamentoRemovido;
     if (tipo === "receita") {
       const index = obra.receitas.findIndex(
-        (item) => item.id.toString() === lancamentoId
+        (item) => item._id.toString() === lancamentoId
       );
       if (index === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
@@ -208,7 +208,7 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
       lancamentoRemovido = obra.receitas.splice(index, 1);
     } else if (tipo === "pagamento") {
       const index = obra.pagamentos.findIndex(
-        (item) => item.id.toString() === lancamentoId
+        (item) => item._id.toString() === lancamentoId
       );
       if (index === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
