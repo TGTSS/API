@@ -176,20 +176,18 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
       );
 
       if (receitaIndex !== -1) {
-        const lancamentoRemovido = obra.receitas.splice(receitaIndex, 1);
-        await obra.save();
+        obra.receitas.splice(receitaIndex, 1);
+        await obra.save({ validateBeforeSave: false });
         return res.status(200).json({
           message: "Lançamento excluído com sucesso",
-          lancamento: lancamentoRemovido,
         });
       }
 
       if (pagamentoIndex !== -1) {
-        const lancamentoRemovido = obra.pagamentos.splice(pagamentoIndex, 1);
-        await obra.save();
+        obra.pagamentos.splice(pagamentoIndex, 1);
+        await obra.save({ validateBeforeSave: false });
         return res.status(200).json({
           message: "Lançamento excluído com sucesso",
-          lancamento: lancamentoRemovido,
         });
       }
 
@@ -197,7 +195,6 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
     }
 
     // Se tiver tipo e lancamentoId, usa a lógica original
-    let lancamentoRemovido;
     if (tipo === "receita") {
       const index = obra.receitas.findIndex(
         (item) => item._id.toString() === lancamentoId
@@ -205,7 +202,7 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
       if (index === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
-      lancamentoRemovido = obra.receitas.splice(index, 1);
+      obra.receitas.splice(index, 1);
     } else if (tipo === "pagamento") {
       const index = obra.pagamentos.findIndex(
         (item) => item._id.toString() === lancamentoId
@@ -213,15 +210,14 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
       if (index === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
-      lancamentoRemovido = obra.pagamentos.splice(index, 1);
+      obra.pagamentos.splice(index, 1);
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
 
-    await obra.save();
+    await obra.save({ validateBeforeSave: false });
     res.status(200).json({
       message: "Lançamento excluído com sucesso",
-      lancamento: lancamentoRemovido,
     });
   } catch (error) {
     console.error("Erro ao excluir lançamento:", error);
