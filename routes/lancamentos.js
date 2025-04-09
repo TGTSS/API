@@ -17,6 +17,15 @@ router.post("/:id/:tipo", async (req, res) => {
 
     novoLancamento.id = new mongoose.Types.ObjectId(); // Gerar um novo ID para o lançamento
 
+    if (req.files) {
+      novoLancamento.anexos = req.files.map((file) => ({
+        nome: file.originalname,
+        tipo: file.mimetype,
+        tamanho: file.size,
+        caminho: file.path,
+      }));
+    }
+
     if (tipo === "receita") {
       obra.receitas.push(novoLancamento);
     } else if (tipo === "pagamento") {
@@ -52,7 +61,10 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
       if (lancamentoIndex === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
-      obra.receitas[lancamentoIndex] = lancamentoEditado;
+      obra.receitas[lancamentoIndex] = {
+        ...obra.receitas[lancamentoIndex],
+        ...lancamentoEditado,
+      };
     } else if (tipo === "pagamento") {
       lancamentoIndex = obra.pagamentos.findIndex(
         (item) => item.id.toString() === lancamentoId
@@ -60,7 +72,10 @@ router.put("/:id/:tipo/:lancamentoId", async (req, res) => {
       if (lancamentoIndex === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
-      obra.pagamentos[lancamentoIndex] = lancamentoEditado;
+      obra.pagamentos[lancamentoIndex] = {
+        ...obra.pagamentos[lancamentoIndex],
+        ...lancamentoEditado,
+      };
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }

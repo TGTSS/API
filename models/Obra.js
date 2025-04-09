@@ -23,6 +23,16 @@ const ReceitaSchema = new mongoose.Schema({
   dataQuitacao: { type: Date }, // Alterado para Date
   formaPagamento: { type: String }, // Novo campo
   status: { type: String, enum: ["pendente", "recebido", "cancelado"] }, // Novo campo
+  anexos: [
+    {
+      nome: { type: String },
+      tipo: { type: String },
+      tamanho: { type: Number },
+      caminho: { type: String },
+    },
+  ], // Novo campo para anexos
+  beneficiario: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" }, // Novo campo
+  documento: { type: String }, // Novo campo
 });
 
 const PagamentoSchema = new mongoose.Schema({
@@ -40,6 +50,23 @@ const PagamentoSchema = new mongoose.Schema({
   dataQuitacao: { type: Date }, // Alterado para Date
   formaPagamento: { type: String }, // Novo campo
   status: { type: String, enum: ["pendente", "pago", "cancelado"] }, // Novo campo
+  anexos: [
+    {
+      nome: { type: String },
+      tipo: { type: String },
+      tamanho: { type: Number },
+      caminho: { type: String },
+    },
+  ], // Novo campo para anexos
+  beneficiario: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "beneficiarioTipo",
+  }, // Novo campo
+  beneficiarioTipo: {
+    type: String,
+    enum: ["Fornecedor", "Funcionario"],
+  }, // Novo campo para diferenciar tipos de beneficiários
+  documento: { type: String }, // Novo campo
 });
 
 const DocumentoSchema = new mongoose.Schema({
