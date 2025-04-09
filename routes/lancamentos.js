@@ -44,6 +44,7 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
 
     // Função para converter valor monetário para número
     const parseValorMonetario = (valor) => {
+      if (!valor) return 0;
       if (typeof valor === "string") {
         // Remove R$, pontos e espaços, substitui vírgula por ponto
         return parseFloat(
@@ -53,20 +54,33 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
       return parseFloat(valor);
     };
 
+    // Extrair valores do FormData
+    const {
+      descricao,
+      valor,
+      data,
+      status,
+      categoria,
+      centroCusto,
+      dataVencimento,
+      formaPagamento,
+      beneficiario,
+      beneficiarioTipo,
+      documento,
+    } = req.body;
+
     const novoLancamento = {
       id: new mongoose.Types.ObjectId(),
-      descricao: req.body.descricao,
-      valor: parseValorMonetario(req.body.valorNumerico || req.body.valor),
-      tipo: tipo,
-      data: new Date(req.body.data),
-      status: req.body.status || "pendente",
-      categoria: req.body.categoria,
-      centroCusto: req.body.centroCusto,
-      dataVencimento: req.body.dataVencimento
-        ? new Date(req.body.dataVencimento)
-        : undefined,
-      formaPagamento: req.body.formaPagamento,
-      documento: req.body.documento,
+      descricao,
+      valor: parseValorMonetario(valor),
+      tipo,
+      data: new Date(data),
+      status: status || "pendente",
+      categoria,
+      centroCusto,
+      dataVencimento: dataVencimento ? new Date(dataVencimento) : undefined,
+      formaPagamento,
+      documento,
       anexos: req.files
         ? req.files.map((file) => ({
             nome: file.originalname,
@@ -79,18 +93,16 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
 
     // Campos específicos para cada tipo
     if (tipo === "receita") {
-      novoLancamento.valorRecebido = parseValorMonetario(
-        req.body.valorRecebido || 0
-      );
-      novoLancamento.beneficiario = req.body.beneficiario
-        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+      novoLancamento.valorRecebido = 0;
+      novoLancamento.beneficiario = beneficiario
+        ? new mongoose.Types.ObjectId(beneficiario)
         : undefined;
     } else if (tipo === "pagamento") {
-      novoLancamento.valorPago = parseValorMonetario(req.body.valorPago || 0);
-      novoLancamento.beneficiario = req.body.beneficiario
-        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+      novoLancamento.valorPago = 0;
+      novoLancamento.beneficiario = beneficiario
+        ? new mongoose.Types.ObjectId(beneficiario)
         : undefined;
-      novoLancamento.beneficiarioTipo = req.body.beneficiarioTipo;
+      novoLancamento.beneficiarioTipo = beneficiarioTipo;
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
@@ -101,9 +113,14 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
       !novoLancamento.valor ||
       !novoLancamento.data
     ) {
-      return res
-        .status(400)
-        .json({ message: "Campos obrigatórios não preenchidos" });
+      return res.status(400).json({
+        message: "Campos obrigatórios não preenchidos",
+        details: {
+          descricao: !novoLancamento.descricao,
+          valor: !novoLancamento.valor,
+          data: !novoLancamento.data,
+        },
+      });
     }
 
     if (tipo === "receita") {
@@ -116,7 +133,10 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
     res.status(201).json(novoLancamento);
   } catch (error) {
     console.error("Erro ao adicionar lançamento:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+      details: error,
+    });
   }
 });
 
