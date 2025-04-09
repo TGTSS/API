@@ -42,20 +42,34 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
+    // Função para converter valor monetário para número
+    const parseValorMonetario = (valor) => {
+      if (typeof valor === "string") {
+        // Remove R$, espaços e substitui vírgula por ponto
+        return parseFloat(valor.replace("R$", "").trim().replace(",", "."));
+      }
+      return parseFloat(valor);
+    };
+
     const novoLancamento = {
       ...req.body,
-      id: new mongoose.Types.ObjectId(),
+      _id: new mongoose.Types.ObjectId(),
       tipo: tipo,
-      valor: parseFloat(req.body.valor),
+      valor: parseValorMonetario(req.body.valorNumerico || req.body.valor),
       valorRecebido:
         tipo === "receita"
-          ? parseFloat(req.body.valorRecebido || 0)
+          ? parseValorMonetario(req.body.valorRecebido || 0)
           : undefined,
       valorPago:
-        tipo === "pagamento" ? parseFloat(req.body.valorPago || 0) : undefined,
+        tipo === "pagamento"
+          ? parseValorMonetario(req.body.valorPago || 0)
+          : undefined,
       data: new Date(req.body.data),
       dataVencimento: req.body.dataVencimento
         ? new Date(req.body.dataVencimento)
+        : undefined,
+      beneficiario: req.body.beneficiario
+        ? new mongoose.Types.ObjectId(req.body.beneficiario)
         : undefined,
       anexos: req.files
         ? req.files.map((file) => ({
