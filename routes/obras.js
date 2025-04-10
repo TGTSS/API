@@ -142,12 +142,26 @@ router.post("/", async (req, res) => {
     } = req.body;
 
     // Converter valores numéricos
-    const areaConstruidaNumber = parseFloat(areaConstruida.replace(",", "."));
+    let areaConstruidaNumber;
+    if (typeof areaConstruida === "string") {
+      areaConstruidaNumber = parseFloat(areaConstruida.replace(",", "."));
+    } else {
+      areaConstruidaNumber = areaConstruida;
+    }
+
     if (isNaN(areaConstruidaNumber)) {
       return res
         .status(400)
         .json({ message: "Valor de área construída inválido" });
     }
+
+    // Converter datas de string para Date
+    const formatDate = (dateStr) => {
+      if (!dateStr) return null;
+      if (dateStr instanceof Date) return dateStr;
+      const [day, month, year] = dateStr.split("/");
+      return new Date(year, month - 1, day);
+    };
 
     const obra = new Obra({
       ...rest,
@@ -167,21 +181,25 @@ router.post("/", async (req, res) => {
       cliente: mongoose.Types.ObjectId.isValid(cliente)
         ? new mongoose.Types.ObjectId(cliente)
         : null,
-      contatos: contatos.map((contato) => ({
-        nome: contato.nome,
-        telefone: contato.telefone,
-        cargo: contato.cargo,
-        email: contato.email,
-      })),
+      contatos: Array.isArray(contatos)
+        ? contatos.map((contato) => ({
+            nome: contato.nome,
+            telefone: contato.telefone,
+            cargo: contato.cargo,
+            email: contato.email,
+          }))
+        : [],
       mapPosition: mapPosition,
       visivelPara,
       contatoPrincipal,
-      documentos: documentos.map((doc) => ({
-        nome: doc.nome,
-        arquivo: doc.arquivo,
-      })),
-      dataInicio,
-      previsaoTermino,
+      documentos: Array.isArray(documentos)
+        ? documentos.map((doc) => ({
+            nome: doc.nome,
+            arquivo: doc.arquivo,
+          }))
+        : [],
+      dataInicio: formatDate(dataInicio),
+      previsaoTermino: formatDate(previsaoTermino),
       imagem,
     });
 
