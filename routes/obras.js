@@ -9,8 +9,46 @@ import Etapa from "../models/Etapa.js"; // Adicionado
 import RegistroDiario from "../models/RegistroDiario.js"; // Adicionado
 import Galeria from "../models/Galeria.js"; // Adicionado
 import Documento from "../models/Documento.js"; // Adicionado
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const router = express.Router();
+
+// Configuração do multer para upload de arquivos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), "uploads", "documentos");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|pdf|doc|docx|xls|xlsx/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(
+      new Error(
+        "Apenas arquivos PDF, DOC, DOCX, XLS, XLSX, JPEG e PNG são permitidos"
+      )
+    );
+  },
+});
 
 // Rota para listar todos os status de obra
 router.get("/status", async (req, res) => {
@@ -337,20 +375,30 @@ router.post("/:_id/galeria", async (req, res) => {
 });
 
 // Rota para adicionar documentos
-router.post("/:id/documentos", async (req, res) => {
+router.post("/:id/documentos", upload.single("arquivo"), async (req, res) => {
   try {
     const { id } = req.params;
-    const documentos = req.body.documentos.map((documento) => ({
-      nome: documento.nome,
-      url: documento.url,
+    const { nome } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Arquivo não enviado" });
+    }
+
+    const documento = new Documento({
+      nome,
+      arquivo: {
+        nome: req.file.originalname,
+        tipo: req.file.mimetype,
+        tamanho: req.file.size,
+        caminho: req.file.path,
+      },
       obra: id,
-      data: documento.data || new Date(),
-      dataUpload: new Date(),
-    }));
-    const savedDocumentos = await Documento.insertMany(documentos);
-    res.status(201).json(savedDocumentos);
+    });
+
+    const savedDocumento = await documento.save();
+    res.status(201).json(savedDocumento);
   } catch (error) {
-    console.error("Erro ao adicionar documentos:", error);
+    console.error("Erro ao adicionar documento:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1141,6 +1189,29 @@ router.post("/:id/registros-diarios", async (req, res) => {
   } catch (error) {
     console.error("Erro ao criar registro diário:", error);
     res.status(500).json({ message: "Erro interno ao criar registro diário" });
+  }
+});
+
+// Rota para remover um documento
+router.delete("/:id/documentos/:documentoId", async (req, res) => {
+  try {
+    const { id, documentoId } = req.params;
+
+    const documento = await Documento.findOne({ _id: documentoId, obra: id });
+    if (!documento) {
+      return res.status(404).json({ message: "Documento não encontrado" });
+    }
+
+    // Remove o arquivo físico
+    if (documento.arquivo && documento.arquivo.caminho) {
+      fs.unlinkSync(documento.arquivo.caminho);
+    }
+
+    await Documento.findByIdAndDelete(documentoId);
+    res.status(200).json({ message: "Documento removido com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover documento:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 
