@@ -341,8 +341,11 @@ router.post("/:id/documentos", async (req, res) => {
   try {
     const { id } = req.params;
     const documentos = req.body.documentos.map((documento) => ({
-      ...documento,
+      nome: documento.nome,
+      url: documento.url,
       obra: id,
+      data: documento.data || new Date(),
+      dataUpload: new Date(),
     }));
     const savedDocumentos = await Documento.insertMany(documentos);
     res.status(201).json(savedDocumentos);
