@@ -20,7 +20,6 @@ const ReceitaSchema = new mongoose.Schema({
   data: { type: Date, default: Date.now },
   status: {
     type: String,
-    enum: ["pendente", "recebido", "atrasado"],
     default: "pendente",
   },
   categoria: { type: String },
@@ -51,7 +50,6 @@ const PagamentoSchema = new mongoose.Schema({
   data: { type: Date, default: Date.now },
   status: {
     type: String,
-    enum: ["pendente", "pago", "atrasado"],
     default: "pendente",
   },
   categoria: { type: String },
@@ -256,7 +254,6 @@ const ObraSchema = new mongoose.Schema({
   dataFim: Date,
   status: {
     type: String,
-    enum: ["Em andamento", "Concluída", "Parada", "Cancelada", "Atrasada"],
     default: "Em andamento",
   },
   etapas: [etapaSchema],
