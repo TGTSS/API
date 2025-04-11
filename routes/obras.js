@@ -1219,7 +1219,7 @@ router.delete("/:id/documentos/:documentoId", async (req, res) => {
 });
 
 // Rota para adicionar uma nova medicao
-router.post("/:id/medicoes", isAuthenticated, async (req, res) => {
+router.post("/:id/medicoes", async (req, res) => {
   try {
     const obra = await Obra.findById(req.params.id);
     if (!obra) {
