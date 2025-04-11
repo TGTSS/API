@@ -12,7 +12,8 @@ import Documento from "../models/Documento.js"; // Adicionado
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { isAuthenticated } from "../middleware/auth.js";
+
+
 
 const router = express.Router();
 
@@ -160,7 +161,7 @@ router.get("/ultimo-codigo", async (req, res) => {
 });
 
 // Rota para criar uma nova obra
-router.post("/", isAuthenticated, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const {
       status,
@@ -251,7 +252,7 @@ router.post("/", isAuthenticated, async (req, res) => {
 });
 
 // Rota para listar todas as obras
-router.get("/", isAuthenticated, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const obras = await Obra.find()
       .populate("cliente")
@@ -267,7 +268,7 @@ router.get("/", isAuthenticated, async (req, res) => {
 });
 
 // Rota para buscar uma obra específica
-router.get("/:id", isAuthenticated, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -406,7 +407,7 @@ router.post("/:id/documentos", upload.single("arquivo"), async (req, res) => {
 });
 
 // Rota para atualizar uma obra
-router.put("/:id", isAuthenticated, async (req, res) => {
+  router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const {
