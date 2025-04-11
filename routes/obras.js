@@ -1316,21 +1316,77 @@ router.post("/:id/medicao/save", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    // Adiciona a nova medição ao array de medições
-    obra.medicoes.push({
+    // Transforma os grupos em items e groups conforme o schema
+    const transformedData = {
       ...medicaoData,
-      obraId: id,
+      obraId: new mongoose.Types.ObjectId(id), // Convert to ObjectId
       date: new Date(medicaoData.date),
+      items: medicaoData.groups.flatMap((group) =>
+        group.items.map((item) => ({
+          ...item,
+          groupId: group.id,
+          groupTitle: group.title,
+        }))
+      ),
+      groups: medicaoData.groups.map((group) => ({
+        id: group.id,
+        title: group.title,
+        totalOrcado: group.items.reduce(
+          (sum, item) => sum + (item.value || 0),
+          0
+        ),
+        totalMedido: 0,
+        saldoAtualizado: 0,
+        progresso: 0,
+        items: group.items.map((item) => ({
+          id: item.id,
+          description: item.description,
+          unit: item.unit,
+          plannedQuantity: item.quantity,
+          value: item.value,
+          executedQuantity: 0,
+          executedValue: 0,
+          percentage: 0,
+          status: "Pendente",
+          totalOrcado: item.value,
+          totalMedido: 0,
+          saldoAtualizado: 0,
+        })),
+      })),
+      totalOrcado: medicaoData.groups.reduce(
+        (sum, group) =>
+          sum +
+          group.items.reduce(
+            (groupSum, item) => groupSum + (item.value || 0),
+            0
+          ),
+        0
+      ),
+      totalMedido: 0,
+      saldoAtualizado: 0,
+      progressoGeral: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
+    };
 
+    // Ensure all existing measurements have obraId
+    obra.medicoes = obra.medicoes.map((medicao) => ({
+      ...medicao,
+      obraId: new mongoose.Types.ObjectId(id),
+    }));
+
+    // Add the new measurement
+    obra.medicoes.push(transformedData);
     await obra.save();
 
-    res.status(201).json(medicaoData);
+    res.status(201).json(transformedData);
   } catch (error) {
-    console.error("Erro ao salvar medição:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Erro detalhado ao salvar medição:", error);
+    res.status(500).json({
+      message: "Erro ao salvar medição",
+      error: error.message,
+      stack: error.stack,
+    });
   }
 });
 
