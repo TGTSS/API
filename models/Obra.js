@@ -200,33 +200,26 @@ const medicaoSchema = new mongoose.Schema({
   obraId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Obra",
-    required: true,
   },
   date: {
     type: Date,
-    required: true,
     default: Date.now,
   },
   responsavel: {
     type: String,
-    required: true,
     default: "Não especificado",
   },
   totalOrcado: {
     type: Number,
-    required: true,
   },
   totalMedido: {
     type: Number,
-    required: true,
   },
   saldoAtualizado: {
     type: Number,
-    required: true,
   },
   progressoGeral: {
     type: Number,
-    required: true,
   },
   items: [
     {
