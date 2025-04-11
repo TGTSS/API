@@ -256,7 +256,7 @@ const ObraSchema = new mongoose.Schema({
   dataFim: Date,
   status: {
     type: String,
-    enum: ["Em andamento", "Concluída", "Parada"],
+    enum: ["Em andamento", "Concluída", "Parada", "Cancelada", "Atrasada"],
     default: "Em andamento",
   },
   etapas: [etapaSchema],
