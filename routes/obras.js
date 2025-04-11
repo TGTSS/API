@@ -1427,4 +1427,41 @@ router.post("/:id/medicao/stage", async (req, res) => {
   }
 });
 
+// Rota para excluir uma medição específica
+router.delete("/:id/medicoes/:medicaoId", async (req, res) => {
+  try {
+    const { id, medicaoId } = req.params;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(medicaoId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Encontra o índice da medição a ser removida
+    const medicaoIndex = obra.medicoes.findIndex(
+      (medicao) => medicao._id.toString() === medicaoId
+    );
+
+    if (medicaoIndex === -1) {
+      return res.status(404).json({ message: "Medição não encontrada" });
+    }
+
+    // Remove a medição do array
+    obra.medicoes.splice(medicaoIndex, 1);
+    await obra.save();
+
+    res.status(200).json({ message: "Medição excluída com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir medição:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

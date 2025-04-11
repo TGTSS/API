@@ -230,6 +230,8 @@ const medicaoSchema = new mongoose.Schema({
         },
       ],
       attachments: [String],
+      groupId: String,
+      groupTitle: String,
     },
   ],
   totalOrcado: Number,
