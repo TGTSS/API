@@ -103,6 +103,24 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
       });
     }
 
+    // Validar beneficiario para pagamentos
+    if (tipo === "pagamento" && beneficiario) {
+      try {
+        // Verificar se o beneficiario é um ObjectId válido
+        if (!mongoose.Types.ObjectId.isValid(beneficiario)) {
+          return res.status(400).json({
+            message: "ID do beneficiário inválido",
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao validar beneficiário:", error);
+        return res.status(400).json({
+          message: "Erro ao validar beneficiário",
+          error: error.message,
+        });
+      }
+    }
+
     const novoLancamento = {
       id: new mongoose.Types.ObjectId(),
       descricao,
