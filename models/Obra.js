@@ -197,7 +197,12 @@ const etapaSchema = new mongoose.Schema({
 });
 
 const medicaoSchema = new mongoose.Schema({
-  data: {
+  obraId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Obra",
+    required: true,
+  },
+  date: {
     type: Date,
     required: true,
     default: Date.now,
@@ -205,19 +210,51 @@ const medicaoSchema = new mongoose.Schema({
   responsavel: {
     type: String,
     required: true,
+    default: "Não especificado",
   },
-  itens: [
+  totalOrcado: {
+    type: Number,
+    required: true,
+  },
+  totalMedido: {
+    type: Number,
+    required: true,
+  },
+  saldoAtualizado: {
+    type: Number,
+    required: true,
+  },
+  progressoGeral: {
+    type: Number,
+    required: true,
+  },
+  items: [
     {
       id: String,
       description: String,
       unit: String,
       plannedQuantity: Number,
       value: Number,
-      executedQuantity: Number,
-      executedValue: Number,
-      percentage: Number,
-      status: String,
-      comments: String,
+      executedQuantity: {
+        type: Number,
+        default: 0,
+      },
+      executedValue: {
+        type: Number,
+        default: 0,
+      },
+      percentage: {
+        type: Number,
+        default: 0,
+      },
+      status: {
+        type: String,
+        default: "Pendente",
+      },
+      comments: {
+        type: String,
+        default: "",
+      },
       history: [
         {
           date: Date,
@@ -232,21 +269,46 @@ const medicaoSchema = new mongoose.Schema({
       attachments: [String],
       groupId: String,
       groupTitle: String,
+      totalOrcado: Number,
+      totalMedido: Number,
+      saldoAtualizado: Number,
+      progresso: Number,
     },
   ],
-  totalOrcado: Number,
-  totalMedido: Number,
-  saldoAtualizado: Number,
-  progressoGeral: Number,
   groups: [
     {
       id: String,
       title: String,
       totalOrcado: Number,
       totalMedido: Number,
+      saldoAtualizado: Number,
       progresso: Number,
+      items: [
+        {
+          id: String,
+          description: String,
+          unit: String,
+          plannedQuantity: Number,
+          value: Number,
+          executedQuantity: Number,
+          executedValue: Number,
+          percentage: Number,
+          status: String,
+          totalOrcado: Number,
+          totalMedido: Number,
+          saldoAtualizado: Number,
+        },
+      ],
     },
   ],
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const ObraSchema = new mongoose.Schema({

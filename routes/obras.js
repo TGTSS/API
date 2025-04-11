@@ -1291,7 +1291,10 @@ router.get("/:id/medicoes", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    res.json(obra.medicoes);
+    // Ordena as medições por data (mais recente primeiro)
+    const medicoesOrdenadas = obra.medicoes.sort((a, b) => b.date - a.date);
+
+    res.json(medicoesOrdenadas);
   } catch (error) {
     console.error("Erro ao buscar medições:", error);
     res.status(500).json({ message: error.message });
@@ -1314,7 +1317,14 @@ router.post("/:id/medicao/save", async (req, res) => {
     }
 
     // Adiciona a nova medição ao array de medições
-    obra.medicoes.push(medicaoData);
+    obra.medicoes.push({
+      ...medicaoData,
+      obraId: id,
+      date: new Date(medicaoData.date),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
     await obra.save();
 
     res.status(201).json(medicaoData);
