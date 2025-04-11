@@ -199,18 +199,54 @@ const etapaSchema = new mongoose.Schema({
 });
 
 const medicaoSchema = new mongoose.Schema({
-  data: { type: Date, required: true },
-  responsavel: { type: String, required: true },
+  data: {
+    type: Date,
+    required: true,
+    default: Date.now,
+  },
+  responsavel: {
+    type: String,
+    required: true,
+  },
   itens: [
     {
-      itemId: { type: mongoose.Schema.Types.ObjectId, ref: "Item" },
-      quantidadeExecutada: Number,
-      valorExecutado: Number,
-      porcentagem: Number,
+      id: String,
+      description: String,
+      unit: String,
+      plannedQuantity: Number,
+      value: Number,
+      executedQuantity: Number,
+      executedValue: Number,
+      percentage: Number,
+      status: String,
+      comments: String,
+      history: [
+        {
+          date: Date,
+          quantity: Number,
+          value: Number,
+          percentage: Number,
+          status: String,
+          comments: String,
+          attachments: [String],
+        },
+      ],
+      attachments: [String],
     },
   ],
-  valorTotal: Number,
-  progresso: Number,
+  totalOrcado: Number,
+  totalMedido: Number,
+  saldoAtualizado: Number,
+  progressoGeral: Number,
+  groups: [
+    {
+      id: String,
+      title: String,
+      totalOrcado: Number,
+      totalMedido: Number,
+      progresso: Number,
+    },
+  ],
 });
 
 const ObraSchema = new mongoose.Schema({

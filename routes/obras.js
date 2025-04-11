@@ -1298,4 +1298,133 @@ router.get("/:id/medicoes", async (req, res) => {
   }
 });
 
+// Rota para salvar uma nova medição
+router.post("/:id/medicao/save", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const medicaoData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Adiciona a nova medição ao array de medições
+    obra.medicoes.push(medicaoData);
+    await obra.save();
+
+    res.status(201).json(medicaoData);
+  } catch (error) {
+    console.error("Erro ao salvar medição:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para atualizar um item específico da medição
+router.post("/:id/medicao", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      itemId,
+      field,
+      value,
+      executedQuantity,
+      executedValue,
+      percentage,
+    } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Encontra a medição mais recente
+    const ultimaMedicao = obra.medicoes[obra.medicoes.length - 1];
+    if (!ultimaMedicao) {
+      return res.status(404).json({ message: "Nenhuma medição encontrada" });
+    }
+
+    // Atualiza o item específico
+    const item = ultimaMedicao.itens.find((item) => item.id === itemId);
+    if (item) {
+      item[field] = value;
+      if (executedQuantity !== undefined)
+        item.executedQuantity = executedQuantity;
+      if (executedValue !== undefined) item.executedValue = executedValue;
+      if (percentage !== undefined) item.percentage = percentage;
+
+      // Adiciona ao histórico
+      item.history.push({
+        date: new Date(),
+        quantity: item.executedQuantity,
+        value: item.executedValue,
+        percentage: item.percentage,
+        status: item.status,
+        comments: `Atualização de ${field}`,
+      });
+    }
+
+    await obra.save();
+    res.status(200).json(ultimaMedicao);
+  } catch (error) {
+    console.error("Erro ao atualizar medição:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para atualizar uma etapa inteira da medição
+router.post("/:id/medicao/stage", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { stageId, percentage, items } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Encontra a medição mais recente
+    const ultimaMedicao = obra.medicoes[obra.medicoes.length - 1];
+    if (!ultimaMedicao) {
+      return res.status(404).json({ message: "Nenhuma medição encontrada" });
+    }
+
+    // Atualiza todos os itens da etapa
+    items.forEach((updatedItem) => {
+      const item = ultimaMedicao.itens.find(
+        (item) => item.id === updatedItem.id
+      );
+      if (item) {
+        Object.assign(item, updatedItem);
+        item.history.push({
+          date: new Date(),
+          quantity: item.executedQuantity,
+          value: item.executedValue,
+          percentage: item.percentage,
+          status: item.status,
+          comments: `Atualização em lote da etapa ${stageId}`,
+        });
+      }
+    });
+
+    await obra.save();
+    res.status(200).json(ultimaMedicao);
+  } catch (error) {
+    console.error("Erro ao atualizar etapa da medição:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
