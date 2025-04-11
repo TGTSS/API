@@ -1278,4 +1278,24 @@ router.put("/:id/etapas/:etapaId/itens/:itemId", async (req, res) => {
   }
 });
 
+// Rota para listar todas as medições de uma obra
+router.get("/:id/medicoes", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id).select("medicoes");
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    res.json(obra.medicoes);
+  } catch (error) {
+    console.error("Erro ao buscar medições:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
