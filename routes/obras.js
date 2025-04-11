@@ -12,6 +12,7 @@ import Documento from "../models/Documento.js"; // Adicionado
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { isAuthenticated } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -159,7 +160,7 @@ router.get("/ultimo-codigo", async (req, res) => {
 });
 
 // Rota para criar uma nova obra
-router.post("/", async (req, res) => {
+router.post("/", isAuthenticated, async (req, res) => {
   try {
     const {
       status,
@@ -250,7 +251,7 @@ router.post("/", async (req, res) => {
 });
 
 // Rota para listar todas as obras
-router.get("/", async (req, res) => {
+router.get("/", isAuthenticated, async (req, res) => {
   try {
     const obras = await Obra.find()
       .populate("cliente")
@@ -266,7 +267,7 @@ router.get("/", async (req, res) => {
 });
 
 // Rota para buscar uma obra específica
-router.get("/:id", async (req, res) => {
+router.get("/:id", isAuthenticated, async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -287,6 +288,7 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 // Rota para listar todas as etapas de uma obra
 router.get("/:id/etapas", async (req, res) => {
   try {
@@ -404,7 +406,7 @@ router.post("/:id/documentos", upload.single("arquivo"), async (req, res) => {
 });
 
 // Rota para atualizar uma obra
-router.put("/:id", async (req, res) => {
+router.put("/:id", isAuthenticated, async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -1214,5 +1216,71 @@ router.delete("/:id/documentos/:documentoId", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// Rota para adicionar uma nova medicao
+router.post("/:id/medicoes", isAuthenticated, async (req, res) => {
+  try {
+    const obra = await Obra.findById(req.params.id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const novaMedicao = {
+      data: req.body.data,
+      responsavel: req.body.responsavel,
+      itens: req.body.itens,
+      valorTotal: req.body.valorTotal,
+      progresso: req.body.progresso,
+    };
+
+    obra.medicoes.push(novaMedicao);
+    const updatedObra = await obra.save();
+    res.status(201).json(updatedObra);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Rota para atualizar um item's status
+router.put(
+  "/:id/etapas/:etapaId/itens/:itemId",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const obra = await Obra.findById(req.params.id);
+      if (!obra) {
+        return res.status(404).json({ message: "Obra não encontrada" });
+      }
+
+      const etapa = obra.etapas.id(req.params.etapaId);
+      if (!etapa) {
+        return res.status(404).json({ message: "Etapa não encontrada" });
+      }
+
+      const item = etapa.itens.id(req.params.itemId);
+      if (!item) {
+        return res.status(404).json({ message: "Item não encontrado" });
+      }
+
+      item.status = req.body.status;
+      if (req.body.comentarios) {
+        item.historico.push({
+          data: new Date(),
+          quantidade: item.quantidadeExecutada,
+          valor: item.valorUnitario * item.quantidadeExecutada,
+          porcentagem: (item.quantidadeExecutada / item.quantidade) * 100,
+          status: req.body.status,
+          comentarios: req.body.comentarios,
+          anexos: req.body.anexos || [],
+        });
+      }
+
+      const updatedObra = await obra.save();
+      res.json(updatedObra);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+);
 
 export default router;

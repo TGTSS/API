@@ -169,13 +169,64 @@ const RegistroDiarioSchema = new mongoose.Schema({
   },
 });
 
-const ObraSchema = new mongoose.Schema({
-  nome: { type: String }, // Campo obrigatório
+const itemSchema = new mongoose.Schema({
+  descricao: { type: String, required: true },
+  unidade: { type: String, required: true },
+  valorUnitario: { type: Number, required: true },
+  quantidade: { type: Number, required: true },
+  quantidadeExecutada: { type: Number, default: 0 },
   status: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "StatusObra",
-    required: true, // Campo obrigatório
+    type: String,
+    enum: ["Pendente", "Em revisão", "Aprovado"],
+    default: "Pendente",
   },
+  historico: [
+    {
+      data: { type: Date, default: Date.now },
+      quantidade: Number,
+      valor: Number,
+      porcentagem: Number,
+      status: String,
+      comentarios: String,
+      anexos: [String],
+    },
+  ],
+});
+
+const etapaSchema = new mongoose.Schema({
+  nome: { type: String, required: true },
+  itens: [itemSchema],
+});
+
+const medicaoSchema = new mongoose.Schema({
+  data: { type: Date, required: true },
+  responsavel: { type: String, required: true },
+  itens: [
+    {
+      itemId: { type: mongoose.Schema.Types.ObjectId, ref: "Item" },
+      quantidadeExecutada: Number,
+      valorExecutado: Number,
+      porcentagem: Number,
+    },
+  ],
+  valorTotal: Number,
+  progresso: Number,
+});
+
+const ObraSchema = new mongoose.Schema({
+  nome: { type: String, required: true },
+  descricao: String,
+  dataInicio: { type: Date, required: true },
+  dataFim: Date,
+  status: {
+    type: String,
+    enum: ["Em andamento", "Concluída", "Parada"],
+    default: "Em andamento",
+  },
+  etapas: [etapaSchema],
+  medicoes: [medicaoSchema],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
   codigo: { type: String, unique: true },
   codigoObras: { type: String },
   tipo: {
@@ -228,12 +279,9 @@ const ObraSchema = new mongoose.Schema({
     },
     index: "2dsphere",
   },
-  etapas: [{ type: mongoose.Schema.Types.ObjectId, ref: "Etapa" }],
   registrosDiarios: [RegistroDiarioSchema],
   galeria: [{ type: mongoose.Schema.Types.ObjectId, ref: "Galeria" }],
   documentos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Documento" }],
-  dataInicio: { type: Date },
-  previsaoTermino: { type: Date },
   dataPrevisao: { type: Date }, // Novo campo
   imagem: { type: String },
   documentos: [DocumentoSchema],
@@ -243,6 +291,12 @@ const ObraSchema = new mongoose.Schema({
     dataCriacao: Date,
     dataAtualizacao: Date,
   },
+});
+
+// Middleware to update the updatedAt field
+ObraSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
 const tipoAbreviacoes = {
