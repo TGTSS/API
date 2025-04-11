@@ -13,8 +13,6 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-
-
 const router = express.Router();
 
 // Configuração do multer para upload de arquivos
@@ -407,7 +405,7 @@ router.post("/:id/documentos", upload.single("arquivo"), async (req, res) => {
 });
 
 // Rota para atualizar uma obra
-  router.put("/:id", async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -1243,45 +1241,41 @@ router.post("/:id/medicoes", async (req, res) => {
 });
 
 // Rota para atualizar um item's status
-router.put(
-  "/:id/etapas/:etapaId/itens/:itemId",
-  isAuthenticated,
-  async (req, res) => {
-    try {
-      const obra = await Obra.findById(req.params.id);
-      if (!obra) {
-        return res.status(404).json({ message: "Obra não encontrada" });
-      }
-
-      const etapa = obra.etapas.id(req.params.etapaId);
-      if (!etapa) {
-        return res.status(404).json({ message: "Etapa não encontrada" });
-      }
-
-      const item = etapa.itens.id(req.params.itemId);
-      if (!item) {
-        return res.status(404).json({ message: "Item não encontrado" });
-      }
-
-      item.status = req.body.status;
-      if (req.body.comentarios) {
-        item.historico.push({
-          data: new Date(),
-          quantidade: item.quantidadeExecutada,
-          valor: item.valorUnitario * item.quantidadeExecutada,
-          porcentagem: (item.quantidadeExecutada / item.quantidade) * 100,
-          status: req.body.status,
-          comentarios: req.body.comentarios,
-          anexos: req.body.anexos || [],
-        });
-      }
-
-      const updatedObra = await obra.save();
-      res.json(updatedObra);
-    } catch (error) {
-      res.status(400).json({ message: error.message });
+router.put("/:id/etapas/:etapaId/itens/:itemId", async (req, res) => {
+  try {
+    const obra = await Obra.findById(req.params.id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
     }
+
+    const etapa = obra.etapas.id(req.params.etapaId);
+    if (!etapa) {
+      return res.status(404).json({ message: "Etapa não encontrada" });
+    }
+
+    const item = etapa.itens.id(req.params.itemId);
+    if (!item) {
+      return res.status(404).json({ message: "Item não encontrado" });
+    }
+
+    item.status = req.body.status;
+    if (req.body.comentarios) {
+      item.historico.push({
+        data: new Date(),
+        quantidade: item.quantidadeExecutada,
+        valor: item.valorUnitario * item.quantidadeExecutada,
+        porcentagem: (item.quantidadeExecutada / item.quantidade) * 100,
+        status: req.body.status,
+        comentarios: req.body.comentarios,
+        anexos: req.body.anexos || [],
+      });
+    }
+
+    const updatedObra = await obra.save();
+    res.json(updatedObra);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
-);
+});
 
 export default router;
