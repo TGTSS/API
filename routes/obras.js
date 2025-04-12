@@ -1301,91 +1301,52 @@ router.get("/:id/medicoes", async (req, res) => {
   }
 });
 
-// Rota para salvar uma nova medição
-router.post("/:id/medicao/save", async (req, res) => {
+// routes/obras.js
+router.post("/:obraId/medicao/save", async (req, res) => {
   try {
-    const { id } = req.params;
-    const medicaoData = req.body;
+    const { obraId } = req.params;
+    const { date, responsavel, totalMedido, progressoGeral, status, groups } =
+      req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
+    // Validação básica dos dados
+    if (!groups || !Array.isArray(groups)) {
+      return res.status(400).json({
+        message: "Dados de medição inválidos: grupos não encontrados",
+      });
     }
 
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
+    // Cria a nova medição
+    const novaMedicao = new Measurement({
+      obraId,
+      date: new Date(date),
+      responsavel,
+      totalMedido,
+      progressoGeral,
+      status,
+      groups,
+      createdBy: req.user._id, // Se estiver usando autenticação
+    });
 
-    // Transforma os grupos em items e groups conforme o schema
-    const transformedData = {
-      ...medicaoData,
-      obraId: new mongoose.Types.ObjectId(id), // Convert to ObjectId
-      date: new Date(medicaoData.date),
-      items: medicaoData.groups.flatMap((group) =>
-        group.items.map((item) => ({
-          ...item,
-          groupId: group.id,
-          groupTitle: group.title,
-        }))
-      ),
-      groups: medicaoData.groups.map((group) => ({
-        id: group.id,
-        title: group.title,
-        totalOrcado: group.items.reduce(
-          (sum, item) => sum + (item.value || 0),
-          0
-        ),
-        totalMedido: 0,
-        saldoAtualizado: 0,
-        progresso: 0,
-        items: group.items.map((item) => ({
-          id: item.id,
-          description: item.description,
-          unit: item.unit,
-          plannedQuantity: item.quantity,
-          value: item.value,
-          executedQuantity: 0,
-          executedValue: 0,
-          percentage: 0,
-          status: "Pendente",
-          totalOrcado: item.value,
-          totalMedido: 0,
-          saldoAtualizado: 0,
-        })),
-      })),
-      totalOrcado: medicaoData.groups.reduce(
-        (sum, group) =>
-          sum +
-          group.items.reduce(
-            (groupSum, item) => groupSum + (item.value || 0),
-            0
-          ),
-        0
-      ),
-      totalMedido: 0,
-      saldoAtualizado: 0,
-      progressoGeral: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    // Salva no banco de dados
+    await novaMedicao.save();
 
-    // Ensure all existing measurements have obraId
-    obra.medicoes = obra.medicoes.map((medicao) => ({
-      ...medicao,
-      obraId: new mongoose.Types.ObjectId(id),
-    }));
+    // Atualiza o progresso da obra
+    await Obra.findByIdAndUpdate(obraId, {
+      $set: {
+        ultimaMedicao: novaMedicao._id,
+        progressoGeral: progressoGeral,
+      },
+    });
 
-    // Add the new measurement
-    obra.medicoes.push(transformedData);
-    await obra.save();
-
-    res.status(201).json(transformedData);
+    res.status(201).json({
+      message: "Medição salva com sucesso",
+      medicao: novaMedicao,
+    });
   } catch (error) {
     console.error("Erro detalhado ao salvar medição:", error);
     res.status(500).json({
       message: "Erro ao salvar medição",
       error: error.message,
-      stack: error.stack,
     });
   }
 });
