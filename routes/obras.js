@@ -1357,15 +1357,18 @@ router.post("/:obraId/medicao/save", async (req, res) => {
     // Converte os status nos grupos e itens
     const convertedGroups = groups.map((group) => ({
       ...group,
+      id: group.id.toString(), // Converte ID para string
       items: group.items.map((item) => ({
         ...item,
+        id: item.id.toString(), // Converte ID para string
         status: convertStatus(item.status),
+        unit: item.unit || "un", // Adiciona unidade padrão se não existir
       })),
     }));
 
     // Cria a nova medição
     const novaMedicao = new Medicao({
-      obraId,
+      obraId: new mongoose.Types.ObjectId(obraId), // Converte para ObjectId
       date: new Date(date),
       responsavel,
       totalMedido,
@@ -1377,13 +1380,22 @@ router.post("/:obraId/medicao/save", async (req, res) => {
     // Salva no banco de dados
     await novaMedicao.save();
 
-    // Atualiza o progresso da obra
-    await Obra.findByIdAndUpdate(obraId, {
-      $set: {
-        ultimaMedicao: novaMedicao._id,
-        progressoGeral: progressoGeral,
+    // Atualiza o progresso da obra e adiciona a medição
+    const obra = await Obra.findByIdAndUpdate(
+      obraId,
+      {
+        $set: {
+          ultimaMedicao: novaMedicao._id,
+          progressoGeral: progressoGeral,
+        },
+        $push: { medicoes: novaMedicao._id },
       },
-    });
+      { new: true }
+    );
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
 
     res.status(201).json({
       message: "Medição salva com sucesso",
