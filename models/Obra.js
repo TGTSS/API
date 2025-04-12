@@ -207,89 +207,109 @@ const medicaoSchema = new mongoose.Schema({
   },
   responsavel: {
     type: String,
-    default: "Não especificado",
-  },
-  totalOrcado: {
-    type: Number,
   },
   totalMedido: {
     type: Number,
-  },
-  saldoAtualizado: {
-    type: Number,
+    default: 0,
   },
   progressoGeral: {
     type: Number,
+    default: 0,
   },
-  items: [
-    {
-      id: String,
-      description: String,
-      unit: String,
-      plannedQuantity: Number,
-      value: Number,
-      executedQuantity: {
-        type: Number,
-        default: 0,
-      },
-      executedValue: {
-        type: Number,
-        default: 0,
-      },
-      percentage: {
-        type: Number,
-        default: 0,
-      },
-      status: {
-        type: String,
-        default: "Pendente",
-      },
-      comments: {
-        type: String,
-        default: "",
-      },
-      history: [
-        {
-          date: Date,
-          quantity: Number,
-          value: Number,
-          percentage: Number,
-          status: String,
-          comments: String,
-          attachments: [String],
-        },
-      ],
-      attachments: [String],
-      groupId: String,
-      groupTitle: String,
-      totalOrcado: Number,
-      totalMedido: Number,
-      saldoAtualizado: Number,
-      progresso: Number,
-    },
-  ],
+  status: {
+    type: String,
+    enum: ["Aprovado", "Em revisão", "Pendente"],
+    default: "Pendente",
+  },
   groups: [
     {
-      id: String,
-      title: String,
-      totalOrcado: Number,
-      totalMedido: Number,
-      saldoAtualizado: Number,
-      progresso: Number,
+      id: {
+        type: String,
+      },
+      title: {
+        type: String,
+      },
       items: [
         {
-          id: String,
-          description: String,
-          unit: String,
-          plannedQuantity: Number,
-          value: Number,
-          executedQuantity: Number,
-          executedValue: Number,
-          percentage: Number,
-          status: String,
-          totalOrcado: Number,
-          totalMedido: Number,
-          saldoAtualizado: Number,
+          id: {
+            type: String,
+          },
+          description: {
+            type: String,
+          },
+          unit: {
+            type: String,
+          },
+          plannedQuantity: {
+            type: Number,
+          },
+          value: {
+            type: Number,
+          },
+          executedQuantity: {
+            type: Number,
+            default: 0,
+          },
+          executedValue: {
+            type: Number,
+            default: 0,
+          },
+          percentage: {
+            type: Number,
+            default: 0,
+          },
+          status: {
+            type: String,
+            enum: ["Aprovado", "Em revisão", "Pendente"],
+            default: "Pendente",
+          },
+          history: [
+            {
+              date: {
+                type: Date,
+                default: Date.now,
+              },
+              quantity: {
+                type: Number,
+              },
+              value: {
+                type: Number,
+              },
+              percentage: {
+                type: Number,
+              },
+              status: {
+                type: String,
+                enum: ["Aprovado", "Em revisão", "Pendente"],
+              },
+              comments: {
+                type: String,
+              },
+              responsavel: {
+                type: String,
+              },
+            },
+          ],
+          attachments: [
+            {
+              name: {
+                type: String,
+              },
+              url: {
+                type: String,
+              },
+              type: {
+                type: String,
+              },
+              size: {
+                type: Number,
+              },
+              uploadedAt: {
+                type: Date,
+                default: Date.now,
+              },
+            },
+          ],
         },
       ],
     },
@@ -301,6 +321,14 @@ const medicaoSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now,
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
   },
 });
 
