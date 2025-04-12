@@ -1351,7 +1351,6 @@ router.post("/:obraId/medicao/save", async (req, res) => {
       progressoGeral,
       status,
       groups,
-      createdBy: req.user._id, // Se estiver usando autenticação
     });
 
     // Salva no banco de dados
