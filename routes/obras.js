@@ -1363,18 +1363,25 @@ router.post("/:obraId/medicao/save", async (req, res) => {
         id: item.id.toString(), // Converte ID para string
         status: convertStatus(item.status),
         unit: item.unit || "un", // Adiciona unidade padrão se não existir
+        executedQuantity: item.executedQuantity || 0,
+        executedValue: item.executedValue || 0,
+        percentage: item.percentage || 0,
+        history: item.history || [],
+        attachments: item.attachments || [],
       })),
     }));
 
     // Cria a nova medição
     const novaMedicao = new Medicao({
-      obraId: new mongoose.Types.ObjectId(obraId), // Converte para ObjectId
+      obraId: new mongoose.Types.ObjectId(obraId),
       date: new Date(date),
-      responsavel,
-      totalMedido,
-      progressoGeral,
+      responsavel: responsavel || "Não especificado",
+      totalMedido: totalMedido || 0,
+      progressoGeral: progressoGeral || 0,
       status: convertStatus(status),
       groups: convertedGroups,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     // Salva no banco de dados
@@ -1386,7 +1393,7 @@ router.post("/:obraId/medicao/save", async (req, res) => {
       {
         $set: {
           ultimaMedicao: novaMedicao._id,
-          progressoGeral: progressoGeral,
+          progressoGeral: progressoGeral || 0,
         },
         $push: { medicoes: novaMedicao._id },
       },
