@@ -541,31 +541,27 @@ router.post("/:id/orcamento", async (req, res) => {
       return res.status(400).json({ message: "Stages deve ser um array" });
     }
 
-    const orcamentoData = {
-      stages: stages.map((stage) => ({
-        ...stage,
-        subStages: (stage.subStages || []).map((subStage) => ({
-          ...subStage,
-          items: (subStage.items || []).map((item) => ({
-            ...item,
-            custoTotal: item.quantity * item.unitPrice,
-            precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
-            precoTotal:
-              item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
-            _id: undefined, // Remover _id
-          })),
-          _id: undefined, // Remover _id
-        })),
-        items: (stage.items || []).map((item) => ({
-          ...item,
-          custoTotal: item.quantity * item.unitPrice,
-          precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
-          precoTotal:
-            item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
-          _id: undefined, // Remover _id
-        })),
-        _id: undefined, // Remover _id
+    // Função para converter o status para o formato correto
+    const convertStatus = (status) => {
+      const statusMap = {
+        pending: "Pendente",
+        in_review: "Em revisão",
+        approved: "Aprovado",
+      };
+      return statusMap[status] || status;
+    };
+
+    // Converte os status nos grupos e itens
+    const convertedGroups = stages.map((stage) => ({
+      ...stage,
+      items: stage.items.map((item) => ({
+        ...item,
+        status: convertStatus(item.status),
       })),
+    }));
+
+    const orcamentoData = {
+      stages: convertedGroups,
       globalBdi,
       dataCriacao: dataCriacao || new Date(),
       dataAtualizacao: new Date(),
@@ -602,31 +598,27 @@ router.put("/:id/orcamento", async (req, res) => {
       return res.status(400).json({ message: "Stages deve ser um array" });
     }
 
-    const orcamentoData = {
-      stages: stages.map((stage) => ({
-        ...stage,
-        subStages: (stage.subStages || []).map((subStage) => ({
-          ...subStage,
-          items: (subStage.items || []).map((item) => ({
-            ...item,
-            custoTotal: item.quantity * item.unitPrice,
-            precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
-            precoTotal:
-              item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
-            _id: undefined, // Remover _id
-          })),
-          _id: undefined, // Remover _id
-        })),
-        items: (stage.items || []).map((item) => ({
-          ...item,
-          custoTotal: item.quantity * item.unitPrice,
-          precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
-          precoTotal:
-            item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
-          _id: undefined, // Remover _id
-        })),
-        _id: undefined, // Remover _id
+    // Função para converter o status para o formato correto
+    const convertStatus = (status) => {
+      const statusMap = {
+        pending: "Pendente",
+        in_review: "Em revisão",
+        approved: "Aprovado",
+      };
+      return statusMap[status] || status;
+    };
+
+    // Converte os status nos grupos e itens
+    const convertedGroups = stages.map((stage) => ({
+      ...stage,
+      items: stage.items.map((item) => ({
+        ...item,
+        status: convertStatus(item.status),
       })),
+    }));
+
+    const orcamentoData = {
+      stages: convertedGroups,
       globalBdi,
       dataCriacao: dataCriacao || new Date(),
       dataAtualizacao: new Date(),
@@ -663,31 +655,27 @@ router.post("/:id/orcamento", async (req, res) => {
       return res.status(400).json({ message: "Stages deve ser um array" });
     }
 
-    const orcamentoData = {
-      stages: stages.map((stage) => ({
-        ...stage,
-        subStages: (stage.subStages || []).map((subStage) => ({
-          ...subStage,
-          items: (subStage.items || []).map((item) => ({
-            ...item,
-            custoTotal: item.quantity * item.unitPrice,
-            precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
-            precoTotal:
-              item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
-            _id: undefined, // Remover _id
-          })),
-          _id: undefined, // Remover _id
-        })),
-        items: (stage.items || []).map((item) => ({
-          ...item,
-          custoTotal: item.quantity * item.unitPrice,
-          precoUnitario: item.unitPrice * (1 + (item.bdi || 0) / 100),
-          precoTotal:
-            item.quantity * item.unitPrice * (1 + (item.bdi || 0) / 100),
-          _id: undefined, // Remover _id
-        })),
-        _id: undefined, // Remover _id
+    // Função para converter o status para o formato correto
+    const convertStatus = (status) => {
+      const statusMap = {
+        pending: "Pendente",
+        in_review: "Em revisão",
+        approved: "Aprovado",
+      };
+      return statusMap[status] || status;
+    };
+
+    // Converte os status nos grupos e itens
+    const convertedGroups = stages.map((stage) => ({
+      ...stage,
+      items: stage.items.map((item) => ({
+        ...item,
+        status: convertStatus(item.status),
       })),
+    }));
+
+    const orcamentoData = {
+      stages: convertedGroups,
       globalBdi,
       dataCriacao: dataCriacao || new Date(),
       dataAtualizacao: new Date(),
@@ -1228,37 +1216,51 @@ router.post("/:id/medicoes", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    // Transforma os grupos em items e groups conforme o schema
-    const transformedData = {
-      ...medicaoData,
-      obraId: new mongoose.Types.ObjectId(id),
-      date: new Date(medicaoData.date),
-      items: medicaoData.groups
-        ? medicaoData.groups.flatMap((group) =>
-            group.items.map((item) => ({
-              ...item,
-              groupId: group.id,
-              groupTitle: group.title,
-            }))
-          )
-        : [],
-      groups: medicaoData.groups
-        ? medicaoData.groups.map((group) => ({
-            id: group.id,
-            title: group.title,
-            items: group.items,
-          }))
-        : [],
+    // Validação básica dos dados
+    if (!medicaoData.groups || !Array.isArray(medicaoData.groups)) {
+      return res.status(400).json({
+        message: "Dados de medição inválidos: grupos não encontrados",
+      });
+    }
+
+    // Função para converter o status para o formato correto
+    const convertStatus = (status) => {
+      const statusMap = {
+        pending: "Pendente",
+        in_review: "Em revisão",
+        approved: "Aprovado",
+      };
+      return statusMap[status] || status;
     };
 
-    const medicao = new Medicao(transformedData);
-    await medicao.save();
+    // Converte os status nos grupos e itens
+    const convertedGroups = medicaoData.groups.map((group) => ({
+      ...group,
+      items: group.items.map((item) => ({
+        ...item,
+        status: convertStatus(item.status),
+      })),
+    }));
+
+    // Cria a nova medição
+    const novaMedicao = new Medicao({
+      obraId: new mongoose.Types.ObjectId(id),
+      date: new Date(medicaoData.date),
+      responsavel: medicaoData.responsavel,
+      totalMedido: medicaoData.totalMedido,
+      progressoGeral: medicaoData.progressoGeral,
+      status: convertStatus(medicaoData.status),
+      groups: convertedGroups,
+    });
+
+    // Salva no banco de dados
+    await novaMedicao.save();
 
     // Adiciona a medição à obra
-    obra.medicoes.push(medicao._id);
+    obra.medicoes.push(novaMedicao._id);
     await obra.save();
 
-    res.status(201).json(medicao);
+    res.status(201).json(novaMedicao);
   } catch (error) {
     console.error("Erro ao salvar medição:", error);
     res
@@ -1342,6 +1344,25 @@ router.post("/:obraId/medicao/save", async (req, res) => {
       });
     }
 
+    // Função para converter o status para o formato correto
+    const convertStatus = (status) => {
+      const statusMap = {
+        pending: "Pendente",
+        in_review: "Em revisão",
+        approved: "Aprovado",
+      };
+      return statusMap[status] || status;
+    };
+
+    // Converte os status nos grupos e itens
+    const convertedGroups = groups.map((group) => ({
+      ...group,
+      items: group.items.map((item) => ({
+        ...item,
+        status: convertStatus(item.status),
+      })),
+    }));
+
     // Cria a nova medição
     const novaMedicao = new Medicao({
       obraId,
@@ -1349,8 +1370,8 @@ router.post("/:obraId/medicao/save", async (req, res) => {
       responsavel,
       totalMedido,
       progressoGeral,
-      status,
-      groups,
+      status: convertStatus(status),
+      groups: convertedGroups,
     });
 
     // Salva no banco de dados
