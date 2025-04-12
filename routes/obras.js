@@ -12,6 +12,7 @@ import Documento from "../models/Documento.js"; // Adicionado
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import Medicao from "../models/Medicao.js";
 
 const router = express.Router();
 
@@ -1216,27 +1217,53 @@ router.delete("/:id/documentos/:documentoId", async (req, res) => {
   }
 });
 
-// Rota para adicionar uma nova medicao
+// Rota para criar uma nova medição
 router.post("/:id/medicoes", async (req, res) => {
   try {
-    const obra = await Obra.findById(req.params.id);
+    const { id } = req.params;
+    const medicaoData = req.body;
+
+    const obra = await Obra.findById(id);
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    const novaMedicao = {
-      data: req.body.data,
-      responsavel: req.body.responsavel,
-      itens: req.body.itens,
-      valorTotal: req.body.valorTotal,
-      progresso: req.body.progresso,
+    // Transforma os grupos em items e groups conforme o schema
+    const transformedData = {
+      ...medicaoData,
+      obraId: new mongoose.Types.ObjectId(id),
+      date: new Date(medicaoData.date),
+      items: medicaoData.groups
+        ? medicaoData.groups.flatMap((group) =>
+            group.items.map((item) => ({
+              ...item,
+              groupId: group.id,
+              groupTitle: group.title,
+            }))
+          )
+        : [],
+      groups: medicaoData.groups
+        ? medicaoData.groups.map((group) => ({
+            id: group.id,
+            title: group.title,
+            items: group.items,
+          }))
+        : [],
     };
 
-    obra.medicoes.push(novaMedicao);
-    const updatedObra = await obra.save();
-    res.status(201).json(updatedObra);
+    const medicao = new Medicao(transformedData);
+    await medicao.save();
+
+    // Adiciona a medição à obra
+    obra.medicoes.push(medicao._id);
+    await obra.save();
+
+    res.status(201).json(medicao);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Erro ao salvar medição:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao salvar medição", error: error.message });
   }
 });
 
