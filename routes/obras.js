@@ -1530,4 +1530,65 @@ router.delete("/:id/medicoes/:medicaoId", async (req, res) => {
   }
 });
 
+// Rota para obter uma medição específica
+router.get("/:id/medicao/:medicaoId", async (req, res) => {
+  try {
+    const { id, medicaoId } = req.params;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(medicaoId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Encontra a medição específica
+    const medicao = obra.medicoes.find((m) => m._id.toString() === medicaoId);
+    if (!medicao) {
+      return res.status(404).json({ message: "Medição não encontrada" });
+    }
+
+    // Transforma os dados para o formato esperado pelo frontend
+    const transformedMedicao = {
+      ...medicao,
+      groups: medicao.groups.map((group) => ({
+        id: group.id,
+        title: group.title,
+        totalOrcado: group.totalOrcado,
+        totalMedido: group.totalMedido,
+        saldoAtualizado: group.saldoAtualizado,
+        progresso: group.progresso,
+        items: group.items.map((item) => ({
+          id: item.id,
+          description: item.description,
+          unit: item.unit,
+          plannedQuantity: item.plannedQuantity,
+          value: item.value,
+          executedQuantity: item.executedQuantity,
+          executedValue: item.executedValue,
+          percentage: item.percentage,
+          status: item.status,
+          totalOrcado: item.totalOrcado,
+          totalMedido: item.totalMedido,
+          saldoAtualizado: item.saldoAtualizado,
+        })),
+      })),
+    };
+
+    res.json(transformedMedicao);
+  } catch (error) {
+    console.error("Erro ao buscar medição:", error);
+    res.status(500).json({
+      message: "Erro ao buscar medição",
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+});
+
 export default router;
