@@ -9,10 +9,10 @@ import Etapa from "../models/Etapa.js"; // Adicionado
 import RegistroDiario from "../models/RegistroDiario.js"; // Adicionado
 import Galeria from "../models/Galeria.js"; // Adicionado
 import Documento from "../models/Documento.js"; // Adicionado
+import Medicao from "../models/Medicao.js"; // Adicionado
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import Medicao from "../models/Medicao.js";
 
 const router = express.Router();
 
@@ -1343,7 +1343,7 @@ router.post("/:obraId/medicao/save", async (req, res) => {
     }
 
     // Cria a nova medição
-    const novaMedicao = new Measurement({
+    const novaMedicao = new Medicao({
       obraId,
       date: new Date(date),
       responsavel,
