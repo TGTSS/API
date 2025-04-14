@@ -4,6 +4,9 @@ import Obra from "../models/Obra.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import TipoObra from "../models/TipoObra.js";
+import QuemPaga from "../models/QuemPaga.js";
+import Conta from "../models/Conta.js";
 
 const router = express.Router();
 
@@ -45,7 +48,6 @@ const upload = multer({
 // Rota para listar todas as obras
 router.get("/", async (req, res) => {
   try {
-
     // Verificar conexão com o MongoDB
     if (mongoose.connection.readyState !== 1) {
       throw new Error("Banco de dados não está conectado");
@@ -643,6 +645,39 @@ router.put("/:id/orcamento", async (req, res) => {
     res.json(obra.orcamento);
   } catch (error) {
     console.error("Erro ao atualizar orçamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar todos os tipos de obra
+router.get("/tipos", async (req, res) => {
+  try {
+    const tipos = await TipoObra.find().lean();
+    res.json(tipos);
+  } catch (error) {
+    console.error("Erro ao buscar tipos de obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar todos os quem paga
+router.get("/quem-paga", async (req, res) => {
+  try {
+    const quemPaga = await QuemPaga.find().lean();
+    res.json(quemPaga);
+  } catch (error) {
+    console.error("Erro ao buscar quem paga:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar todas as contas
+router.get("/contas", async (req, res) => {
+  try {
+    const contas = await Conta.find().lean();
+    res.json(contas);
+  } catch (error) {
+    console.error("Erro ao buscar contas:", error);
     res.status(500).json({ message: error.message });
   }
 });

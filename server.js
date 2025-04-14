@@ -248,7 +248,7 @@ app.post("/records", async (req, res) => {
 // Rota para listar todos os registros
 app.get("/records", async (req, res) => {
   try {
-    console.log("Rota GET /records chamada");
+
     const records = await Record.find().lean();
     res.json(records);
   } catch (error) {
