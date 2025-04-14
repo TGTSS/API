@@ -32,11 +32,15 @@ import obrasRouter from "./routes/obras.js";
 import profissionaisRouter from "./routes/profissionais.js";
 import diariosRouter from "./routes/diarios.js";
 import orcamentosRouter from "./routes/orcamentos.js";
-import Etapa from "./models/Etapa.js"; // Adicionado
-import Solicitacao from "./models/Solicitacao.js"; // Adicionado
+import Etapa from "./models/Etapa.js";
+import Solicitacao from "./models/Solicitacao.js";
 import cotacoesRouter from "./routes/cotacoes.js";
-import ordensCompraRouter from "./routes/ordensCompra.js"; // Adicionado
+import ordensCompraRouter from "./routes/ordensCompra.js";
 import transacoesIndependentesRoutes from "./routes/transacoesIndependentes.js";
+import Obra from "./models/Obra.js";
+import TipoObra from "./models/TipoObra.js";
+import QuemPaga from "./models/QuemPaga.js";
+import Conta from "./models/Conta.js";
 
 dotenv.config();
 
@@ -154,7 +158,6 @@ app.post("/api/beneficiarios/exemplo", async (req, res) => {
 // Rota para cadastrar um novo beneficiário
 app.post("/api/beneficiarios", async (req, res) => {
   try {
-    console.log("Rota POST /api/beneficiarios chamada");
     const beneficiario = new Beneficiario({
       ...req.body,
       endereco: req.body.endereco,
@@ -171,14 +174,9 @@ app.post("/api/beneficiarios", async (req, res) => {
 // Rota para cadastrar um novo cliente
 app.post("/api/clientes", async (req, res) => {
   try {
-    console.log("Rota POST /api/clientes chamada");
-    console.log("Dados recebidos:", req.body);
-
     const cliente = new Cliente({
       ...req.body,
     });
-
-    console.log("Objeto Cliente a ser salvo:", cliente.toObject());
 
     const savedCliente = await cliente.save();
     console.log("Cliente salvo:", savedCliente);
@@ -193,7 +191,6 @@ app.post("/api/clientes", async (req, res) => {
 // Rota para importar clientes a partir de um arquivo JSON
 app.post("/api/clientes/import", async (req, res) => {
   try {
-    console.log("Rota POST /api/clientes/import chamada");
     const clientes = req.body;
     if (!Array.isArray(clientes)) {
       return res.status(400).json({ message: "Dados inválidos" });
@@ -202,11 +199,6 @@ app.post("/api/clientes/import", async (req, res) => {
     const clientesToSave = clientes.map((cliente) => ({
       ...cliente,
     }));
-
-    console.log(
-      "Clientes a serem salvos:",
-      JSON.stringify(clientesToSave, null, 2)
-    );
 
     const savedClientes = await Cliente.insertMany(clientesToSave);
     console.log("Clientes salvos:", JSON.stringify(savedClientes, null, 2));
@@ -221,8 +213,6 @@ app.post("/api/clientes/import", async (req, res) => {
 // Rota para criar um registro
 app.post("/records", async (req, res) => {
   try {
-    console.log("Rota POST /records chamada");
-    console.log("Dados recebidos:", req.body);
     const { beneficiario, fornecedor, date, services, totalValue } = req.body;
 
     if (!beneficiario || !fornecedor || !date || !services || !totalValue) {
@@ -1071,7 +1061,6 @@ const emitirAtualizacaoRecibos = async () => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
-  console.log(`Allowed Origins: ${allowedOrigins.join(", ")}`);
 });
 
 // Rota para listar recibos recusados

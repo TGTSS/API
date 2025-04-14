@@ -45,7 +45,6 @@ const upload = multer({
 // Rota para listar todas as obras
 router.get("/", async (req, res) => {
   try {
-    console.log("Iniciando busca de obras...");
 
     // Verificar conexão com o MongoDB
     if (mongoose.connection.readyState !== 1) {
@@ -63,6 +62,7 @@ router.get("/", async (req, res) => {
         path: "tipo",
         select: "nome",
         options: { lean: true },
+        model: "TipoObra", // Especificando o modelo explicitamente
       })
       .populate({
         path: "quemPaga",
@@ -76,7 +76,13 @@ router.get("/", async (req, res) => {
       })
       .lean();
 
-    console.log("Obras encontradas:", obras.length);
+    // Garantir que o tipo seja null se não existir
+    obras.forEach((obra) => {
+      if (!obra.tipo) {
+        obra.tipo = null;
+      }
+    });
+
     res.json(obras);
   } catch (error) {
     console.error("Erro detalhado ao buscar obras:", {
