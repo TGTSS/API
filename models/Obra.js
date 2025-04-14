@@ -312,8 +312,6 @@ const ObraSchema = new mongoose.Schema({
     required: true, // Campo obrigatório
   },
   contatos: [ContatoSchema],
-  receitas: [ReceitaSchema],
-  despesas: [DespesaSchema],
   mapPosition: {
     type: [Number], // [latitude, longitude]
     validate: {
