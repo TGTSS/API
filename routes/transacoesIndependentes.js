@@ -3,44 +3,32 @@ import TransacaoIndependente from "../models/TransacaoIndependente.js";
 
 const router = express.Router();
 
-<<<<<<< HEAD
 // Get all independent transactions
 router.get("/", async (req, res) => {
-=======
-// Rota para adicionar uma nova transação independente
-router.post("/", async (req, res) => {
->>>>>>> parent of 8dc8675 (Atualizações)
   try {
-    const novaTransacao = new TransacaoIndependente(req.body);
-    const transacaoSalva = await novaTransacao.save();
-    res.status(201).json(transacaoSalva);
+    const transacoes = await TransacaoIndependente.find();
+    res.status(200).json(transacoes);
   } catch (error) {
-    console.error("Erro ao adicionar transação independente:", error);
+    console.error("Erro ao buscar transações independentes:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-<<<<<<< HEAD
 // Get a single independent transaction
 router.get("/:id", async (req, res) => {
-=======
-// Rota para excluir uma transação independente
-router.delete("/:id", async (req, res) => {
->>>>>>> parent of 8dc8675 (Atualizações)
   try {
     const { id } = req.params;
-    const transacaoExcluida = await TransacaoIndependente.findByIdAndDelete(id);
-    if (!transacaoExcluida) {
+    const transacao = await TransacaoIndependente.findById(id);
+    if (!transacao) {
       return res.status(404).json({ message: "Transação não encontrada" });
     }
-    res.status(200).json({ message: "Transação excluída com sucesso" });
+    res.status(200).json(transacao);
   } catch (error) {
-    console.error("Erro ao excluir transação independente:", error);
+    console.error("Erro ao buscar transação independente:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-<<<<<<< HEAD
 // Create a new independent transaction
 router.post("/", async (req, res) => {
   const transacao = new TransacaoIndependente({
@@ -95,28 +83,12 @@ router.delete("/:id", async (req, res) => {
     }
     await transacao.remove();
     res.json({ message: "Transação excluída com sucesso" });
-=======
-// Rota para atualizar uma transação independente
-router.put("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const transacaoAtualizada = await TransacaoIndependente.findByIdAndUpdate(
-      id,
-      req.body,
-      { new: true }
-    );
-    if (!transacaoAtualizada) {
-      return res.status(404).json({ message: "Transação não encontrada" });
-    }
-    res.status(200).json(transacaoAtualizada);
->>>>>>> parent of 8dc8675 (Atualizações)
   } catch (error) {
-    console.error("Erro ao atualizar transação independente:", error);
+    console.error("Erro ao excluir transação independente:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-<<<<<<< HEAD
 // Get transactions by date range
 router.get("/periodo/:inicio/:fim", async (req, res) => {
   try {
@@ -163,15 +135,7 @@ router.get("/tipo/:tipo", async (req, res) => {
       .sort({ data: -1 });
 
     res.json(transacoes);
-=======
-// Rota para obter todas as transações independentes
-router.get("/", async (req, res) => {
-  try {
-    const transacoes = await TransacaoIndependente.find();
-    res.status(200).json(transacoes);
->>>>>>> parent of 8dc8675 (Atualizações)
   } catch (error) {
-    console.error("Erro ao buscar transações independentes:", error);
     res.status(500).json({ message: error.message });
   }
 });
