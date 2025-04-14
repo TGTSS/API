@@ -17,14 +17,13 @@ const ReceitaSchema = new mongoose.Schema({
   valor: { type: Number },
   valorRecebido: { type: Number, default: 0 },
   tipo: { type: String, default: "receita" },
-  data: { type: Date, default: Date.now },
+  data: { type: Date },
   status: {
     type: String,
     enum: ["pendente", "recebido", "atrasado"],
     default: "pendente",
   },
   categoria: { type: String },
-  categoriaOutros: { type: String },
   centroCusto: { type: String },
   dataVencimento: { type: Date },
   formaPagamento: { type: String },
@@ -33,14 +32,7 @@ const ReceitaSchema = new mongoose.Schema({
     ref: "Cliente",
   },
   documento: { type: String },
-  anexos: [
-    {
-      nome: { type: String },
-      tipo: { type: String },
-      tamanho: { type: Number },
-      caminho: { type: String },
-    },
-  ],
+  anexos: [{ type: String }],
 });
 
 const DespesaSchema = new mongoose.Schema({
@@ -157,7 +149,7 @@ const RegistroDiarioSchema = new mongoose.Schema({
     {
       tipo: { type: String },
       quantidade: { type: Number },
-      outroTipo: { type: String }, // Para tipos personalizados
+      outroTipo: { type: String },
     },
   ],
   equipamentos: [
@@ -165,14 +157,9 @@ const RegistroDiarioSchema = new mongoose.Schema({
       tipo: { type: String },
       quantidade: { type: Number },
       horasUso: { type: Number },
-      outroTipo: { type: String }, // Para tipos personalizados
+      outroTipo: { type: String },
     },
   ],
-  ocorrencias: {
-    descricao: { type: String },
-    tipo: { type: String },
-    gravidade: { type: String },
-  },
 });
 
 const itemSchema = new mongoose.Schema({
@@ -340,83 +327,89 @@ const medicaoSchema = new mongoose.Schema({
   },
 });
 
-const ObraSchema = new mongoose.Schema({
-  nome: { type: String, required: true },
-  descricao: String,
-  dataInicio: { type: Date, required: true },
-  dataFim: Date,
-  status: {
-    type: String,
-    default: "Em andamento",
-  },
-  etapas: [etapaSchema],
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-  codigo: { type: String, unique: true },
-  codigoObras: { type: String },
-  tipo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "TipoObra",
-    required: true, // Campo obrigatório
-  },
-  art: { type: String },
-  responsavelTecnico: { type: String },
-  responsavelObra: { type: String },
-  arquiteto: { type: String }, // Novo campo
-  ceiCno: { type: String },
-  areaConstruida: { type: Number },
-  areaTerreno: { type: Number },
-  numeroPavimentos: { type: Number },
-  numeroUnidades: { type: Number },
-  endereco: EnderecoSchema, // Estrutura de endereço atualizada
-  quemPaga: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "QuemPaga",
-  },
-  conta: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Conta",
-  },
-  comentario: { type: String },
-  visivelPara: { type: String },
-  contatoPrincipal: { type: Number },
-  cliente: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Cliente",
-    required: true, // Campo obrigatório
-  },
-  contatos: [ContatoSchema],
-  receitas: [ReceitaSchema],
-  despesas: [DespesaSchema],
-  mapPosition: {
-    type: [Number], // [latitude, longitude]
-    validate: {
-      validator: function (value) {
-        // Verifica se o array contém exatamente dois números válidos
-        return (
-          Array.isArray(value) &&
-          value.length === 2 &&
-          value.every((num) => typeof num === "number" && !isNaN(num))
-        );
-      },
-      message:
-        "mapPosition deve conter exatamente dois números válidos [latitude, longitude].",
+const ObraSchema = new mongoose.Schema(
+  {
+    nome: { type: String, required: true },
+    descricao: String,
+    dataInicio: { type: Date, required: true },
+    dataFim: Date,
+    status: {
+      type: String,
+      default: "Em andamento",
     },
-    index: "2dsphere",
+    etapas: [etapaSchema],
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+    codigo: { type: String, unique: true },
+    codigoObras: { type: String },
+    tipo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TipoObra",
+      required: true, // Campo obrigatório
+    },
+    art: { type: String },
+    responsavelTecnico: { type: String },
+    responsavelObra: { type: String },
+    arquiteto: { type: String }, // Novo campo
+    ceiCno: { type: String },
+    areaConstruida: { type: Number },
+    areaTerreno: { type: Number },
+    numeroPavimentos: { type: Number },
+    numeroUnidades: { type: Number },
+    endereco: EnderecoSchema, // Estrutura de endereço atualizada
+    quemPaga: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "QuemPaga",
+    },
+    conta: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Conta",
+    },
+    comentario: { type: String },
+    visivelPara: { type: String },
+    contatoPrincipal: { type: Number },
+    cliente: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Cliente",
+      required: true, // Campo obrigatório
+    },
+    contatos: [ContatoSchema],
+    receitas: [ReceitaSchema],
+    despesas: [DespesaSchema],
+    mapPosition: {
+      type: [Number], // [latitude, longitude]
+      validate: {
+        validator: function (value) {
+          // Verifica se o array contém exatamente dois números válidos
+          return (
+            Array.isArray(value) &&
+            value.length === 2 &&
+            value.every((num) => typeof num === "number" && !isNaN(num))
+          );
+        },
+        message:
+          "mapPosition deve conter exatamente dois números válidos [latitude, longitude].",
+      },
+      index: "2dsphere",
+    },
+    registrosDiarios: [RegistroDiarioSchema],
+    galeria: [{ type: mongoose.Schema.Types.ObjectId, ref: "Galeria" }],
+    documentos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Documento" }],
+    dataPrevisao: { type: Date }, // Novo campo
+    imagem: { type: String },
+    documentos: [DocumentoSchema],
+    orcamento: {
+      stages: [StageSchema],
+      globalBdi: Number,
+      dataCriacao: Date,
+      dataAtualizacao: Date,
+    },
+    medicoes: [medicaoSchema],
   },
-  registrosDiarios: [RegistroDiarioSchema],
-  galeria: [{ type: mongoose.Schema.Types.ObjectId, ref: "Galeria" }],
-  documentos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Documento" }],
-  dataPrevisao: { type: Date }, // Novo campo
-  imagem: { type: String },
-  documentos: [DocumentoSchema],
-  orcamento: {
-    stages: [StageSchema],
-    globalBdi: Number,
-    dataCriacao: Date,
-    dataAtualizacao: Date,
-  },
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Middleware to update the updatedAt field
 ObraSchema.pre("save", function (next) {
