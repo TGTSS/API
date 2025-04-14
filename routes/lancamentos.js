@@ -1,444 +1,154 @@
 import express from "express";
-import mongoose from "mongoose";
-import Obra from "../models/Obra.js";
+import Lancamento from "../models/Lancamento.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 
 const router = express.Router();
 
-// Criar diretório uploads se não existir
-const uploadDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure multer for file uploads
+// Configuração do multer para upload de arquivos
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: (req, file, cb) => {
+    const uploadDir = "uploads/lancamentos";
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
     cb(null, uploadDir);
   },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
 
 const upload = multer({
-  storage: storage,
-  fileFilter: function (req, file, cb) {
-    const filetypes = /jpeg|jpg|png|pdf/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-
-    if (mimetype && extname) {
-      return cb(null, true);
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Tipo de arquivo não permitido"), false);
     }
-    cb(new Error("Apenas arquivos PDF, JPEG e PNG são permitidos"));
   },
 });
 
-// Adicionar middleware para capturar erros do multer
-router.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    return res.status(400).json({ message: err.message });
-  }
-  next(err);
-});
-
-// Rota para adicionar um novo lançamento de receita ou despesa
-router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
+// Rota para criar um novo lançamento
+router.post("/:obraId/:tipo", upload.array("anexos"), async (req, res) => {
   try {
-    const { id, tipo } = req.params;
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
+    const { obraId, tipo } = req.params;
+    const formData = req.body;
 
-    // Função para converter valor monetário para número
-    const parseValorMonetario = (valor) => {
-      if (!valor) return 0;
-      if (typeof valor === "string") {
-        // Remove R$, pontos e espaços, substitui vírgula por ponto
-        return parseFloat(
-          valor.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()
-        );
-      }
-      return parseFloat(valor);
-    };
+    // Processar arquivos anexados
+    const anexos = req.files ? req.files.map((file) => file.path) : [];
 
-    // Extrair valores do FormData
-    const {
-      descricao,
-      valor,
-      valorNumerico,
-      data,
-      status,
-      categoria,
-      categoriaOutros,
-      centroCusto,
-      dataVencimento,
-      formaPagamento,
-      beneficiario,
-      beneficiarioTipo,
-      documento,
-      valorRecebido,
-      valorPago,
-    } = req.body;
-
-    // Validar campos obrigatórios
-    if (
-      !descricao ||
-      !valorNumerico ||
-      !data ||
-      !categoria ||
-      !formaPagamento ||
-      !beneficiario
-    ) {
-      return res.status(400).json({
-        message: "Campos obrigatórios não preenchidos",
-        details: {
-          descricao: !descricao,
-          valor: !valorNumerico,
-          data: !data,
-          categoria: !categoria,
-          formaPagamento: !formaPagamento,
-          beneficiario: !beneficiario,
-        },
-      });
-    }
-
-    // Validar categoriaOutros se categoria for "Outros"
-    if (categoria === "Outros" && !categoriaOutros) {
-      return res.status(400).json({
-        message: "Categoria 'Outros' requer especificação",
-      });
-    }
-
-    // Validar beneficiarioTipo para despesas
-    if (tipo === "despesa" && !beneficiarioTipo) {
-      return res.status(400).json({
-        message: "Tipo de beneficiário é obrigatório para despesas",
-      });
-    }
-
-    // Validar beneficiario para despesas
-    if (tipo === "despesa" && beneficiario) {
-      try {
-        // Verificar se o beneficiario é um ObjectId válido
-        if (!mongoose.Types.ObjectId.isValid(beneficiario)) {
-          return res.status(400).json({
-            message: "ID do beneficiário inválido",
-          });
-        }
-      } catch (error) {
-        console.error("Erro ao validar beneficiário:", error);
-        return res.status(400).json({
-          message: "Erro ao validar beneficiário",
-          error: error.message,
-        });
-      }
-    }
-
-    const novoLancamento = {
-      id: new mongoose.Types.ObjectId(),
-      descricao,
-      valor: parseValorMonetario(valorNumerico || valor),
+    const lancamento = new Lancamento({
+      ...formData,
       tipo,
-      data: new Date(data),
-      status: status || "pendente",
-      categoria,
-      categoriaOutros: categoria === "Outros" ? categoriaOutros : undefined,
-      centroCusto,
-      dataVencimento: dataVencimento ? new Date(dataVencimento) : undefined,
-      formaPagamento,
-      documento,
-      anexos: req.files
-        ? req.files.map((file) => ({
-            nome: file.originalname,
-            tipo: file.mimetype,
-            tamanho: file.size,
-            caminho: file.path,
-          }))
-        : [],
-    };
-
-    // Adicionar campos específicos para cada tipo
-    if (tipo === "receita") {
-      novoLancamento.valorRecebido = parseValorMonetario(valorRecebido || 0);
-      if (beneficiario) {
-        novoLancamento.beneficiario = new mongoose.Types.ObjectId(beneficiario);
-      }
-    } else if (tipo === "despesa") {
-      novoLancamento.valorPago = parseValorMonetario(valorPago || 0);
-      if (beneficiario) {
-        novoLancamento.beneficiario = new mongoose.Types.ObjectId(beneficiario);
-        novoLancamento.beneficiarioTipo = beneficiarioTipo;
-      }
-    }
-
-    // Adicionar o lançamento ao array correto
-    if (tipo === "receita") {
-      obra.receitas.push(novoLancamento);
-    } else if (tipo === "despesa") {
-      obra.despesas.push(novoLancamento);
-    }
-
-    await obra.save();
-    res.status(201).json(novoLancamento);
-  } catch (error) {
-    console.error("Erro ao adicionar lançamento:", error);
-    res.status(500).json({
-      message: "Erro ao adicionar lançamento",
-      error: error.message,
+      obra: obraId,
+      anexos,
+      valor: parseFloat(formData.valor),
+      valorRecebido: formData.valorRecebido
+        ? parseFloat(formData.valorRecebido)
+        : 0,
+      valorPago: formData.valorPago ? parseFloat(formData.valorPago) : 0,
     });
+
+    await lancamento.save();
+    res.status(201).json(lancamento);
+  } catch (error) {
+    console.error("Erro ao criar lançamento:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Rota para editar um lançamento de receita ou despesa
-router.put(
-  "/:id/:tipo/:lancamentoId",
-  upload.array("anexos"),
-  async (req, res) => {
-    try {
-      const { id, tipo, lancamentoId } = req.params;
-      const obra = await Obra.findById(id);
-      if (!obra) {
-        return res.status(404).json({ message: "Obra não encontrada" });
-      }
-
-      // Função para converter valor monetário para número
-      const parseValorMonetario = (valor) => {
-        if (typeof valor === "string") {
-          // Remove R$, pontos e espaços, substitui vírgula por ponto
-          return parseFloat(
-            valor.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()
-          );
-        }
-        return parseFloat(valor);
-      };
-
-      const lancamentoEditado = {
-        descricao: req.body.descricao,
-        valor: parseValorMonetario(req.body.valorNumerico || req.body.valor),
-        data: new Date(req.body.data),
-        status: req.body.status,
-        categoria: req.body.categoria,
-        centroCusto: req.body.centroCusto,
-        dataVencimento: req.body.dataVencimento
-          ? new Date(req.body.dataVencimento)
-          : undefined,
-        formaPagamento: req.body.formaPagamento,
-        documento: req.body.documento,
-      };
-
-      // Adicionar novos anexos se houver
-      if (req.files && req.files.length > 0) {
-        const novosAnexos = req.files.map((file) => ({
-          nome: file.originalname,
-          tipo: file.mimetype,
-          tamanho: file.size,
-          caminho: file.path,
-        }));
-        lancamentoEditado.anexos = novosAnexos;
-      }
-
-      // Campos específicos para cada tipo
-      if (tipo === "receita") {
-        lancamentoEditado.valorRecebido = parseValorMonetario(
-          req.body.valorRecebido || 0
-        );
-        lancamentoEditado.beneficiario = req.body.beneficiario
-          ? new mongoose.Types.ObjectId(req.body.beneficiario)
-          : undefined;
-      } else if (tipo === "despesa") {
-        lancamentoEditado.valorPago = parseValorMonetario(
-          req.body.valorPago || 0
-        );
-        lancamentoEditado.beneficiario = req.body.beneficiario
-          ? new mongoose.Types.ObjectId(req.body.beneficiario)
-          : undefined;
-        lancamentoEditado.beneficiarioTipo = req.body.beneficiarioTipo;
-      }
-
-      // Validar campos obrigatórios
-      if (
-        !lancamentoEditado.descricao ||
-        !lancamentoEditado.valor ||
-        !lancamentoEditado.data
-      ) {
-        return res
-          .status(400)
-          .json({ message: "Campos obrigatórios não preenchidos" });
-      }
-
-      let lancamentoIndex;
-      if (tipo === "receita") {
-        lancamentoIndex = obra.receitas.findIndex(
-          (item) => item._id.toString() === lancamentoId
-        );
-        if (lancamentoIndex === -1) {
-          return res.status(404).json({ message: "Lançamento não encontrado" });
-        }
-        obra.receitas[lancamentoIndex] = {
-          ...obra.receitas[lancamentoIndex],
-          ...lancamentoEditado,
-        };
-      } else if (tipo === "despesa") {
-        lancamentoIndex = obra.despesas.findIndex(
-          (item) => item._id.toString() === lancamentoId
-        );
-        if (lancamentoIndex === -1) {
-          return res.status(404).json({ message: "Lançamento não encontrado" });
-        }
-        obra.despesas[lancamentoIndex] = {
-          ...obra.despesas[lancamentoIndex],
-          ...lancamentoEditado,
-        };
-      } else {
-        return res.status(400).json({ message: "Tipo de lançamento inválido" });
-      }
-
-      await obra.save();
-      res.json(lancamentoEditado);
-    } catch (error) {
-      console.error("Erro ao editar lançamento:", error);
-      res.status(500).json({ message: error.message });
-    }
-  }
-);
-
-// Rota para excluir um lançamento de receita ou despesa
-router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
+// Rota para atualizar um lançamento
+router.put("/:id", upload.array("anexos"), async (req, res) => {
   try {
-    const { id, tipo, lancamentoId } = req.params;
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
+    const { id } = req.params;
+    const formData = req.body;
 
-    // Se não tiver tipo e lancamentoId, assume que o id é o lancamentoId
-    if (!tipo && !lancamentoId) {
-      // Procura em receitas e pagamentos
-      const receitaIndex = obra.receitas.findIndex(
-        (item) => item._id.toString() === id
-      );
-      const despesaIndex = obra.despesas.findIndex(
-        (item) => item._id.toString() === id
-      );
+    // Processar arquivos anexados
+    const anexos = req.files ? req.files.map((file) => file.path) : [];
 
-      if (receitaIndex !== -1) {
-        obra.receitas.splice(receitaIndex, 1);
-        await obra.save({ validateBeforeSave: false });
-        return res.status(200).json({
-          message: "Lançamento excluído com sucesso",
-        });
-      }
+    const lancamento = await Lancamento.findByIdAndUpdate(
+      id,
+      {
+        ...formData,
+        anexos,
+        valor: parseFloat(formData.valor),
+        valorRecebido: formData.valorRecebido
+          ? parseFloat(formData.valorRecebido)
+          : 0,
+        valorPago: formData.valorPago ? parseFloat(formData.valorPago) : 0,
+      },
+      { new: true }
+    );
 
-      if (despesaIndex !== -1) {
-        obra.despesas.splice(despesaIndex, 1);
-        await obra.save({ validateBeforeSave: false });
-        return res.status(200).json({
-          message: "Lançamento excluído com sucesso",
-        });
-      }
-
+    if (!lancamento) {
       return res.status(404).json({ message: "Lançamento não encontrado" });
     }
 
-    // Se tiver tipo e lancamentoId, usa a lógica original
-    if (tipo === "receita") {
-      const index = obra.receitas.findIndex(
-        (item) => item._id.toString() === lancamentoId
-      );
-      if (index === -1) {
-        return res.status(404).json({ message: "Lançamento não encontrado" });
-      }
-      obra.receitas.splice(index, 1);
-    } else if (tipo === "despesa") {
-      const index = obra.despesas.findIndex(
-        (item) => item._id.toString() === lancamentoId
-      );
-      if (index === -1) {
-        return res.status(404).json({ message: "Lançamento não encontrado" });
-      }
-      obra.despesas.splice(index, 1);
-    } else {
-      return res.status(400).json({ message: "Tipo de lançamento inválido" });
+    res.json(lancamento);
+  } catch (error) {
+    console.error("Erro ao atualizar lançamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para excluir um lançamento
+router.delete("/:obraId/:tipo/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const lancamento = await Lancamento.findByIdAndDelete(id);
+
+    if (!lancamento) {
+      return res.status(404).json({ message: "Lançamento não encontrado" });
     }
 
-    await obra.save({ validateBeforeSave: false });
-    res.status(200).json({
-      message: "Lançamento excluído com sucesso",
-    });
+    // Remover arquivos anexados
+    if (lancamento.anexos && lancamento.anexos.length > 0) {
+      lancamento.anexos.forEach((filePath) => {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      });
+    }
+
+    res.json({ message: "Lançamento excluído com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir lançamento:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-// Rota para obter todos os lançamentos de receita de uma obra
-router.get("/:id/receitas", async (req, res) => {
+// Rota para listar receitas de uma obra
+router.get("/:obraId/receitas", async (req, res) => {
   try {
-    const { id } = req.params;
-    const obra = await Obra.findById(id).lean();
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-    res.json(obra.receitas);
+    const { obraId } = req.params;
+    const receitas = await Lancamento.find({
+      obra: obraId,
+      tipo: "receita",
+    }).sort({ data: -1 });
+    res.json(receitas);
   } catch (error) {
     console.error("Erro ao buscar receitas:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-// Rota para obter todos os lançamentos de despesa de uma obra
-router.get("/:id/despesas", async (req, res) => {
+// Rota para listar despesas de uma obra
+router.get("/:obraId/despesas", async (req, res) => {
   try {
-    const { id } = req.params;
-    const obra = await Obra.findById(id).lean();
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-    res.json(obra.despesas);
+    const { obraId } = req.params;
+    const despesas = await Lancamento.find({
+      obra: obraId,
+      tipo: "despesa",
+    }).sort({ data: -1 });
+    res.json(despesas);
   } catch (error) {
     console.error("Erro ao buscar despesas:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para obter todos os lançamentos (receitas e despesas) de uma obra
-router.get("/:id/lancamentos", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const obra = await Obra.findById(id).lean();
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-    const lancamentos = {
-      receitas: obra.receitas,
-      despesas: obra.despesas,
-    };
-    res.json(lancamentos);
-  } catch (error) {
-    console.error("Erro ao buscar lançamentos:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para obter todos os lançamentos (receitas e despesas) de todas as obras
-router.get("/lancamentos", async (req, res) => {
-  try {
-    const obras = await Obra.find().lean();
-    const todosLancamentos = obras.map((obra) => ({
-      obraId: obra._id,
-      receitas: obra.receitas,
-      despesas: obra.despesas,
-    }));
-    res.json(todosLancamentos);
-  } catch (error) {
-    console.error("Erro ao buscar lançamentos de todas as obras:", error);
     res.status(500).json({ message: error.message });
   }
 });

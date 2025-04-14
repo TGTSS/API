@@ -30,7 +30,6 @@ import { Server } from "socket.io";
 import http from "http";
 import obrasRouter from "./routes/obras.js";
 import profissionaisRouter from "./routes/profissionais.js";
-import lancamentosRouter from "./routes/lancamentos.js";
 import diariosRouter from "./routes/diarios.js";
 import orcamentosRouter from "./routes/orcamentos.js";
 import Etapa from "./models/Etapa.js"; // Adicionado
@@ -38,6 +37,7 @@ import Solicitacao from "./models/Solicitacao.js"; // Adicionado
 import cotacoesRouter from "./routes/cotacoes.js";
 import ordensCompraRouter from "./routes/ordensCompra.js"; // Adicionado
 import transacoesIndependentesRoutes from "./routes/transacoesIndependentes.js";
+import lancamentosRouter from "./routes/lancamentos.js";
 
 dotenv.config();
 
