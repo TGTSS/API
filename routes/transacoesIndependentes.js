@@ -1,11 +1,10 @@
 import express from "express";
 import TransacaoIndependente from "../models/TransacaoIndependente.js";
-import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
 // Get all independent transactions
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const transacoes = await TransacaoIndependente.find()
       .populate("beneficiario")
@@ -17,7 +16,7 @@ router.get("/", verifyToken, async (req, res) => {
 });
 
 // Get a single independent transaction
-router.get("/:id", verifyToken, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const transacao = await TransacaoIndependente.findById(
       req.params.id
@@ -32,7 +31,7 @@ router.get("/:id", verifyToken, async (req, res) => {
 });
 
 // Create a new independent transaction
-router.post("/", verifyToken, async (req, res) => {
+router.post("/", async (req, res) => {
   const transacao = new TransacaoIndependente({
     ...req.body,
     valorPago: req.body.tipo === "despesa" ? req.body.valor : 0,
@@ -48,7 +47,7 @@ router.post("/", verifyToken, async (req, res) => {
 });
 
 // Update an independent transaction
-router.put("/:id", verifyToken, async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const transacao = await TransacaoIndependente.findById(req.params.id);
     if (!transacao) {
@@ -77,7 +76,7 @@ router.put("/:id", verifyToken, async (req, res) => {
 });
 
 // Delete an independent transaction
-router.delete("/:id", verifyToken, async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const transacao = await TransacaoIndependente.findById(req.params.id);
     if (!transacao) {
@@ -91,7 +90,7 @@ router.delete("/:id", verifyToken, async (req, res) => {
 });
 
 // Get transactions by date range
-router.get("/periodo/:inicio/:fim", verifyToken, async (req, res) => {
+router.get("/periodo/:inicio/:fim", async (req, res) => {
   try {
     const inicio = new Date(req.params.inicio);
     const fim = new Date(req.params.fim);
@@ -112,7 +111,7 @@ router.get("/periodo/:inicio/:fim", verifyToken, async (req, res) => {
 });
 
 // Get transactions by status
-router.get("/status/:status", verifyToken, async (req, res) => {
+router.get("/status/:status", async (req, res) => {
   try {
     const transacoes = await TransacaoIndependente.find({
       status: req.params.status,
@@ -127,7 +126,7 @@ router.get("/status/:status", verifyToken, async (req, res) => {
 });
 
 // Get transactions by type
-router.get("/tipo/:tipo", verifyToken, async (req, res) => {
+router.get("/tipo/:tipo", async (req, res) => {
   try {
     const transacoes = await TransacaoIndependente.find({
       tipo: req.params.tipo,
