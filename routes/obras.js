@@ -45,15 +45,53 @@ const upload = multer({
 // Rota para listar todas as obras
 router.get("/", async (req, res) => {
   try {
+    console.log("Iniciando busca de obras...");
+
+    // Verificar conexão com o MongoDB
+    if (mongoose.connection.readyState !== 1) {
+      throw new Error("Banco de dados não está conectado");
+    }
+
+    // Buscar obras com população segura
     const obras = await Obra.find()
-      .populate("cliente")
-      .populate("tipo")
-      .populate("quemPaga")
-      .populate("conta");
+      .populate({
+        path: "cliente",
+        select: "nome cnpj cpf",
+        options: { lean: true },
+      })
+      .populate({
+        path: "tipo",
+        select: "nome",
+        options: { lean: true },
+      })
+      .populate({
+        path: "quemPaga",
+        select: "nome",
+        options: { lean: true },
+      })
+      .populate({
+        path: "conta",
+        select: "nome numero",
+        options: { lean: true },
+      })
+      .lean();
+
+    console.log("Obras encontradas:", obras.length);
     res.json(obras);
   } catch (error) {
-    console.error("Erro ao buscar obras:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Erro detalhado ao buscar obras:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      connectionState: mongoose.connection.readyState,
+    });
+
+    res.status(500).json({
+      message: error.message,
+      error: error.name,
+      connectionState: mongoose.connection.readyState,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
   }
 });
 
