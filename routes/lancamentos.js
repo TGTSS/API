@@ -203,4 +203,19 @@ router.get("/:obraId/despesas", async (req, res) => {
   }
 });
 
+// Rota para listar pagamentos de uma obra
+router.get("/:obraId/pagamentos", async (req, res) => {
+  try {
+    const { obraId } = req.params;
+    const pagamentos = await Lancamento.find({
+      obra: obraId,
+      tipo: "pagamento",
+    }).sort({ data: -1 });
+    res.json(pagamentos);
+  } catch (error) {
+    console.error("Erro ao buscar pagamentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
