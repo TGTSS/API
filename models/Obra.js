@@ -13,20 +13,20 @@ const ReceitaSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     default: () => new mongoose.Types.ObjectId(),
   },
-  descricao: { type: String },
-  valor: { type: Number },
+  descricao: { type: String, required: true },
+  valor: { type: Number, required: true },
   valorRecebido: { type: Number, default: 0 },
   tipo: { type: String, default: "receita" },
-  data: { type: Date },
+  data: { type: Date, default: Date.now },
   status: {
     type: String,
     enum: ["pendente", "recebido", "atrasado"],
     default: "pendente",
   },
-  categoria: { type: String },
+  categoria: { type: String, required: true },
   centroCusto: { type: String },
   dataVencimento: { type: Date },
-  formaPagamento: { type: String },
+  formaPagamento: { type: String, required: true },
   beneficiario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cliente",
@@ -109,7 +109,7 @@ const SubStageSchema = new mongoose.Schema({
   number: String,
   name: String,
   items: [ItemSchema],
-  progresso: Number, // Novo campo
+  progresso: Number,
 });
 
 const StageSchema = new mongoose.Schema({
@@ -123,7 +123,45 @@ const StageSchema = new mongoose.Schema({
   bdi: Number,
   subStages: [SubStageSchema],
   items: [ItemSchema],
-  progresso: Number, // Novo campo
+  progresso: Number,
+});
+
+const OrcamentoSchema = new mongoose.Schema({
+  stages: [StageSchema],
+  globalBdi: Number,
+  dataCriacao: Date,
+  dataAtualizacao: Date,
+});
+
+const PagamentoSchema = new mongoose.Schema({
+  id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId(),
+  },
+  descricao: { type: String, required: true },
+  valor: { type: Number, required: true },
+  valorPago: { type: Number, default: 0 },
+  tipo: { type: String, default: "pagamento" },
+  data: { type: Date, default: Date.now },
+  status: {
+    type: String,
+    enum: ["pendente", "pago", "atrasado"],
+    default: "pendente",
+  },
+  categoria: { type: String, required: true },
+  centroCusto: { type: String },
+  dataVencimento: { type: Date },
+  formaPagamento: { type: String, required: true },
+  beneficiario: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "beneficiarioTipo",
+  },
+  beneficiarioTipo: {
+    type: String,
+    enum: ["Fornecedor", "Funcionario"],
+  },
+  documento: { type: String },
+  anexos: [{ type: String }],
 });
 
 const RegistroDiarioSchema = new mongoose.Schema({
@@ -162,169 +200,60 @@ const RegistroDiarioSchema = new mongoose.Schema({
   ],
 });
 
-const itemSchema = new mongoose.Schema({
-  descricao: { type: String, required: true },
-  unidade: { type: String, required: true },
-  valorUnitario: { type: Number, required: true },
-  quantidade: { type: Number, required: true },
-  quantidadeExecutada: { type: Number, default: 0 },
+const MedicaoSchema = new mongoose.Schema({
+  totalMedido: { type: Number, default: 0 },
+  progressoGeral: { type: Number, default: 0 },
   status: {
     type: String,
     enum: ["Pendente", "Em revisão", "Aprovado"],
     default: "Pendente",
   },
-  historico: [
-    {
-      data: { type: Date, default: Date.now },
-      quantidade: Number,
-      valor: Number,
-      porcentagem: Number,
-      status: String,
-      comentarios: String,
-      anexos: [String],
-    },
-  ],
-});
-
-const etapaSchema = new mongoose.Schema({
-  nome: { type: String, required: true },
-  itens: [itemSchema],
-});
-
-const medicaoSchema = new mongoose.Schema({
-  obraId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Obra",
-  },
-  date: {
-    type: Date,
-    default: Date.now,
-  },
-  responsavel: {
-    type: String,
-  },
-  totalMedido: {
-    type: Number,
-    default: 0,
-  },
-  progressoGeral: {
-    type: Number,
-    default: 0,
-  },
-  status: {
-    type: String,
-    enum: ["Aprovado", "Em revisão", "Pendente"],
-    default: "Pendente",
-  },
+  date: { type: Date, default: Date.now },
   groups: [
     {
-      id: {
-        type: String,
-      },
-      title: {
-        type: String,
-      },
+      id: { type: String },
+      title: { type: String },
       items: [
         {
-          id: {
-            type: String,
-          },
-          description: {
-            type: String,
-          },
-          unit: {
-            type: String,
-          },
-          plannedQuantity: {
-            type: Number,
-          },
-          value: {
-            type: Number,
-          },
-          executedQuantity: {
-            type: Number,
-            default: 0,
-          },
-          executedValue: {
-            type: Number,
-            default: 0,
-          },
-          percentage: {
-            type: Number,
-            default: 0,
-          },
+          id: { type: String },
+          description: { type: String },
+          unit: { type: String },
+          plannedQuantity: { type: Number },
+          value: { type: Number },
+          executedQuantity: { type: Number, default: 0 },
+          executedValue: { type: Number, default: 0 },
+          percentage: { type: Number, default: 0 },
           status: {
             type: String,
-            enum: ["Aprovado", "Em revisão", "Pendente"],
+            enum: ["Pendente", "Em revisão", "Aprovado"],
             default: "Pendente",
           },
           history: [
             {
-              date: {
-                type: Date,
-                default: Date.now,
-              },
-              quantity: {
-                type: Number,
-              },
-              value: {
-                type: Number,
-              },
-              percentage: {
-                type: Number,
-              },
-              status: {
-                type: String,
-                enum: ["Aprovado", "Em revisão", "Pendente"],
-              },
-              comments: {
-                type: String,
-              },
-              responsavel: {
-                type: String,
-              },
+              date: { type: Date, default: Date.now },
+              quantity: { type: Number },
+              value: { type: Number },
+              percentage: { type: Number },
+              status: { type: String },
+              comments: { type: String },
+              responsavel: { type: String },
             },
           ],
           attachments: [
             {
-              name: {
-                type: String,
-              },
-              url: {
-                type: String,
-              },
-              type: {
-                type: String,
-              },
-              size: {
-                type: Number,
-              },
-              uploadedAt: {
-                type: Date,
-                default: Date.now,
-              },
+              name: { type: String },
+              url: { type: String },
+              type: { type: String },
+              size: { type: Number },
+              uploadedAt: { type: Date, default: Date.now },
             },
           ],
         },
       ],
     },
   ],
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
-  updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 const ObraSchema = new mongoose.Schema(
@@ -337,7 +266,7 @@ const ObraSchema = new mongoose.Schema(
       type: String,
       default: "Em andamento",
     },
-    etapas: [etapaSchema],
+    etapas: [StageSchema],
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     codigo: { type: String, unique: true },
@@ -398,13 +327,9 @@ const ObraSchema = new mongoose.Schema(
     dataPrevisao: { type: Date }, // Novo campo
     imagem: { type: String },
     documentos: [DocumentoSchema],
-    orcamento: {
-      stages: [StageSchema],
-      globalBdi: Number,
-      dataCriacao: Date,
-      dataAtualizacao: Date,
-    },
-    medicoes: [medicaoSchema],
+    orcamento: OrcamentoSchema,
+    pagamentos: [PagamentoSchema],
+    medicoes: [MedicaoSchema],
   },
   {
     timestamps: true,

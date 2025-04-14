@@ -14,12 +14,10 @@ app.post("/api/fornecedores", async (req, res) => {
   const fornecedor = new Fornecedor(req.body);
   try {
     const savedFornecedor = await fornecedor.save();
-    res
-      .status(201)
-      .json({
-        message: "Fornecedor cadastrado com sucesso",
-        fornecedor: savedFornecedor,
-      });
+    res.status(201).json({
+      message: "Fornecedor cadastrado com sucesso",
+      fornecedor: savedFornecedor,
+    });
   } catch (error) {
     console.error("Erro ao cadastrar fornecedor:", error.message);
     res.status(500).json({ error: "Erro ao cadastrar fornecedor" });

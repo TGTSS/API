@@ -1,14 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
 import Obra from "../models/Obra.js";
-import StatusObra from "../models/StatusObra.js";
-import TipoObra from "../models/TipoObra.js";
-import QuemPaga from "../models/QuemPaga.js";
-import Conta from "../models/Conta.js";
-import Etapa from "../models/Etapa.js";
-import RegistroDiario from "../models/RegistroDiario.js";
-import Galeria from "../models/Galeria.js";
-import Documento from "../models/Documento.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -117,9 +109,6 @@ router.post("/", async (req, res) => {
       previsaoTermino,
       dataPrevisao,
       imagem,
-      etapas,
-      galeria,
-      documentos,
       orcamento,
       receitas,
       pagamentos,
@@ -162,9 +151,6 @@ router.post("/", async (req, res) => {
       previsaoTermino,
       dataPrevisao,
       imagem,
-      etapas,
-      galeria,
-      documentos,
       orcamento,
       receitas,
       pagamentos,
@@ -211,9 +197,6 @@ router.put("/:id", async (req, res) => {
       previsaoTermino,
       dataPrevisao,
       imagem,
-      etapas,
-      galeria,
-      documentos,
       orcamento,
       receitas,
       pagamentos,
@@ -262,9 +245,6 @@ router.put("/:id", async (req, res) => {
         previsaoTermino,
         dataPrevisao,
         imagem,
-        etapas,
-        galeria,
-        documentos,
         orcamento,
         receitas,
         pagamentos,
@@ -320,6 +300,100 @@ router.get("/:id/receitas", async (req, res) => {
   }
 });
 
+// Rota para adicionar uma receita
+router.post("/:id/receitas", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const novaReceita = {
+      ...req.body,
+      id: new mongoose.Types.ObjectId(),
+      data: req.body.data || new Date(),
+      status: req.body.status || "pendente",
+      valorRecebido: req.body.valorRecebido || 0,
+    };
+
+    obra.receitas.push(novaReceita);
+    await obra.save();
+
+    res.status(201).json(novaReceita);
+  } catch (error) {
+    console.error("Erro ao adicionar receita:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para atualizar uma receita
+router.put("/:id/receitas/:receitaId", async (req, res) => {
+  try {
+    const { id, receitaId } = req.params;
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(receitaId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const receitaIndex = obra.receitas.findIndex(
+      (r) => r._id.toString() === receitaId
+    );
+    if (receitaIndex === -1) {
+      return res.status(404).json({ message: "Receita não encontrada" });
+    }
+
+    obra.receitas[receitaIndex] = {
+      ...obra.receitas[receitaIndex],
+      ...req.body,
+      _id: new mongoose.Types.ObjectId(receitaId),
+    };
+
+    await obra.save();
+    res.json(obra.receitas[receitaIndex]);
+  } catch (error) {
+    console.error("Erro ao atualizar receita:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para excluir uma receita
+router.delete("/:id/receitas/:receitaId", async (req, res) => {
+  try {
+    const { id, receitaId } = req.params;
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(receitaId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    obra.receitas = obra.receitas.filter((r) => r._id.toString() !== receitaId);
+    await obra.save();
+
+    res.json({ message: "Receita excluída com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir receita:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para listar pagamentos de uma obra
 router.get("/:id/pagamentos", async (req, res) => {
   try {
@@ -336,6 +410,102 @@ router.get("/:id/pagamentos", async (req, res) => {
     res.json(obra.pagamentos);
   } catch (error) {
     console.error("Erro ao buscar pagamentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para adicionar um pagamento
+router.post("/:id/pagamentos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const novoPagamento = {
+      ...req.body,
+      id: new mongoose.Types.ObjectId(),
+      data: req.body.data || new Date(),
+      status: req.body.status || "pendente",
+      valorPago: req.body.valorPago || 0,
+    };
+
+    obra.pagamentos.push(novoPagamento);
+    await obra.save();
+
+    res.status(201).json(novoPagamento);
+  } catch (error) {
+    console.error("Erro ao adicionar pagamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para atualizar um pagamento
+router.put("/:id/pagamentos/:pagamentoId", async (req, res) => {
+  try {
+    const { id, pagamentoId } = req.params;
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(pagamentoId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const pagamentoIndex = obra.pagamentos.findIndex(
+      (p) => p._id.toString() === pagamentoId
+    );
+    if (pagamentoIndex === -1) {
+      return res.status(404).json({ message: "Pagamento não encontrado" });
+    }
+
+    obra.pagamentos[pagamentoIndex] = {
+      ...obra.pagamentos[pagamentoIndex],
+      ...req.body,
+      _id: new mongoose.Types.ObjectId(pagamentoId),
+    };
+
+    await obra.save();
+    res.json(obra.pagamentos[pagamentoIndex]);
+  } catch (error) {
+    console.error("Erro ao atualizar pagamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para excluir um pagamento
+router.delete("/:id/pagamentos/:pagamentoId", async (req, res) => {
+  try {
+    const { id, pagamentoId } = req.params;
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(pagamentoId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    obra.pagamentos = obra.pagamentos.filter(
+      (p) => p._id.toString() !== pagamentoId
+    );
+    await obra.save();
+
+    res.json({ message: "Pagamento excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir pagamento:", error);
     res.status(500).json({ message: error.message });
   }
 });
