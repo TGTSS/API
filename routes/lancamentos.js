@@ -3,6 +3,7 @@ import Lancamento from "../models/Lancamento.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
@@ -40,19 +41,68 @@ router.post("/:obraId/:tipo", upload.array("anexos"), async (req, res) => {
     const { obraId, tipo } = req.params;
     const formData = req.body;
 
+    // Extrair valores do FormData
+    const {
+      descricao,
+      valor,
+      valorNumerico,
+      data,
+      status,
+      categoria,
+      centroCusto,
+      dataVencimento,
+      formaPagamento,
+      beneficiario,
+      beneficiarioTipo,
+      documento,
+    } = formData;
+
+    // Validar campos obrigatórios
+    if (!descricao || !valorNumerico || !data) {
+      return res.status(400).json({
+        message: "Campos obrigatórios não preenchidos",
+        details: {
+          descricao: !descricao,
+          valor: !valorNumerico,
+          data: !data,
+        },
+      });
+    }
+
+    // Validar beneficiarioTipo para pagamentos
+    if (tipo === "pagamento" && !beneficiarioTipo) {
+      return res.status(400).json({
+        message: "Tipo de beneficiário é obrigatório para pagamentos",
+      });
+    }
+
     // Processar arquivos anexados
-    const anexos = req.files ? req.files.map((file) => file.path) : [];
+    const anexos = req.files
+      ? req.files.map((file) => ({
+          nome: file.originalname,
+          tipo: file.mimetype,
+          tamanho: file.size,
+          caminho: file.path,
+        }))
+      : [];
 
     const lancamento = new Lancamento({
-      ...formData,
+      descricao,
+      valor: parseFloat(valorNumerico || valor),
       tipo,
       obra: obraId,
+      data: new Date(data),
+      status: status || "pendente",
+      categoria,
+      centroCusto,
+      dataVencimento: dataVencimento ? new Date(dataVencimento) : undefined,
+      formaPagamento,
+      documento,
       anexos,
-      valor: parseFloat(formData.valor),
-      valorRecebido: formData.valorRecebido
-        ? parseFloat(formData.valorRecebido)
-        : 0,
-      valorPago: formData.valorPago ? parseFloat(formData.valorPago) : 0,
+      valorRecebido: tipo === "receita" ? 0 : undefined,
+      valorPago: tipo === "pagamento" ? 0 : undefined,
+      beneficiario: beneficiario ? beneficiario : undefined,
+      beneficiarioTipo: tipo === "pagamento" ? beneficiarioTipo : undefined,
     });
 
     await lancamento.save();

@@ -926,22 +926,22 @@ router.get("/:id/receitas", async (req, res) => {
   }
 });
 
-// Rota para listar despesas de uma obra
-router.get("/:id/despesas", async (req, res) => {
+// Rota para listar pagamentos de uma obra
+router.get("/:id/pagamentos", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const obra = await Obra.findById(id).select("despesas");
+    const obra = await Obra.findById(id).select("pagamentos");
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    res.json(obra.despesas);
+    res.json(obra.pagamentos);
   } catch (error) {
-    console.error("Erro ao buscar despesas:", error);
+    console.error("Erro ao buscar pagamentos:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -982,18 +982,18 @@ router.post("/:id/receitas", async (req, res) => {
   }
 });
 
-// Rota para criar uma nova despesa
-router.post("/:id/despesas", async (req, res) => {
+// Rota para criar um novo pagamento
+router.post("/:id/pagamentos", async (req, res) => {
   try {
     const { id } = req.params;
-    const novaDespesa = {
+    const novoPagamento = {
       ...req.body,
       dataCriacao: new Date(),
       dataAtualizacao: new Date(),
     };
 
     if (req.files) {
-      novaDespesa.anexos = req.files.map((file) => ({
+      novoPagamento.anexos = req.files.map((file) => ({
         nome: file.originalname,
         tipo: file.mimetype,
         tamanho: file.size,
@@ -1003,7 +1003,7 @@ router.post("/:id/despesas", async (req, res) => {
 
     const obra = await Obra.findByIdAndUpdate(
       id,
-      { $push: { despesas: novaDespesa } },
+      { $push: { pagamentos: novoPagamento } },
       { new: true }
     );
 
@@ -1011,9 +1011,9 @@ router.post("/:id/despesas", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    res.status(201).json(novaDespesa);
+    res.status(201).json(novoPagamento);
   } catch (error) {
-    console.error("Erro ao criar despesa:", error);
+    console.error("Erro ao criar pagamento:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1048,32 +1048,32 @@ router.put("/:id/receitas/:receitaId", async (req, res) => {
   }
 });
 
-// Rota para editar uma despesa
-router.put("/:id/despesas/:despesaId", async (req, res) => {
+// Rota para editar um pagamento
+router.put("/:id/pagamentos/:pagamentoId", async (req, res) => {
   try {
-    const { id, despesaId } = req.params;
-    const despesaAtualizada = req.body;
+    const { id, pagamentoId } = req.params;
+    const pagamentoAtualizado = req.body;
 
     if (
       !mongoose.Types.ObjectId.isValid(id) ||
-      !mongoose.Types.ObjectId.isValid(despesaId)
+      !mongoose.Types.ObjectId.isValid(pagamentoId)
     ) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
     const obra = await Obra.findOneAndUpdate(
-      { _id: id, "despesas._id": despesaId },
-      { $set: { "despesas.$": despesaAtualizada } },
+      { _id: id, "pagamentos._id": pagamentoId },
+      { $set: { "pagamentos.$": pagamentoAtualizado } },
       { new: true }
     );
 
     if (!obra) {
-      return res.status(404).json({ message: "Despesa não encontrada" });
+      return res.status(404).json({ message: "Pagamento não encontrado" });
     }
 
-    res.status(200).json(despesaAtualizada);
+    res.status(200).json(pagamentoAtualizado);
   } catch (error) {
-    console.error("Erro ao editar despesa:", error);
+    console.error("Erro ao editar pagamento:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1107,31 +1107,31 @@ router.delete("/:id/receitas/:receitaId", async (req, res) => {
   }
 });
 
-// Rota para excluir uma despesa
-router.delete("/:id/despesas/:despesaId", async (req, res) => {
+// Rota para excluir um pagamento
+router.delete("/:id/pagamentos/:pagamentoId", async (req, res) => {
   try {
-    const { id, despesaId } = req.params;
+    const { id, pagamentoId } = req.params;
 
     if (
       !mongoose.Types.ObjectId.isValid(id) ||
-      !mongoose.Types.ObjectId.isValid(despesaId)
+      !mongoose.Types.ObjectId.isValid(pagamentoId)
     ) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
     const obra = await Obra.findByIdAndUpdate(
       id,
-      { $pull: { despesas: { _id: despesaId } } },
+      { $pull: { pagamentos: { _id: pagamentoId } } },
       { new: true }
     );
 
     if (!obra) {
-      return res.status(404).json({ message: "Despesa não encontrada" });
+      return res.status(404).json({ message: "Pagamento não encontrado" });
     }
 
-    res.status(200).json({ message: "Despesa excluída com sucesso" });
+    res.status(200).json({ message: "Pagamento excluído com sucesso" });
   } catch (error) {
-    console.error("Erro ao excluir despesa:", error);
+    console.error("Erro ao excluir pagamento:", error);
     res.status(500).json({ message: error.message });
   }
 });
