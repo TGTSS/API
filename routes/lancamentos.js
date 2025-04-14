@@ -47,7 +47,7 @@ router.use((err, req, res, next) => {
   next(err);
 });
 
-// Rota para adicionar um novo lançamento de receita ou pagamento
+// Rota para adicionar um novo lançamento de receita ou despesa
 router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
   try {
     const { id, tipo } = req.params;
@@ -116,15 +116,15 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
       });
     }
 
-    // Validar beneficiarioTipo para pagamentos
-    if (tipo === "pagamento" && !beneficiarioTipo) {
+    // Validar beneficiarioTipo para despesas
+    if (tipo === "despesa" && !beneficiarioTipo) {
       return res.status(400).json({
-        message: "Tipo de beneficiário é obrigatório para pagamentos",
+        message: "Tipo de beneficiário é obrigatório para despesas",
       });
     }
 
-    // Validar beneficiario para pagamentos
-    if (tipo === "pagamento" && beneficiario) {
+    // Validar beneficiario para despesas
+    if (tipo === "despesa" && beneficiario) {
       try {
         // Verificar se o beneficiario é um ObjectId válido
         if (!mongoose.Types.ObjectId.isValid(beneficiario)) {
@@ -170,7 +170,7 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
       if (beneficiario) {
         novoLancamento.beneficiario = new mongoose.Types.ObjectId(beneficiario);
       }
-    } else if (tipo === "pagamento") {
+    } else if (tipo === "despesa") {
       novoLancamento.valorPago = parseValorMonetario(valorPago || 0);
       if (beneficiario) {
         novoLancamento.beneficiario = new mongoose.Types.ObjectId(beneficiario);
@@ -181,8 +181,8 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
     // Adicionar o lançamento ao array correto
     if (tipo === "receita") {
       obra.receitas.push(novoLancamento);
-    } else if (tipo === "pagamento") {
-      obra.pagamentos.push(novoLancamento);
+    } else if (tipo === "despesa") {
+      obra.despesas.push(novoLancamento);
     }
 
     await obra.save();
@@ -196,7 +196,7 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
   }
 });
 
-// Rota para editar um lançamento de receita ou pagamento
+// Rota para editar um lançamento de receita ou despesa
 router.put(
   "/:id/:tipo/:lancamentoId",
   upload.array("anexos"),
@@ -252,7 +252,7 @@ router.put(
         lancamentoEditado.beneficiario = req.body.beneficiario
           ? new mongoose.Types.ObjectId(req.body.beneficiario)
           : undefined;
-      } else if (tipo === "pagamento") {
+      } else if (tipo === "despesa") {
         lancamentoEditado.valorPago = parseValorMonetario(
           req.body.valorPago || 0
         );
@@ -285,15 +285,15 @@ router.put(
           ...obra.receitas[lancamentoIndex],
           ...lancamentoEditado,
         };
-      } else if (tipo === "pagamento") {
-        lancamentoIndex = obra.pagamentos.findIndex(
+      } else if (tipo === "despesa") {
+        lancamentoIndex = obra.despesas.findIndex(
           (item) => item._id.toString() === lancamentoId
         );
         if (lancamentoIndex === -1) {
           return res.status(404).json({ message: "Lançamento não encontrado" });
         }
-        obra.pagamentos[lancamentoIndex] = {
-          ...obra.pagamentos[lancamentoIndex],
+        obra.despesas[lancamentoIndex] = {
+          ...obra.despesas[lancamentoIndex],
           ...lancamentoEditado,
         };
       } else {
@@ -309,7 +309,7 @@ router.put(
   }
 );
 
-// Rota para excluir um lançamento de receita ou pagamento
+// Rota para excluir um lançamento de receita ou despesa
 router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
   try {
     const { id, tipo, lancamentoId } = req.params;
@@ -324,7 +324,7 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
       const receitaIndex = obra.receitas.findIndex(
         (item) => item._id.toString() === id
       );
-      const pagamentoIndex = obra.pagamentos.findIndex(
+      const despesaIndex = obra.despesas.findIndex(
         (item) => item._id.toString() === id
       );
 
@@ -336,8 +336,8 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
         });
       }
 
-      if (pagamentoIndex !== -1) {
-        obra.pagamentos.splice(pagamentoIndex, 1);
+      if (despesaIndex !== -1) {
+        obra.despesas.splice(despesaIndex, 1);
         await obra.save({ validateBeforeSave: false });
         return res.status(200).json({
           message: "Lançamento excluído com sucesso",
@@ -356,14 +356,14 @@ router.delete("/:id/:tipo?/:lancamentoId?", async (req, res) => {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
       obra.receitas.splice(index, 1);
-    } else if (tipo === "pagamento") {
-      const index = obra.pagamentos.findIndex(
+    } else if (tipo === "despesa") {
+      const index = obra.despesas.findIndex(
         (item) => item._id.toString() === lancamentoId
       );
       if (index === -1) {
         return res.status(404).json({ message: "Lançamento não encontrado" });
       }
-      obra.pagamentos.splice(index, 1);
+      obra.despesas.splice(index, 1);
     } else {
       return res.status(400).json({ message: "Tipo de lançamento inválido" });
     }
@@ -393,22 +393,22 @@ router.get("/:id/receitas", async (req, res) => {
   }
 });
 
-// Rota para obter todos os lançamentos de pagamento de uma obra
-router.get("/:id/pagamentos", async (req, res) => {
+// Rota para obter todos os lançamentos de despesa de uma obra
+router.get("/:id/despesas", async (req, res) => {
   try {
     const { id } = req.params;
     const obra = await Obra.findById(id).lean();
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
-    res.json(obra.pagamentos);
+    res.json(obra.despesas);
   } catch (error) {
-    console.error("Erro ao buscar pagamentos:", error);
+    console.error("Erro ao buscar despesas:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-// Rota para obter todos os lançamentos (receitas e pagamentos) de uma obra
+// Rota para obter todos os lançamentos (receitas e despesas) de uma obra
 router.get("/:id/lancamentos", async (req, res) => {
   try {
     const { id } = req.params;
@@ -418,7 +418,7 @@ router.get("/:id/lancamentos", async (req, res) => {
     }
     const lancamentos = {
       receitas: obra.receitas,
-      pagamentos: obra.pagamentos,
+      despesas: obra.despesas,
     };
     res.json(lancamentos);
   } catch (error) {
@@ -427,14 +427,14 @@ router.get("/:id/lancamentos", async (req, res) => {
   }
 });
 
-// Rota para obter todos os lançamentos (receitas e pagamentos) de todas as obras
+// Rota para obter todos os lançamentos (receitas e despesas) de todas as obras
 router.get("/lancamentos", async (req, res) => {
   try {
     const obras = await Obra.find().lean();
     const todosLancamentos = obras.map((obra) => ({
       obraId: obra._id,
       receitas: obra.receitas,
-      pagamentos: obra.pagamentos,
+      despesas: obra.despesas,
     }));
     res.json(todosLancamentos);
   } catch (error) {
