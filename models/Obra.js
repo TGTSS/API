@@ -20,13 +20,18 @@ const ReceitaSchema = new mongoose.Schema({
   data: { type: Date, default: Date.now },
   status: {
     type: String,
+    enum: ["pendente", "recebido", "atrasado"],
     default: "pendente",
   },
   categoria: { type: String },
+  categoriaOutros: { type: String },
   centroCusto: { type: String },
   dataVencimento: { type: Date },
   formaPagamento: { type: String },
-  beneficiario: { type: mongoose.Schema.Types.ObjectId, ref: "Cliente" },
+  beneficiario: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Cliente",
+  },
   documento: { type: String },
   anexos: [
     {
@@ -38,7 +43,7 @@ const ReceitaSchema = new mongoose.Schema({
   ],
 });
 
-const PagamentoSchema = new mongoose.Schema({
+const DespesaSchema = new mongoose.Schema({
   id: {
     type: mongoose.Schema.Types.ObjectId,
     default: () => new mongoose.Types.ObjectId(),
@@ -50,9 +55,11 @@ const PagamentoSchema = new mongoose.Schema({
   data: { type: Date, default: Date.now },
   status: {
     type: String,
+    enum: ["pendente", "pago", "atrasado"],
     default: "pendente",
   },
   categoria: { type: String },
+  categoriaOutros: { type: String },
   centroCusto: { type: String },
   dataVencimento: { type: Date },
   formaPagamento: { type: String },
@@ -62,6 +69,7 @@ const PagamentoSchema = new mongoose.Schema({
   },
   beneficiarioTipo: {
     type: String,
+    enum: ["Fornecedor", "Funcionario"],
   },
   documento: { type: String },
   anexos: [
@@ -342,7 +350,6 @@ const ObraSchema = new mongoose.Schema({
     default: "Em andamento",
   },
   etapas: [etapaSchema],
-  medicoes: [medicaoSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   codigo: { type: String, unique: true },
@@ -380,7 +387,7 @@ const ObraSchema = new mongoose.Schema({
   },
   contatos: [ContatoSchema],
   receitas: [ReceitaSchema],
-  pagamentos: [PagamentoSchema],
+  despesas: [DespesaSchema],
   mapPosition: {
     type: [Number], // [latitude, longitude]
     validate: {

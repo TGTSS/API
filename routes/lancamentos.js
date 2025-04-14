@@ -76,23 +76,43 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
       data,
       status,
       categoria,
+      categoriaOutros,
       centroCusto,
       dataVencimento,
       formaPagamento,
       beneficiario,
       beneficiarioTipo,
       documento,
+      valorRecebido,
+      valorPago,
     } = req.body;
 
     // Validar campos obrigatórios
-    if (!descricao || !valorNumerico || !data) {
+    if (
+      !descricao ||
+      !valorNumerico ||
+      !data ||
+      !categoria ||
+      !formaPagamento ||
+      !beneficiario
+    ) {
       return res.status(400).json({
         message: "Campos obrigatórios não preenchidos",
         details: {
           descricao: !descricao,
           valor: !valorNumerico,
           data: !data,
+          categoria: !categoria,
+          formaPagamento: !formaPagamento,
+          beneficiario: !beneficiario,
         },
+      });
+    }
+
+    // Validar categoriaOutros se categoria for "Outros"
+    if (categoria === "Outros" && !categoriaOutros) {
+      return res.status(400).json({
+        message: "Categoria 'Outros' requer especificação",
       });
     }
 
@@ -129,6 +149,7 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
       data: new Date(data),
       status: status || "pendente",
       categoria,
+      categoriaOutros: categoria === "Outros" ? categoriaOutros : undefined,
       centroCusto,
       dataVencimento: dataVencimento ? new Date(dataVencimento) : undefined,
       formaPagamento,
@@ -145,12 +166,12 @@ router.post("/:id/:tipo", upload.array("anexos"), async (req, res) => {
 
     // Adicionar campos específicos para cada tipo
     if (tipo === "receita") {
-      novoLancamento.valorRecebido = 0;
+      novoLancamento.valorRecebido = parseValorMonetario(valorRecebido || 0);
       if (beneficiario) {
         novoLancamento.beneficiario = new mongoose.Types.ObjectId(beneficiario);
       }
     } else if (tipo === "pagamento") {
-      novoLancamento.valorPago = 0;
+      novoLancamento.valorPago = parseValorMonetario(valorPago || 0);
       if (beneficiario) {
         novoLancamento.beneficiario = new mongoose.Types.ObjectId(beneficiario);
         novoLancamento.beneficiarioTipo = beneficiarioTipo;

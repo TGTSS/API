@@ -9,7 +9,6 @@ import Etapa from "../models/Etapa.js"; // Adicionado
 import RegistroDiario from "../models/RegistroDiario.js"; // Adicionado
 import Galeria from "../models/Galeria.js"; // Adicionado
 import Documento from "../models/Documento.js"; // Adicionado
-import Medicao from "../models/Medicao.js"; // Adicionado
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -927,22 +926,22 @@ router.get("/:id/receitas", async (req, res) => {
   }
 });
 
-// Rota para listar pagamentos de uma obra
-router.get("/:id/pagamentos", async (req, res) => {
+// Rota para listar despesas de uma obra
+router.get("/:id/despesas", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const obra = await Obra.findById(id).select("pagamentos");
+    const obra = await Obra.findById(id).select("despesas");
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    res.json(obra.pagamentos);
+    res.json(obra.despesas);
   } catch (error) {
-    console.error("Erro ao buscar pagamentos:", error);
+    console.error("Erro ao buscar despesas:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -983,18 +982,18 @@ router.post("/:id/receitas", async (req, res) => {
   }
 });
 
-// Rota para criar um novo pagamento
-router.post("/:id/pagamentos", async (req, res) => {
+// Rota para criar uma nova despesa
+router.post("/:id/despesas", async (req, res) => {
   try {
     const { id } = req.params;
-    const novoPagamento = {
+    const novaDespesa = {
       ...req.body,
       dataCriacao: new Date(),
       dataAtualizacao: new Date(),
     };
 
     if (req.files) {
-      novoPagamento.anexos = req.files.map((file) => ({
+      novaDespesa.anexos = req.files.map((file) => ({
         nome: file.originalname,
         tipo: file.mimetype,
         tamanho: file.size,
@@ -1004,7 +1003,7 @@ router.post("/:id/pagamentos", async (req, res) => {
 
     const obra = await Obra.findByIdAndUpdate(
       id,
-      { $push: { pagamentos: novoPagamento } },
+      { $push: { despesas: novaDespesa } },
       { new: true }
     );
 
@@ -1012,9 +1011,9 @@ router.post("/:id/pagamentos", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    res.status(201).json(novoPagamento);
+    res.status(201).json(novaDespesa);
   } catch (error) {
-    console.error("Erro ao criar pagamento:", error);
+    console.error("Erro ao criar despesa:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1049,32 +1048,32 @@ router.put("/:id/receitas/:receitaId", async (req, res) => {
   }
 });
 
-// Rota para editar um pagamento
-router.put("/:id/pagamentos/:pagamentoId", async (req, res) => {
+// Rota para editar uma despesa
+router.put("/:id/despesas/:despesaId", async (req, res) => {
   try {
-    const { id, pagamentoId } = req.params;
-    const pagamentoAtualizado = req.body;
+    const { id, despesaId } = req.params;
+    const despesaAtualizada = req.body;
 
     if (
       !mongoose.Types.ObjectId.isValid(id) ||
-      !mongoose.Types.ObjectId.isValid(pagamentoId)
+      !mongoose.Types.ObjectId.isValid(despesaId)
     ) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
     const obra = await Obra.findOneAndUpdate(
-      { _id: id, "pagamentos._id": pagamentoId },
-      { $set: { "pagamentos.$": pagamentoAtualizado } },
+      { _id: id, "despesas._id": despesaId },
+      { $set: { "despesas.$": despesaAtualizada } },
       { new: true }
     );
 
     if (!obra) {
-      return res.status(404).json({ message: "Pagamento não encontrado" });
+      return res.status(404).json({ message: "Despesa não encontrada" });
     }
 
-    res.status(200).json(pagamentoAtualizado);
+    res.status(200).json(despesaAtualizada);
   } catch (error) {
-    console.error("Erro ao editar pagamento:", error);
+    console.error("Erro ao editar despesa:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1108,31 +1107,31 @@ router.delete("/:id/receitas/:receitaId", async (req, res) => {
   }
 });
 
-// Rota para excluir um pagamento
-router.delete("/:id/pagamentos/:pagamentoId", async (req, res) => {
+// Rota para excluir uma despesa
+router.delete("/:id/despesas/:despesaId", async (req, res) => {
   try {
-    const { id, pagamentoId } = req.params;
+    const { id, despesaId } = req.params;
 
     if (
       !mongoose.Types.ObjectId.isValid(id) ||
-      !mongoose.Types.ObjectId.isValid(pagamentoId)
+      !mongoose.Types.ObjectId.isValid(despesaId)
     ) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
     const obra = await Obra.findByIdAndUpdate(
       id,
-      { $pull: { pagamentos: { _id: pagamentoId } } },
+      { $pull: { despesas: { _id: despesaId } } },
       { new: true }
     );
 
     if (!obra) {
-      return res.status(404).json({ message: "Pagamento não encontrado" });
+      return res.status(404).json({ message: "Despesa não encontrada" });
     }
 
-    res.status(200).json({ message: "Pagamento excluído com sucesso" });
+    res.status(200).json({ message: "Despesa excluída com sucesso" });
   } catch (error) {
-    console.error("Erro ao excluir pagamento:", error);
+    console.error("Erro ao excluir despesa:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1202,419 +1201,6 @@ router.delete("/:id/documentos/:documentoId", async (req, res) => {
   } catch (error) {
     console.error("Erro ao remover documento:", error);
     res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para criar uma nova medição
-router.post("/:id/medicoes", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const medicaoData = req.body;
-
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Validação básica dos dados
-    if (!medicaoData.groups || !Array.isArray(medicaoData.groups)) {
-      return res.status(400).json({
-        message: "Dados de medição inválidos: grupos não encontrados",
-      });
-    }
-
-    // Função para converter o status para o formato correto
-    const convertStatus = (status) => {
-      const statusMap = {
-        pending: "Pendente",
-        in_review: "Em revisão",
-        approved: "Aprovado",
-      };
-      return statusMap[status] || status;
-    };
-
-    // Converte os status nos grupos e itens
-    const convertedGroups = medicaoData.groups.map((group) => ({
-      ...group,
-      items: group.items.map((item) => ({
-        ...item,
-        status: convertStatus(item.status),
-      })),
-    }));
-
-    // Cria a nova medição
-    const novaMedicao = new Medicao({
-      obraId: new mongoose.Types.ObjectId(id),
-      date: new Date(medicaoData.date),
-      responsavel: medicaoData.responsavel,
-      totalMedido: medicaoData.totalMedido,
-      progressoGeral: medicaoData.progressoGeral,
-      status: convertStatus(medicaoData.status),
-      groups: convertedGroups,
-    });
-
-    // Salva no banco de dados
-    await novaMedicao.save();
-
-    // Adiciona a medição à obra
-    obra.medicoes.push(novaMedicao._id);
-    await obra.save();
-
-    res.status(201).json(novaMedicao);
-  } catch (error) {
-    console.error("Erro ao salvar medição:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao salvar medição", error: error.message });
-  }
-});
-
-// Rota para atualizar um item's status
-router.put("/:id/etapas/:etapaId/itens/:itemId", async (req, res) => {
-  try {
-    const obra = await Obra.findById(req.params.id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    const etapa = obra.etapas.id(req.params.etapaId);
-    if (!etapa) {
-      return res.status(404).json({ message: "Etapa não encontrada" });
-    }
-
-    const item = etapa.itens.id(req.params.itemId);
-    if (!item) {
-      return res.status(404).json({ message: "Item não encontrado" });
-    }
-
-    item.status = req.body.status;
-    if (req.body.comentarios) {
-      item.historico.push({
-        data: new Date(),
-        quantidade: item.quantidadeExecutada,
-        valor: item.valorUnitario * item.quantidadeExecutada,
-        porcentagem: (item.quantidadeExecutada / item.quantidade) * 100,
-        status: req.body.status,
-        comentarios: req.body.comentarios,
-        anexos: req.body.anexos || [],
-      });
-    }
-
-    const updatedObra = await obra.save();
-    res.json(updatedObra);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-
-// Rota para listar todas as medições de uma obra
-router.get("/:id/medicoes", async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
-    }
-
-    const obra = await Obra.findById(id).select("medicoes");
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Ordena as medições por data (mais recente primeiro)
-    const medicoesOrdenadas = obra.medicoes.sort((a, b) => b.date - a.date);
-
-    res.json(medicoesOrdenadas);
-  } catch (error) {
-    console.error("Erro ao buscar medições:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// routes/obras.js
-router.post("/:obraId/medicao/save", async (req, res) => {
-  try {
-    const { obraId } = req.params;
-    const { date, responsavel, totalMedido, progressoGeral, status, groups } =
-      req.body;
-
-    // Validação básica dos dados
-    if (!groups || !Array.isArray(groups)) {
-      return res.status(400).json({
-        message: "Dados de medição inválidos: grupos não encontrados",
-      });
-    }
-
-    // Função para converter o status para o formato correto
-    const convertStatus = (status) => {
-      const statusMap = {
-        pending: "Pendente",
-        in_review: "Em revisão",
-        approved: "Aprovado",
-      };
-      return statusMap[status] || status;
-    };
-
-    // Converte os status nos grupos e itens
-    const convertedGroups = groups.map((group) => ({
-      ...group,
-      id: group.id.toString(), // Converte ID para string
-      items: group.items.map((item) => ({
-        ...item,
-        id: item.id.toString(), // Converte ID para string
-        status: convertStatus(item.status),
-        unit: item.unit || "un", // Adiciona unidade padrão se não existir
-        executedQuantity: item.executedQuantity || 0,
-        executedValue: item.executedValue || 0,
-        percentage: item.percentage || 0,
-        history: item.history || [],
-        attachments: item.attachments || [],
-      })),
-    }));
-
-    // Cria a nova medição
-    const novaMedicao = new Medicao({
-      obraId: new mongoose.Types.ObjectId(obraId),
-      date: new Date(date),
-      responsavel: responsavel || "Não especificado",
-      totalMedido: totalMedido || 0,
-      progressoGeral: progressoGeral || 0,
-      status: convertStatus(status),
-      groups: convertedGroups,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    // Salva no banco de dados
-    await novaMedicao.save();
-
-    // Atualiza o progresso da obra e adiciona a medição
-    const obra = await Obra.findByIdAndUpdate(
-      obraId,
-      {
-        $set: {
-          ultimaMedicao: novaMedicao._id,
-          progressoGeral: progressoGeral || 0,
-        },
-        $push: { medicoes: novaMedicao._id },
-      },
-      { new: true }
-    );
-
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    res.status(201).json({
-      message: "Medição salva com sucesso",
-      medicao: novaMedicao,
-    });
-  } catch (error) {
-    console.error("Erro detalhado ao salvar medição:", error);
-    res.status(500).json({
-      message: "Erro ao salvar medição",
-      error: error.message,
-    });
-  }
-});
-
-// Rota para atualizar um item específico da medição
-router.post("/:id/medicao", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      itemId,
-      field,
-      value,
-      executedQuantity,
-      executedValue,
-      percentage,
-    } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
-    }
-
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Encontra a medição mais recente
-    const ultimaMedicao = obra.medicoes[obra.medicoes.length - 1];
-    if (!ultimaMedicao) {
-      return res.status(404).json({ message: "Nenhuma medição encontrada" });
-    }
-
-    // Atualiza o item específico
-    const item = ultimaMedicao.itens.find((item) => item.id === itemId);
-    if (item) {
-      item[field] = value;
-      if (executedQuantity !== undefined)
-        item.executedQuantity = executedQuantity;
-      if (executedValue !== undefined) item.executedValue = executedValue;
-      if (percentage !== undefined) item.percentage = percentage;
-
-      // Adiciona ao histórico
-      item.history.push({
-        date: new Date(),
-        quantity: item.executedQuantity,
-        value: item.executedValue,
-        percentage: item.percentage,
-        status: item.status,
-        comments: `Atualização de ${field}`,
-      });
-    }
-
-    await obra.save();
-    res.status(200).json(ultimaMedicao);
-  } catch (error) {
-    console.error("Erro ao atualizar medição:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para atualizar uma etapa inteira da medição
-router.post("/:id/medicao/stage", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { stageId, percentage, items } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
-    }
-
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Encontra a medição mais recente
-    const ultimaMedicao = obra.medicoes[obra.medicoes.length - 1];
-    if (!ultimaMedicao) {
-      return res.status(404).json({ message: "Nenhuma medição encontrada" });
-    }
-
-    // Atualiza todos os itens da etapa
-    items.forEach((updatedItem) => {
-      const item = ultimaMedicao.itens.find(
-        (item) => item.id === updatedItem.id
-      );
-      if (item) {
-        Object.assign(item, updatedItem);
-        item.history.push({
-          date: new Date(),
-          quantity: item.executedQuantity,
-          value: item.executedValue,
-          percentage: item.percentage,
-          status: item.status,
-          comments: `Atualização em lote da etapa ${stageId}`,
-        });
-      }
-    });
-
-    await obra.save();
-    res.status(200).json(ultimaMedicao);
-  } catch (error) {
-    console.error("Erro ao atualizar etapa da medição:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para excluir uma medição específica
-router.delete("/:id/medicoes/:medicaoId", async (req, res) => {
-  try {
-    const { id, medicaoId } = req.params;
-
-    if (
-      !mongoose.Types.ObjectId.isValid(id) ||
-      !mongoose.Types.ObjectId.isValid(medicaoId)
-    ) {
-      return res.status(400).json({ message: "ID inválido" });
-    }
-
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Encontra o índice da medição a ser removida
-    const medicaoIndex = obra.medicoes.findIndex(
-      (medicao) => medicao._id.toString() === medicaoId
-    );
-
-    if (medicaoIndex === -1) {
-      return res.status(404).json({ message: "Medição não encontrada" });
-    }
-
-    // Remove a medição do array
-    obra.medicoes.splice(medicaoIndex, 1);
-    await obra.save();
-
-    res.status(200).json({ message: "Medição excluída com sucesso" });
-  } catch (error) {
-    console.error("Erro ao excluir medição:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para obter uma medição específica
-router.get("/:id/medicao/:medicaoId", async (req, res) => {
-  try {
-    const { id, medicaoId } = req.params;
-
-    if (
-      !mongoose.Types.ObjectId.isValid(id) ||
-      !mongoose.Types.ObjectId.isValid(medicaoId)
-    ) {
-      return res.status(400).json({ message: "ID inválido" });
-    }
-
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Encontra a medição específica
-    const medicao = obra.medicoes.find((m) => m._id.toString() === medicaoId);
-    if (!medicao) {
-      return res.status(404).json({ message: "Medição não encontrada" });
-    }
-
-    // Transforma os dados para o formato esperado pelo frontend
-    const transformedMedicao = {
-      ...medicao,
-      groups: medicao.groups.map((group) => ({
-        id: group.id,
-        title: group.title,
-        totalOrcado: group.totalOrcado,
-        totalMedido: group.totalMedido,
-        saldoAtualizado: group.saldoAtualizado,
-        progresso: group.progresso,
-        items: group.items.map((item) => ({
-          id: item.id,
-          description: item.description,
-          unit: item.unit,
-          plannedQuantity: item.plannedQuantity,
-          value: item.value,
-          executedQuantity: item.executedQuantity,
-          executedValue: item.executedValue,
-          percentage: item.percentage,
-          status: item.status,
-          totalOrcado: item.totalOrcado,
-          totalMedido: item.totalMedido,
-          saldoAtualizado: item.saldoAtualizado,
-        })),
-      })),
-    };
-
-    res.json(transformedMedicao);
-  } catch (error) {
-    console.error("Erro ao buscar medição:", error);
-    res.status(500).json({
-      message: "Erro ao buscar medição",
-      error: error.message,
-      stack: error.stack,
-    });
   }
 });
 
