@@ -541,6 +541,22 @@ router.post("/:id/pagamentos", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
+    // Validar campos obrigatórios
+    const camposObrigatorios = {
+      descricao: "Descrição é obrigatória",
+      valor: "Valor é obrigatório",
+      data: "Data é obrigatória",
+      categoria: "Categoria é obrigatória",
+      formaPagamento: "Forma de pagamento é obrigatória",
+      beneficiario: "Beneficiário é obrigatório",
+    };
+
+    for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+      if (!req.body[campo]) {
+        return res.status(400).json({ message: mensagem });
+      }
+    }
+
     // Validar beneficiarioTipo
     if (
       req.body.beneficiarioTipo &&
@@ -569,16 +585,39 @@ router.post("/:id/pagamentos", async (req, res) => {
           : req.body.valorPago
         : 0,
       data: new Date(req.body.data),
-      dataVencimento: new Date(req.body.dataVencimento),
+      dataVencimento: req.body.dataVencimento
+        ? new Date(req.body.dataVencimento)
+        : null,
       beneficiario: req.body.beneficiario
         ? new mongoose.Types.ObjectId(req.body.beneficiario)
         : null,
+      status: req.body.status || "pendente",
+      categoria: req.body.categoria || "Outros",
+      formaPagamento: req.body.formaPagamento || "Não especificado",
+      documento: req.body.documento || "",
+      centroCusto: obra.nome,
     };
+
+    // Validar valores monetários
+    if (isNaN(pagamentoData.valor) || pagamentoData.valor <= 0) {
+      return res.status(400).json({ message: "Valor inválido" });
+    }
+
+    // Validar datas
+    if (isNaN(pagamentoData.data.getTime())) {
+      return res.status(400).json({ message: "Data inválida" });
+    }
+
+    if (
+      pagamentoData.dataVencimento &&
+      isNaN(pagamentoData.dataVencimento.getTime())
+    ) {
+      return res.status(400).json({ message: "Data de vencimento inválida" });
+    }
 
     const novoPagamento = {
       ...pagamentoData,
       id: new mongoose.Types.ObjectId(),
-      status: req.body.status || "pendente",
     };
 
     console.log(

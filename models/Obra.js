@@ -139,8 +139,8 @@ const PagamentoSchema = new mongoose.Schema({
     default: () => new mongoose.Types.ObjectId(),
   },
   descricao: { type: String },
-  valor: { type: Number },
-  valorPago: { type: Number, default: 0 },
+  valor: { type: Number, min: 0 },
+  valorPago: { type: Number, default: 0, min: 0 },
   tipo: { type: String, default: "pagamento" },
   data: { type: Date, default: Date.now },
   status: {
@@ -149,6 +149,7 @@ const PagamentoSchema = new mongoose.Schema({
     default: "pendente",
   },
   categoria: { type: String },
+  categoriaOutros: { type: String },
   centroCusto: { type: String },
   dataVencimento: { type: Date },
   formaPagamento: { type: String },
@@ -161,7 +162,14 @@ const PagamentoSchema = new mongoose.Schema({
     enum: ["Fornecedor", "Funcionario"],
   },
   documento: { type: String },
-  anexos: [{ type: String }],
+  anexos: [
+    {
+      nome: { type: String },
+      tipo: { type: String },
+      tamanho: { type: Number },
+      caminho: { type: String },
+    },
+  ],
 });
 
 const RegistroDiarioSchema = new mongoose.Schema({
