@@ -391,11 +391,13 @@ router.get("/:id/receitas", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.error("ID inválido:", id);
       return res.status(400).json({ message: "ID inválido" });
     }
 
     const obra = await Obra.findById(id).select("receitas");
     if (!obra) {
+      console.error("Obra não encontrada com ID:", id);
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
@@ -504,12 +506,15 @@ router.delete("/:id/receitas/:receitaId", async (req, res) => {
 router.get("/:id/pagamentos", async (req, res) => {
   try {
     const { id } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.error("ID inválido:", id);
       return res.status(400).json({ message: "ID inválido" });
     }
 
     const obra = await Obra.findById(id).select("pagamentos");
     if (!obra) {
+      console.error("Obra não encontrada com ID:", id);
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
@@ -524,21 +529,42 @@ router.get("/:id/pagamentos", async (req, res) => {
 router.post("/:id/pagamentos", async (req, res) => {
   try {
     const { id } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.error("ID inválido:", id);
       return res.status(400).json({ message: "ID inválido" });
     }
 
     const obra = await Obra.findById(id);
     if (!obra) {
+      console.error("Obra não encontrada com ID:", id);
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    const novoPagamento = {
+    // Transformar os dados recebidos
+    const pagamentoData = {
       ...req.body,
+      valor:
+        typeof req.body.valor === "string"
+          ? parseFloat(
+              req.body.valor.replace("R$", "").replace(",", ".").trim()
+            )
+          : req.body.valor,
+      valorPago: req.body.valorPago
+        ? typeof req.body.valorPago === "string"
+          ? parseFloat(
+              req.body.valorPago.replace("R$", "").replace(",", ".").trim()
+            )
+          : req.body.valorPago
+        : 0,
+      data: new Date(req.body.data),
+      dataVencimento: new Date(req.body.dataVencimento),
+    };
+
+    const novoPagamento = {
+      ...pagamentoData,
       id: new mongoose.Types.ObjectId(),
-      data: req.body.data || new Date(),
       status: req.body.status || "pendente",
-      valorPago: req.body.valorPago || 0,
     };
 
     obra.pagamentos.push(novoPagamento);
