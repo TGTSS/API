@@ -581,13 +581,27 @@ router.post("/:id/pagamentos", async (req, res) => {
       status: req.body.status || "pendente",
     };
 
+    console.log(
+      "Dados do pagamento a serem salvos:",
+      JSON.stringify(novoPagamento, null, 2)
+    );
+
     obra.pagamentos.push(novoPagamento);
     await obra.save();
 
     res.status(201).json(novoPagamento);
   } catch (error) {
-    console.error("Erro ao adicionar pagamento:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Erro detalhado ao adicionar pagamento:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      data: req.body,
+    });
+    res.status(500).json({
+      message: error.message,
+      error: error.name,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
   }
 });
 
