@@ -14,8 +14,8 @@ const ReceitaSchema = new mongoose.Schema({
     default: () => new mongoose.Types.ObjectId(),
   },
   descricao: { type: String },
-  valor: { type: Number },
-  valorRecebido: { type: Number, default: 0 },
+  valor: { type: String },
+  valorRecebido: { type: String, default: 0 },
   tipo: { type: String, default: "receita" },
   data: { type: Date, default: Date.now },
   status: {
@@ -41,8 +41,8 @@ const DespesaSchema = new mongoose.Schema({
     default: () => new mongoose.Types.ObjectId(),
   },
   descricao: { type: String },
-  valor: { type: Number },
-  valorPago: { type: Number, default: 0 },
+  valor: { type: String },
+  valorPago: { type: String, default: 0 },
   tipo: { type: String, default: "pagamento" },
   data: { type: Date, default: Date.now },
   status: {

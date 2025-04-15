@@ -802,7 +802,7 @@ router.put("/:id/orcamento", async (req, res) => {
   }
 });
 
-// Rota para listar todos os lançamentos de todas as obras
+// Rota para listar todas as transações
 router.get("/lancamentos/todos", async (req, res) => {
   try {
     // Buscar todas as obras com seus pagamentos e receitas
