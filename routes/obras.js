@@ -421,12 +421,69 @@ router.post("/:id/receitas", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
+    // Validar campos obrigatórios
+    const camposObrigatorios = {
+      descricao: "Descrição é obrigatória",
+      valor: "Valor é obrigatório",
+      valorConvertido: "Valor convertido é obrigatório",
+      categoria: "Categoria é obrigatória",
+      centroCusto: "Centro de custo é obrigatório",
+      formaPagamento: "Forma de pagamento é obrigatória",
+      beneficiario: "Beneficiário é obrigatório",
+    };
+
+    for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+      if (!req.body[campo]) {
+        return res.status(400).json({ message: mensagem });
+      }
+    }
+
+    // Validar valores monetários
+    if (isNaN(req.body.valor) || req.body.valor <= 0) {
+      return res.status(400).json({ message: "Valor inválido" });
+    }
+
+    if (isNaN(req.body.valorConvertido) || req.body.valorConvertido <= 0) {
+      return res.status(400).json({ message: "Valor convertido inválido" });
+    }
+
+    if (
+      req.body.valorRecebido &&
+      (isNaN(req.body.valorRecebido) || req.body.valorRecebido < 0)
+    ) {
+      return res.status(400).json({ message: "Valor recebido inválido" });
+    }
+
+    if (
+      req.body.valorRecebidoConvertido &&
+      (isNaN(req.body.valorRecebidoConvertido) ||
+        req.body.valorRecebidoConvertido < 0)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Valor recebido convertido inválido" });
+    }
+
+    // Validar datas
+    if (isNaN(new Date(req.body.data).getTime())) {
+      return res.status(400).json({ message: "Data inválida" });
+    }
+
+    if (
+      req.body.dataVencimento &&
+      isNaN(new Date(req.body.dataVencimento).getTime())
+    ) {
+      return res.status(400).json({ message: "Data de vencimento inválida" });
+    }
+
     const novaReceita = {
       ...req.body,
       id: new mongoose.Types.ObjectId(),
-      data: req.body.data || new Date(),
-      status: req.body.status || "pendente",
-      valorRecebido: req.body.valorRecebido || 0,
+      data: new Date(req.body.data),
+      dataVencimento: req.body.dataVencimento
+        ? new Date(req.body.dataVencimento)
+        : null,
+      beneficiario: new mongoose.Types.ObjectId(req.body.beneficiario),
     };
 
     obra.receitas.push(novaReceita);
@@ -529,15 +586,12 @@ router.get("/:id/pagamentos", async (req, res) => {
 router.post("/:id/pagamentos", async (req, res) => {
   try {
     const { id } = req.params;
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      console.error("ID inválido:", id);
       return res.status(400).json({ message: "ID inválido" });
     }
 
     const obra = await Obra.findById(id);
     if (!obra) {
-      console.error("Obra não encontrada com ID:", id);
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
@@ -545,10 +599,12 @@ router.post("/:id/pagamentos", async (req, res) => {
     const camposObrigatorios = {
       descricao: "Descrição é obrigatória",
       valor: "Valor é obrigatório",
-      data: "Data é obrigatória",
+      valorConvertido: "Valor convertido é obrigatório",
       categoria: "Categoria é obrigatória",
+      centroCusto: "Centro de custo é obrigatório",
       formaPagamento: "Forma de pagamento é obrigatória",
       beneficiario: "Beneficiário é obrigatório",
+      beneficiarioTipo: "Tipo de beneficiário é obrigatório",
     };
 
     for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
@@ -557,90 +613,65 @@ router.post("/:id/pagamentos", async (req, res) => {
       }
     }
 
-    // Validar beneficiarioTipo
-    if (
-      req.body.beneficiarioTipo &&
-      !["Fornecedor", "Funcionario"].includes(req.body.beneficiarioTipo)
-    ) {
-      return res.status(400).json({
-        message:
-          "Tipo de beneficiário inválido. Deve ser 'Fornecedor' ou 'Funcionario'",
-      });
-    }
-
-    // Transformar os dados recebidos
-    const pagamentoData = {
-      ...req.body,
-      valor:
-        typeof req.body.valor === "string"
-          ? parseFloat(
-              req.body.valor.replace("R$", "").replace(",", ".").trim()
-            )
-          : req.body.valor,
-      valorPago: req.body.valorPago
-        ? typeof req.body.valorPago === "string"
-          ? parseFloat(
-              req.body.valorPago.replace("R$", "").replace(",", ".").trim()
-            )
-          : req.body.valorPago
-        : 0,
-      data: new Date(req.body.data),
-      dataVencimento: req.body.dataVencimento
-        ? new Date(req.body.dataVencimento)
-        : null,
-      beneficiario: req.body.beneficiario
-        ? new mongoose.Types.ObjectId(req.body.beneficiario)
-        : null,
-      status: req.body.status || "pendente",
-      categoria: req.body.categoria || "Outros",
-      formaPagamento: req.body.formaPagamento || "Não especificado",
-      documento: req.body.documento || "",
-      centroCusto: obra.nome,
-    };
-
     // Validar valores monetários
-    if (isNaN(pagamentoData.valor) || pagamentoData.valor <= 0) {
+    if (isNaN(req.body.valor) || req.body.valor <= 0) {
       return res.status(400).json({ message: "Valor inválido" });
     }
 
+    if (isNaN(req.body.valorConvertido) || req.body.valorConvertido <= 0) {
+      return res.status(400).json({ message: "Valor convertido inválido" });
+    }
+
+    if (
+      req.body.valorPago &&
+      (isNaN(req.body.valorPago) || req.body.valorPago < 0)
+    ) {
+      return res.status(400).json({ message: "Valor pago inválido" });
+    }
+
+    if (
+      req.body.valorPagoConvertido &&
+      (isNaN(req.body.valorPagoConvertido) || req.body.valorPagoConvertido < 0)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Valor pago convertido inválido" });
+    }
+
     // Validar datas
-    if (isNaN(pagamentoData.data.getTime())) {
+    if (isNaN(new Date(req.body.data).getTime())) {
       return res.status(400).json({ message: "Data inválida" });
     }
 
     if (
-      pagamentoData.dataVencimento &&
-      isNaN(pagamentoData.dataVencimento.getTime())
+      req.body.dataVencimento &&
+      isNaN(new Date(req.body.dataVencimento).getTime())
     ) {
       return res.status(400).json({ message: "Data de vencimento inválida" });
     }
 
-    const novoPagamento = {
-      ...pagamentoData,
-      id: new mongoose.Types.ObjectId(),
-    };
+    // Validar beneficiarioTipo
+    if (!["Fornecedor", "Funcionario"].includes(req.body.beneficiarioTipo)) {
+      return res.status(400).json({ message: "Tipo de beneficiário inválido" });
+    }
 
-    console.log(
-      "Dados do pagamento a serem salvos:",
-      JSON.stringify(novoPagamento, null, 2)
-    );
+    const novoPagamento = {
+      ...req.body,
+      id: new mongoose.Types.ObjectId(),
+      data: new Date(req.body.data),
+      dataVencimento: req.body.dataVencimento
+        ? new Date(req.body.dataVencimento)
+        : null,
+      beneficiario: new mongoose.Types.ObjectId(req.body.beneficiario),
+    };
 
     obra.pagamentos.push(novoPagamento);
     await obra.save();
 
     res.status(201).json(novoPagamento);
   } catch (error) {
-    console.error("Erro detalhado ao adicionar pagamento:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      data: req.body,
-    });
-    res.status(500).json({
-      message: error.message,
-      error: error.name,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
+    console.error("Erro ao adicionar pagamento:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 
