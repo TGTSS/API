@@ -541,6 +541,17 @@ router.post("/:id/pagamentos", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
+    // Validar beneficiarioTipo
+    if (
+      req.body.beneficiarioTipo &&
+      !["Fornecedor", "Funcionario"].includes(req.body.beneficiarioTipo)
+    ) {
+      return res.status(400).json({
+        message:
+          "Tipo de beneficiário inválido. Deve ser 'Fornecedor' ou 'Funcionario'",
+      });
+    }
+
     // Transformar os dados recebidos
     const pagamentoData = {
       ...req.body,
@@ -559,6 +570,9 @@ router.post("/:id/pagamentos", async (req, res) => {
         : 0,
       data: new Date(req.body.data),
       dataVencimento: new Date(req.body.dataVencimento),
+      beneficiario: req.body.beneficiario
+        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+        : null,
     };
 
     const novoPagamento = {
