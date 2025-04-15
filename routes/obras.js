@@ -802,4 +802,39 @@ router.put("/:id/orcamento", async (req, res) => {
   }
 });
 
+// Rota para listar todos os lançamentos de todas as obras
+router.get("/lancamentos/todos", async (req, res) => {
+  try {
+    // Buscar todas as obras com seus pagamentos e receitas
+    const obras = await Obra.find().select("nome pagamentos receitas").lean();
+
+    // Transformar os dados para um formato mais amigável
+    const lancamentos = obras.flatMap((obra) => {
+      const pagamentos = obra.pagamentos.map((pagamento) => ({
+        ...pagamento,
+        obraId: obra._id,
+        obraNome: obra.nome,
+        tipo: "pagamento",
+      }));
+
+      const receitas = obra.receitas.map((receita) => ({
+        ...receita,
+        obraId: obra._id,
+        obraNome: obra.nome,
+        tipo: "receita",
+      }));
+
+      return [...pagamentos, ...receitas];
+    });
+
+    // Ordenar por data (mais recente primeiro)
+    lancamentos.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+    res.json(lancamentos);
+  } catch (error) {
+    console.error("Erro ao buscar lançamentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
