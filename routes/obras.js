@@ -814,7 +814,7 @@ router.get("/lancamentos/todos", async (req, res) => {
         ...pagamento,
         obraId: obra._id,
         obraNome: obra.nome,
-        tipo: "pagamento",
+        tipo: "despesa",
       }));
 
       const receitas = obra.receitas.map((receita) => ({
@@ -833,6 +833,246 @@ router.get("/lancamentos/todos", async (req, res) => {
     res.json(lancamentos);
   } catch (error) {
     console.error("Erro ao buscar lançamentos:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para listar transações independentes
+router.get("/lancamentos/independentes", async (req, res) => {
+  try {
+    // Buscar todas as obras com transações independentes
+    const obras = await Obra.find().select("nome pagamentos receitas").lean();
+
+    // Filtrar apenas transações independentes (centroCusto = "Empresa")
+    const transacoesIndependentes = obras.flatMap((obra) => {
+      const pagamentos = obra.pagamentos
+        .filter((p) => p.centroCusto === "Empresa")
+        .map((pagamento) => ({
+          ...pagamento,
+          obraId: obra._id,
+          obraNome: obra.nome,
+          tipo: "despesa",
+        }));
+
+      const receitas = obra.receitas
+        .filter((r) => r.centroCusto === "Empresa")
+        .map((receita) => ({
+          ...receita,
+          obraId: obra._id,
+          obraNome: obra.nome,
+          tipo: "receita",
+        }));
+
+      return [...pagamentos, ...receitas];
+    });
+
+    // Ordenar por data (mais recente primeiro)
+    transacoesIndependentes.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+    res.json(transacoesIndependentes);
+  } catch (error) {
+    console.error("Erro ao buscar transações independentes:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para criar uma transação independente
+router.post("/lancamentos/independentes", async (req, res) => {
+  try {
+    const {
+      descricao,
+      valor,
+      tipo,
+      data,
+      status,
+      categoria,
+      categoriaOutros,
+      centroCusto,
+      dataVencimento,
+      formaPagamento,
+      beneficiario,
+      documento,
+    } = req.body;
+
+    // Validar campos obrigatórios
+    const camposObrigatorios = {
+      descricao: "Descrição é obrigatória",
+      valor: "Valor é obrigatório",
+      tipo: "Tipo é obrigatório",
+      data: "Data é obrigatória",
+      status: "Status é obrigatório",
+      categoria: "Categoria é obrigatória",
+      beneficiario: "Beneficiário é obrigatório",
+    };
+
+    for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+      if (!req.body[campo]) {
+        return res.status(400).json({ message: mensagem });
+      }
+    }
+
+    // Transformar os dados recebidos
+    const transacaoData = {
+      ...req.body,
+      valor:
+        typeof req.body.valor === "string"
+          ? parseFloat(
+              req.body.valor.replace("R$", "").replace(",", ".").trim()
+            )
+          : req.body.valor,
+      data: new Date(req.body.data),
+      dataVencimento: req.body.dataVencimento
+        ? new Date(req.body.dataVencimento)
+        : null,
+      beneficiario: req.body.beneficiario
+        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+        : null,
+      status: req.body.status || "pendente",
+      categoria: req.body.categoria || "Outros",
+      formaPagamento: req.body.formaPagamento || "Não especificado",
+      documento: req.body.documento || "",
+      centroCusto: "Empresa", // Forçar centro de custo como "Empresa" para transações independentes
+    };
+
+    // Validar valores monetários
+    if (isNaN(transacaoData.valor) || transacaoData.valor <= 0) {
+      return res.status(400).json({ message: "Valor inválido" });
+    }
+
+    // Validar datas
+    if (isNaN(transacaoData.data.getTime())) {
+      return res.status(400).json({ message: "Data inválida" });
+    }
+
+    if (
+      transacaoData.dataVencimento &&
+      isNaN(transacaoData.dataVencimento.getTime())
+    ) {
+      return res.status(400).json({ message: "Data de vencimento inválida" });
+    }
+
+    // Criar uma nova obra para transações independentes se não existir
+    let obraIndependente = await Obra.findOne({
+      nome: "Transações Independentes",
+    });
+
+    if (!obraIndependente) {
+      obraIndependente = new Obra({
+        nome: "Transações Independentes",
+        status: "Ativo",
+        centroCusto: "Empresa",
+      });
+      await obraIndependente.save();
+    }
+
+    // Adicionar a transação à obra
+    if (tipo === "receita") {
+      obraIndependente.receitas.push(transacaoData);
+    } else {
+      obraIndependente.pagamentos.push(transacaoData);
+    }
+
+    await obraIndependente.save();
+
+    res.status(201).json(transacaoData);
+  } catch (error) {
+    console.error("Erro ao criar transação independente:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para atualizar uma transação independente
+router.put("/lancamentos/independentes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const obra = await Obra.findOne({ nome: "Transações Independentes" });
+
+    if (!obra) {
+      return res
+        .status(404)
+        .json({ message: "Obra de transações independentes não encontrada" });
+    }
+
+    // Procurar a transação em receitas ou pagamentos
+    let transacao = obra.receitas.id(id) || obra.pagamentos.id(id);
+
+    if (!transacao) {
+      return res.status(404).json({ message: "Transação não encontrada" });
+    }
+
+    // Atualizar os campos da transação
+    Object.assign(transacao, req.body);
+
+    // Validar e transformar valores
+    if (req.body.valor) {
+      transacao.valor =
+        typeof req.body.valor === "string"
+          ? parseFloat(
+              req.body.valor.replace("R$", "").replace(",", ".").trim()
+            )
+          : req.body.valor;
+    }
+
+    if (req.body.data) {
+      transacao.data = new Date(req.body.data);
+    }
+
+    if (req.body.dataVencimento) {
+      transacao.dataVencimento = new Date(req.body.dataVencimento);
+    }
+
+    if (req.body.beneficiario) {
+      transacao.beneficiario = new mongoose.Types.ObjectId(
+        req.body.beneficiario
+      );
+    }
+
+    await obra.save();
+
+    res.json(transacao);
+  } catch (error) {
+    console.error("Erro ao atualizar transação independente:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para excluir uma transação independente
+router.delete("/lancamentos/independentes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const obra = await Obra.findOne({ nome: "Transações Independentes" });
+
+    if (!obra) {
+      return res
+        .status(404)
+        .json({ message: "Obra de transações independentes não encontrada" });
+    }
+
+    // Tentar remover de receitas
+    const receitaIndex = obra.receitas.findIndex(
+      (r) => r._id.toString() === id
+    );
+    if (receitaIndex !== -1) {
+      obra.receitas.splice(receitaIndex, 1);
+    }
+
+    // Tentar remover de pagamentos
+    const pagamentoIndex = obra.pagamentos.findIndex(
+      (p) => p._id.toString() === id
+    );
+    if (pagamentoIndex !== -1) {
+      obra.pagamentos.splice(pagamentoIndex, 1);
+    }
+
+    if (receitaIndex === -1 && pagamentoIndex === -1) {
+      return res.status(404).json({ message: "Transação não encontrada" });
+    }
+
+    await obra.save();
+
+    res.json({ message: "Transação excluída com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir transação independente:", error);
     res.status(500).json({ message: error.message });
   }
 });
