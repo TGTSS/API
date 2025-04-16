@@ -142,7 +142,6 @@ mongoose
 // Adicionar um beneficiário de exemplo ao banco de dados
 app.post("/api/beneficiarios/exemplo", async (req, res) => {
   try {
-    console.log("Rota POST /api/beneficiarios/exemplo chamada");
     const exemploBeneficiario = new Beneficiario({
       name: "Beneficiário Exemplo",
     });
@@ -259,7 +258,6 @@ app.get("/records", async (req, res) => {
 // Rota para buscar um registro específico
 app.get("/records/:id", async (req, res) => {
   try {
-    console.log(`Rota GET /records/${req.params.id} chamada`);
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       console.log(`ID inválido: ${id}`);
@@ -280,7 +278,6 @@ app.get("/records/:id", async (req, res) => {
 // Rota para atualizar um registro com assinatura
 app.put("/records/:id", async (req, res) => {
   try {
-    console.log(`Rota PUT /records/${req.params.id} chamada`);
     const { id } = req.params;
     const { signature, signatureURL, status } = req.body;
     const record = await Record.findById(id);
@@ -305,11 +302,9 @@ app.put("/records/:id", async (req, res) => {
 // Rota para atualizar a localização de um registro
 app.put("/records/:id/location", async (req, res) => {
   try {
-    console.log(`Rota PUT /records/${req.params.id}/location chamada`);
     const { id } = req.params;
     const { location } = req.body;
-    console.log("Atualizando localização para o registro:", id);
-    console.log("Nova localização:", location);
+
 
     if (!location || !location.latitude || !location.longitude) {
       return res
@@ -336,7 +331,6 @@ app.put("/records/:id/location", async (req, res) => {
 // Rota para atualizar o status de um registro
 app.patch("/records/:id/status", async (req, res) => {
   try {
-    console.log(`Rota PATCH /records/${req.params.id}/status chamada`);
     const { id } = req.params;
     const { status } = req.body;
     const record = await Record.findById(id);
@@ -356,7 +350,6 @@ app.patch("/records/:id/status", async (req, res) => {
 // Rota para listar registros por localização
 app.get("/records/location/:location", async (req, res) => {
   try {
-    console.log(`Rota GET /records/location/${req.params.location} chamada`);
     const { location } = req.params;
     const records = await Record.find({ location });
     if (records.length === 0) {
@@ -374,7 +367,6 @@ app.get("/records/location/:location", async (req, res) => {
 // Rota para excluir um registro
 app.delete("/records/:id", async (req, res) => {
   try {
-    console.log(`Rota DELETE /records/${req.params.id} chamada`);
     const { id } = req.params;
     const deletedRecord = await Record.findByIdAndDelete(id);
     if (!deletedRecord) {
@@ -391,7 +383,6 @@ app.delete("/records/:id", async (req, res) => {
 // Rota para excluir todos os beneficiários
 app.delete("/api/beneficiarios", async (req, res) => {
   try {
-    console.log("Rota DELETE /api/beneficiarios chamada");
     await Beneficiario.deleteMany({});
     res
       .status(200)
@@ -406,7 +397,6 @@ app.delete("/api/beneficiarios", async (req, res) => {
 // Rota para excluir um cliente
 app.delete("/api/clientes/:id", async (req, res) => {
   try {
-    console.log(`Rota DELETE /api/clientes/${req.params.id} chamada`);
     const { id } = req.params;
     const deletedCliente = await Cliente.findByIdAndDelete(id);
     if (!deletedCliente) {
@@ -423,7 +413,6 @@ app.delete("/api/clientes/:id", async (req, res) => {
 // Rota para excluir um fornecedor
 app.delete("/api/fornecedores/:id", async (req, res) => {
   try {
-    console.log(`Rota DELETE /api/fornecedores/${req.params.id} chamada`);
     const { id } = req.params;
     const deletedFornecedor = await Fornecedor.findByIdAndDelete(id);
     if (!deletedFornecedor) {
@@ -440,10 +429,8 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
 // Rota para listar todos os beneficiários
 app.get("/api/beneficiarios", async (req, res) => {
   try {
-    console.log("Rota GET /api/beneficiarios chamada");
     const beneficiarios = await Beneficiario.find().lean();
-    console.log(
-      "Beneficiários carregados:",
+    res.json(beneficiarios);
       JSON.stringify(beneficiarios, null, 2)
     );
     res.json(beneficiarios);
@@ -456,9 +443,7 @@ app.get("/api/beneficiarios", async (req, res) => {
 // Rota para listar recibos recusados
 app.get("/records/recusados", async (req, res) => {
   try {
-    console.log("Rota GET /records/recusados chamada");
     const records = await Record.find({ status: "recusado" }).lean();
-    console.log("Recibos recusados encontrados:", records);
     res.json(records);
   } catch (error) {
     console.error("Erro ao buscar recibos recusados:", error);
@@ -469,9 +454,7 @@ app.get("/records/recusados", async (req, res) => {
 // Rota para listar recibos pendentes
 app.get("/records/pendentes", async (req, res) => {
   try {
-    console.log("Rota GET /records/pendentes chamada");
     const records = await Record.find({ status: "pendente" }).lean();
-    console.log("Recibos pendentes encontrados:", records);
     res.json(records);
   } catch (error) {
     console.error("Erro ao buscar recibos pendentes:", error);
@@ -482,9 +465,7 @@ app.get("/records/pendentes", async (req, res) => {
 // Rota para listar recibos aprovados
 app.get("/records/aprovados", async (req, res) => {
   try {
-    console.log("Rota GET /records/aprovados chamada");
     const records = await Record.find({ status: "aprovado" }).lean();
-    console.log("Recibos aprovados encontrados:", records);
     res.json(records);
   } catch (error) {
     console.error("Erro ao buscar recibos aprovados:", error);
@@ -495,7 +476,6 @@ app.get("/records/aprovados", async (req, res) => {
 // Rota para obter o próximo ID disponível
 app.get("/records/nextId", async (req, res) => {
   try {
-    console.log("Rota GET /records/nextId chamada");
     const counter = await Counter.findById("recordId");
     const nextId = counter ? counter.seq + 1 : 1;
     res.json({ nextId });
@@ -537,7 +517,6 @@ app.get("/db/location", async (req, res) => {
 // Rota para obter todos os recibos categorizados
 app.get("/api/recibos", async (req, res) => {
   try {
-    console.log("Rota GET /api/recibos chamada");
     const recusados = await Record.find({ status: "recusado" })
       .sort({ _id: -1 })
       .limit(0);
@@ -578,7 +557,6 @@ app.post("/records/sign", async (req, res) => {
 // Rota para receber dados do site e salvar no banco de dados
 app.post("/api/recibos", async (req, res) => {
   try {
-    console.log("Rota POST /api/recibos chamada");
     const { formData } = req.body;
 
     if (
@@ -615,7 +593,6 @@ app.post("/api/recibos", async (req, res) => {
 // Rota para importar funcionários a partir de um arquivo JSON
 app.post("/api/funcionarios/import", async (req, res) => {
   try {
-    console.log("Rota POST /api/funcionarios/import chamada");
     const funcionarios = req.body;
     if (!Array.isArray(funcionarios)) {
       return res.status(400).json({ message: "Dados inválidos" });
@@ -666,7 +643,6 @@ app.post("/api/segmentos", async (req, res) => {
 // Rota para listar todos os segmentos
 app.get("/api/segmentos", async (req, res) => {
   try {
-    console.log("Rota GET /api/segmentos chamada");
     const segmentos = await Segmento.find().lean();
     res.json(segmentos);
   } catch (error) {
@@ -716,7 +692,6 @@ app.post("/api/formasRemuneracao", async (req, res) => {
 // Rota para listar todas as funções
 app.get("/api/funcoes", async (req, res) => {
   try {
-    console.log("Rota GET /api/funcoes chamada");
     const funcoes = await Funcao.find().lean();
     res.json(funcoes);
   } catch (error) {
@@ -728,7 +703,6 @@ app.get("/api/funcoes", async (req, res) => {
 // Rota para listar todas as formas de remuneração
 app.get("/api/formasRemuneracao", async (req, res) => {
   try {
-    console.log("Rota GET /api/formasRemuneracao chamada");
     const formasRemuneracao = await FormaRemuneracao.find().lean();
     res.json(formasRemuneracao);
   } catch (error) {
@@ -830,7 +804,6 @@ app.get("/server/info", async (req, res) => {
 // Rota para listar todos os fornecedores
 app.get("/api/fornecedores", async (req, res) => {
   try {
-    console.log("Rota GET /api/fornecedores chamada");
     const fornecedores = await Fornecedor.find().lean();
     res.json(fornecedores);
   } catch (error) {
@@ -842,12 +815,10 @@ app.get("/api/fornecedores", async (req, res) => {
 // Rota para cadastrar um novo fornecedor
 app.post("/api/fornecedores", async (req, res) => {
   try {
-    console.log("Rota POST /api/fornecedores chamada");
     const fornecedor = new Fornecedor({
       ...req.body,
     });
     const savedFornecedor = await fornecedor.save();
-    console.log("Fornecedor salvo:", savedFornecedor);
     res.status(201).json(savedFornecedor);
     await emitirAtualizacaoRecibos();
   } catch (error) {
@@ -859,7 +830,6 @@ app.post("/api/fornecedores", async (req, res) => {
 // Rota para atualizar um fornecedor
 app.put("/api/fornecedores/:id", async (req, res) => {
   try {
-    console.log(`Rota PUT /api/fornecedores/${req.params.id} chamada`);
     const { id } = req.params;
     const fornecedor = req.body;
     const updatedFornecedor = await Fornecedor.findByIdAndUpdate(
@@ -881,7 +851,6 @@ app.put("/api/fornecedores/:id", async (req, res) => {
 // Rota para excluir um fornecedor
 app.delete("/api/fornecedores/:id", async (req, res) => {
   try {
-    console.log(`Rota DELETE /api/fornecedores/${req.params.id} chamada`);
     const { id } = req.params;
     const deletedFornecedor = await Fornecedor.findByIdAndDelete(id);
     if (!deletedFornecedor) {
@@ -899,7 +868,6 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
 app.get("/api/fornecedores/check/:documento", async (req, res) => {
   try {
     const { documento } = req.params;
-    console.log("Verificando duplicidade para o documento:", documento);
 
     // Remover formatação do documento
     const formattedDocumento = documento.replace(/[^\d]/g, "");
