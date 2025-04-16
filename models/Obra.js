@@ -15,9 +15,7 @@ const ReceitaSchema = new mongoose.Schema({
   },
   descricao: { type: String, required: true },
   valor: { type: Number, required: true, min: 0 },
-  valorConvertido: { type: Number, required: true, min: 0 },
   valorRecebido: { type: Number, default: 0, min: 0 },
-  valorRecebidoConvertido: { type: Number, default: 0, min: 0 },
   tipo: { type: String, default: "receita" },
   data: { type: Date, default: Date.now },
   status: {
@@ -144,9 +142,7 @@ const PagamentoSchema = new mongoose.Schema({
   },
   descricao: { type: String, required: true },
   valor: { type: Number, required: true, min: 0 },
-  valorConvertido: { type: Number, required: true, min: 0 },
   valorPago: { type: Number, default: 0, min: 0 },
-  valorPagoConvertido: { type: Number, default: 0, min: 0 },
   tipo: { type: String, default: "pagamento" },
   data: { type: Date, default: Date.now },
   status: {

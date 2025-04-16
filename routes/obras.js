@@ -222,7 +222,25 @@ router.post("/", async (req, res) => {
       medicoes,
     } = req.body;
 
-    const obra = new Obra({
+    // Validar campos obrigatórios
+    if (!nome) {
+      return res.status(400).json({ message: "Nome é obrigatório" });
+    }
+
+    if (!tipo) {
+      return res.status(400).json({ message: "Tipo é obrigatório" });
+    }
+
+    if (!cliente) {
+      return res.status(400).json({ message: "Cliente é obrigatório" });
+    }
+
+    if (!dataInicio) {
+      return res.status(400).json({ message: "Data de início é obrigatória" });
+    }
+
+    // Converter valores numéricos
+    const obraData = {
       nome,
       status,
       codigoObras,
@@ -234,10 +252,14 @@ router.post("/", async (req, res) => {
       responsavelObra,
       arquiteto,
       ceiCno,
-      areaConstruida,
-      areaTerreno,
-      numeroPavimentos,
-      numeroUnidades,
+      areaConstruida: areaConstruida
+        ? parseFloat(areaConstruida.replace(",", "."))
+        : null,
+      areaTerreno: areaTerreno
+        ? parseFloat(areaTerreno.replace(",", "."))
+        : null,
+      numeroPavimentos: numeroPavimentos ? parseInt(numeroPavimentos) : null,
+      numeroUnidades: numeroUnidades ? parseInt(numeroUnidades) : null,
       endereco,
       quemPaga: mongoose.Types.ObjectId.isValid(quemPaga)
         ? new mongoose.Types.ObjectId(quemPaga)
@@ -251,24 +273,29 @@ router.post("/", async (req, res) => {
         ? new mongoose.Types.ObjectId(cliente)
         : null,
       contatos,
-      mapPosition,
+      mapPosition: mapPosition ? [mapPosition.lat, mapPosition.lng] : null,
       contatoPrincipal,
-      dataInicio,
-      previsaoTermino,
-      dataPrevisao,
+      dataInicio: new Date(dataInicio),
+      previsaoTermino: previsaoTermino ? new Date(previsaoTermino) : null,
+      dataPrevisao: dataPrevisao ? new Date(dataPrevisao) : null,
       imagem,
       orcamento,
-      receitas,
-      pagamentos,
-      registrosDiarios,
-      medicoes,
-    });
+      receitas: receitas || [],
+      pagamentos: pagamentos || [],
+      registrosDiarios: registrosDiarios || [],
+      medicoes: medicoes || [],
+    };
 
+    const obra = new Obra(obraData);
     const savedObra = await obra.save();
     res.status(201).json(savedObra);
   } catch (error) {
     console.error("Erro ao criar obra:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+      error: error.name,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
   }
 });
 
