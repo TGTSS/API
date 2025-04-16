@@ -247,7 +247,6 @@ app.post("/records", async (req, res) => {
 // Rota para listar todos os registros
 app.get("/records", async (req, res) => {
   try {
-
     const records = await Record.find().lean();
     res.json(records);
   } catch (error) {
@@ -304,7 +303,6 @@ app.put("/records/:id/location", async (req, res) => {
   try {
     const { id } = req.params;
     const { location } = req.body;
-
 
     if (!location || !location.latitude || !location.longitude) {
       return res
@@ -430,7 +428,8 @@ app.delete("/api/fornecedores/:id", async (req, res) => {
 app.get("/api/beneficiarios", async (req, res) => {
   try {
     const beneficiarios = await Beneficiario.find().lean();
-    res.json(beneficiarios);
+    console.log(
+      "Beneficiários encontrados:",
       JSON.stringify(beneficiarios, null, 2)
     );
     res.json(beneficiarios);
