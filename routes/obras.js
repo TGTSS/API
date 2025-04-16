@@ -452,7 +452,6 @@ router.post("/:id/receitas", async (req, res) => {
     const camposObrigatorios = {
       descricao: "Descrição é obrigatória",
       valor: "Valor é obrigatório",
-      valorConvertido: "Valor convertido é obrigatório",
       categoria: "Categoria é obrigatória",
       centroCusto: "Centro de custo é obrigatório",
       formaPagamento: "Forma de pagamento é obrigatória",
@@ -470,25 +469,11 @@ router.post("/:id/receitas", async (req, res) => {
       return res.status(400).json({ message: "Valor inválido" });
     }
 
-    if (isNaN(req.body.valorConvertido) || req.body.valorConvertido <= 0) {
-      return res.status(400).json({ message: "Valor convertido inválido" });
-    }
-
     if (
       req.body.valorRecebido &&
       (isNaN(req.body.valorRecebido) || req.body.valorRecebido < 0)
     ) {
       return res.status(400).json({ message: "Valor recebido inválido" });
-    }
-
-    if (
-      req.body.valorRecebidoConvertido &&
-      (isNaN(req.body.valorRecebidoConvertido) ||
-        req.body.valorRecebidoConvertido < 0)
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Valor recebido convertido inválido" });
     }
 
     // Validar datas
@@ -626,7 +611,6 @@ router.post("/:id/pagamentos", async (req, res) => {
     const camposObrigatorios = {
       descricao: "Descrição é obrigatória",
       valor: "Valor é obrigatório",
-      valorConvertido: "Valor convertido é obrigatório",
       categoria: "Categoria é obrigatória",
       centroCusto: "Centro de custo é obrigatório",
       formaPagamento: "Forma de pagamento é obrigatória",
@@ -645,24 +629,11 @@ router.post("/:id/pagamentos", async (req, res) => {
       return res.status(400).json({ message: "Valor inválido" });
     }
 
-    if (isNaN(req.body.valorConvertido) || req.body.valorConvertido <= 0) {
-      return res.status(400).json({ message: "Valor convertido inválido" });
-    }
-
     if (
       req.body.valorPago &&
       (isNaN(req.body.valorPago) || req.body.valorPago < 0)
     ) {
       return res.status(400).json({ message: "Valor pago inválido" });
-    }
-
-    if (
-      req.body.valorPagoConvertido &&
-      (isNaN(req.body.valorPagoConvertido) || req.body.valorPagoConvertido < 0)
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Valor pago convertido inválido" });
     }
 
     // Validar datas
