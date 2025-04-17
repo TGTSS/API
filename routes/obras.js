@@ -353,6 +353,20 @@ router.post("/duplicar", async (req, res) => {
       return res.status(400).json({ message: "Data de início é obrigatória" });
     }
 
+    // Validar e formatar mapPosition
+    let formattedMapPosition = null;
+    if (mapPosition && Array.isArray(mapPosition)) {
+      const [lat, lng] = mapPosition;
+      if (
+        typeof lat === "number" &&
+        !isNaN(lat) &&
+        typeof lng === "number" &&
+        !isNaN(lng)
+      ) {
+        formattedMapPosition = [lat, lng];
+      }
+    }
+
     // Converter valores numéricos
     const obraData = {
       nome,
@@ -389,7 +403,7 @@ router.post("/duplicar", async (req, res) => {
         ? new mongoose.Types.ObjectId(cliente)
         : null,
       contatos,
-      mapPosition: mapPosition ? [mapPosition.lat, mapPosition.lng] : null,
+      mapPosition: formattedMapPosition,
       contatoPrincipal,
       dataInicio: new Date(dataInicio.split("/").reverse().join("-")),
       previsaoTermino: previsaoTermino
