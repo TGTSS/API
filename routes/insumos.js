@@ -61,7 +61,25 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Rota para deletar um insumo específico
+// Rota para atualizar um insumo
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedInsumo = await Insumo.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!updatedInsumo) {
+      return res.status(404).json({ message: "Insumo não encontrado" });
+    }
+    res.json(updatedInsumo);
+  } catch (error) {
+    console.error("Erro ao atualizar insumo:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para deletar um insumo
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
