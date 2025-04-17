@@ -299,6 +299,120 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Rota para criar uma nova obra
+router.post("/duplicar", async (req, res) => {
+  try {
+    const {
+      nome,
+      status,
+      codigoObras,
+      tipo,
+      art,
+      responsavelTecnico,
+      responsavelObra,
+      arquiteto,
+      ceiCno,
+      areaConstruida,
+      areaTerreno,
+      numeroPavimentos,
+      numeroUnidades,
+      endereco,
+      quemPaga,
+      conta,
+      comentario,
+      visivelPara,
+      cliente,
+      contatos,
+      mapPosition,
+      contatoPrincipal,
+      dataInicio,
+      previsaoTermino,
+      dataPrevisao,
+      imagem,
+      orcamento,
+      receitas,
+      pagamentos,
+      registrosDiarios,
+      medicoes,
+    } = req.body;
+
+    // Validar campos obrigatórios
+    if (!nome) {
+      return res.status(400).json({ message: "Nome é obrigatório" });
+    }
+
+    if (!tipo) {
+      return res.status(400).json({ message: "Tipo é obrigatório" });
+    }
+
+    if (!cliente) {
+      return res.status(400).json({ message: "Cliente é obrigatório" });
+    }
+
+    if (!dataInicio) {
+      return res.status(400).json({ message: "Data de início é obrigatória" });
+    }
+
+    // Converter valores numéricos
+    const obraData = {
+      nome,
+      status,
+      codigoObras,
+      tipo: mongoose.Types.ObjectId.isValid(tipo)
+        ? new mongoose.Types.ObjectId(tipo)
+        : null,
+      art,
+      responsavelTecnico,
+      responsavelObra,
+      arquiteto,
+      ceiCno,
+      areaConstruida: areaConstruida
+        ? parseFloat(areaConstruida.replace(",", "."))
+        : null,
+      areaTerreno: areaTerreno
+        ? parseFloat(areaTerreno.replace(",", "."))
+        : null,
+      numeroPavimentos: numeroPavimentos ? parseInt(numeroPavimentos) : null,
+      numeroUnidades: numeroUnidades ? parseInt(numeroUnidades) : null,
+      endereco,
+      quemPaga: mongoose.Types.ObjectId.isValid(quemPaga)
+        ? new mongoose.Types.ObjectId(quemPaga)
+        : null,
+      conta: mongoose.Types.ObjectId.isValid(conta)
+        ? new mongoose.Types.ObjectId(conta)
+        : null,
+      comentario,
+      visivelPara,
+      cliente: mongoose.Types.ObjectId.isValid(cliente)
+        ? new mongoose.Types.ObjectId(cliente)
+        : null,
+      contatos,
+      mapPosition: mapPosition ? [mapPosition.lat, mapPosition.lng] : null,
+      contatoPrincipal,
+      dataInicio: new Date(dataInicio),
+      previsaoTermino: previsaoTermino ? new Date(previsaoTermino) : null,
+      dataPrevisao: dataPrevisao ? new Date(dataPrevisao) : null,
+      imagem,
+      orcamento,
+      receitas: receitas || [],
+      pagamentos: pagamentos || [],
+      registrosDiarios: registrosDiarios || [],
+      medicoes: medicoes || [],
+    };
+
+    const obra = new Obra(obraData);
+    const savedObra = await obra.save();
+    res.status(201).json(savedObra);
+  } catch (error) {
+    console.error("Erro ao criar obra:", error);
+    res.status(500).json({
+      message: error.message,
+      error: error.name,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+});
+
 // Rota para atualizar uma obra
 router.put("/:id", async (req, res) => {
   try {
