@@ -1047,104 +1047,121 @@ router.get("/lancamentos/independentes", async (req, res) => {
 // Rota para criar uma transação independente
 router.post("/lancamentos/independentes", async (req, res) => {
   try {
-    const {
-      descricao,
-      valor,
-      tipo,
-      data,
-      status,
-      categoria,
-      categoriaOutros,
-      centroCusto,
-      dataVencimento,
-      formaPagamento,
-      beneficiario,
-      documento,
-    } = req.body;
+    // Verificar se é uma única transação ou um array de transações
+    const transacoes = Array.isArray(req.body) ? req.body : [req.body];
+    const resultados = [];
 
-    // Validar campos obrigatórios
-    const camposObrigatorios = {
-      descricao: "Descrição é obrigatória",
-      valor: "Valor é obrigatório",
-      tipo: "Tipo é obrigatório",
-      data: "Data é obrigatória",
-      status: "Status é obrigatório",
-      categoria: "Categoria é obrigatória",
-      beneficiario: "Beneficiário é obrigatório",
-    };
+    for (const transacao of transacoes) {
+      const {
+        descricao,
+        valor,
+        tipo,
+        data,
+        status,
+        categoria,
+        categoriaOutros,
+        centroCusto,
+        dataVencimento,
+        formaPagamento,
+        beneficiario,
+        documento,
+        obraId, // Novo campo para identificar a obra
+      } = transacao;
 
-    for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
-      if (!req.body[campo]) {
-        return res.status(400).json({ message: mensagem });
+      // Validar campos obrigatórios
+      const camposObrigatorios = {
+        descricao: "Descrição é obrigatória",
+        valor: "Valor é obrigatório",
+        tipo: "Tipo é obrigatório",
+        data: "Data é obrigatória",
+        status: "Status é obrigatório",
+        categoria: "Categoria é obrigatória",
+        beneficiario: "Beneficiário é obrigatório",
+      };
+
+      for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+        if (!transacao[campo]) {
+          return res.status(400).json({ message: mensagem });
+        }
       }
+
+      // Transformar os dados recebidos
+      const transacaoData = {
+        ...transacao,
+        valor:
+          typeof transacao.valor === "string"
+            ? parseFloat(
+                transacao.valor.replace("R$", "").replace(",", ".").trim()
+              )
+            : transacao.valor,
+        data: new Date(transacao.data),
+        dataVencimento: transacao.dataVencimento
+          ? new Date(transacao.dataVencimento)
+          : null,
+        beneficiario: transacao.beneficiario
+          ? new mongoose.Types.ObjectId(transacao.beneficiario)
+          : null,
+        status: transacao.status || "pendente",
+        categoria: transacao.categoria || "Outros",
+        formaPagamento: transacao.formaPagamento || "Não especificado",
+        documento: transacao.documento || "",
+        centroCusto: obraId ? obraId : "Empresa", // Usar obraId se fornecido, senão "Empresa"
+      };
+
+      // Validar valores monetários
+      if (isNaN(transacaoData.valor) || transacaoData.valor <= 0) {
+        return res.status(400).json({ message: "Valor inválido" });
+      }
+
+      // Validar datas
+      if (isNaN(transacaoData.data.getTime())) {
+        return res.status(400).json({ message: "Data inválida" });
+      }
+
+      if (
+        transacaoData.dataVencimento &&
+        isNaN(transacaoData.dataVencimento.getTime())
+      ) {
+        return res.status(400).json({ message: "Data de vencimento inválida" });
+      }
+
+      let obra;
+      if (obraId) {
+        // Se uma obraId foi fornecida, buscar a obra específica
+        obra = await Obra.findById(obraId);
+        if (!obra) {
+          return res.status(404).json({ message: "Obra não encontrada" });
+        }
+      } else {
+        // Se não houver obraId, usar a obra de transações independentes
+        obra = await Obra.findOne({
+          nome: "Transações Independentes",
+        });
+
+        if (!obra) {
+          obra = new Obra({
+            nome: "Transações Independentes",
+            status: "Ativo",
+            centroCusto: "Empresa",
+          });
+          await obra.save();
+        }
+      }
+
+      // Adicionar a transação à obra
+      if (tipo === "receita") {
+        obra.receitas.push(transacaoData);
+      } else {
+        obra.pagamentos.push(transacaoData);
+      }
+
+      await obra.save();
+      resultados.push(transacaoData);
     }
 
-    // Transformar os dados recebidos
-    const transacaoData = {
-      ...req.body,
-      valor:
-        typeof req.body.valor === "string"
-          ? parseFloat(
-              req.body.valor.replace("R$", "").replace(",", ".").trim()
-            )
-          : req.body.valor,
-      data: new Date(req.body.data),
-      dataVencimento: req.body.dataVencimento
-        ? new Date(req.body.dataVencimento)
-        : null,
-      beneficiario: req.body.beneficiario
-        ? new mongoose.Types.ObjectId(req.body.beneficiario)
-        : null,
-      status: req.body.status || "pendente",
-      categoria: req.body.categoria || "Outros",
-      formaPagamento: req.body.formaPagamento || "Não especificado",
-      documento: req.body.documento || "",
-      centroCusto: "Empresa", // Forçar centro de custo como "Empresa" para transações independentes
-    };
-
-    // Validar valores monetários
-    if (isNaN(transacaoData.valor) || transacaoData.valor <= 0) {
-      return res.status(400).json({ message: "Valor inválido" });
-    }
-
-    // Validar datas
-    if (isNaN(transacaoData.data.getTime())) {
-      return res.status(400).json({ message: "Data inválida" });
-    }
-
-    if (
-      transacaoData.dataVencimento &&
-      isNaN(transacaoData.dataVencimento.getTime())
-    ) {
-      return res.status(400).json({ message: "Data de vencimento inválida" });
-    }
-
-    // Criar uma nova obra para transações independentes se não existir
-    let obraIndependente = await Obra.findOne({
-      nome: "Transações Independentes",
-    });
-
-    if (!obraIndependente) {
-      obraIndependente = new Obra({
-        nome: "Transações Independentes",
-        status: "Ativo",
-        centroCusto: "Empresa",
-      });
-      await obraIndependente.save();
-    }
-
-    // Adicionar a transação à obra
-    if (tipo === "receita") {
-      obraIndependente.receitas.push(transacaoData);
-    } else {
-      obraIndependente.pagamentos.push(transacaoData);
-    }
-
-    await obraIndependente.save();
-
-    res.status(201).json(transacaoData);
+    res.status(201).json(resultados);
   } catch (error) {
-    console.error("Erro ao criar transação independente:", error);
+    console.error("Erro ao criar transação(ões) independente(s):", error);
     res.status(500).json({ message: error.message });
   }
 });
