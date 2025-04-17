@@ -35,6 +35,9 @@ const ReceitaSchema = new mongoose.Schema({
   },
   documento: { type: String },
   anexos: [{ type: String }],
+  obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 const DespesaSchema = new mongoose.Schema({
@@ -147,7 +150,7 @@ const PagamentoSchema = new mongoose.Schema({
   data: { type: Date, default: Date.now },
   status: {
     type: String,
-    enum: ["pendente", "pago", "atrasado"],
+    enum: ["pendente", "pago", "atrasado", "a_pagar"],
     default: "pendente",
   },
   categoria: { type: String, required: true },
@@ -167,6 +170,9 @@ const PagamentoSchema = new mongoose.Schema({
   },
   documento: { type: String },
   anexos: [{ type: String }],
+  obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 const RegistroDiarioSchema = new mongoose.Schema({
@@ -343,9 +349,55 @@ const ObraSchema = new mongoose.Schema(
 
 // Middleware to update the updatedAt field
 ObraSchema.pre("save", function (next) {
+  if (this.isModified("receitas") || this.isModified("pagamentos")) {
+    const now = new Date();
+
+    // Update timestamps for modified transactions
+    if (this.isModified("receitas")) {
+      this.receitas.forEach((receita) => {
+        if (receita.isModified()) {
+          receita.updatedAt = now;
+        }
+      });
+    }
+
+    if (this.isModified("pagamentos")) {
+      this.pagamentos.forEach((pagamento) => {
+        if (pagamento.isModified()) {
+          pagamento.updatedAt = now;
+        }
+      });
+    }
+  }
   this.updatedAt = Date.now();
   next();
 });
+
+// Add method to handle multiple transactions
+ObraSchema.methods.addTransactions = async function (transactions) {
+  const now = new Date();
+  const results = [];
+
+  for (const transaction of transactions) {
+    const transactionData = {
+      ...transaction,
+      obraId: this._id,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (transaction.tipo === "receita") {
+      this.receitas.push(transactionData);
+      results.push(this.receitas[this.receitas.length - 1]);
+    } else {
+      this.pagamentos.push(transactionData);
+      results.push(this.pagamentos[this.pagamentos.length - 1]);
+    }
+  }
+
+  await this.save();
+  return results;
+};
 
 const tipoAbreviacoes = {
   "67b5b6765fec364fb905548a": "CT",
