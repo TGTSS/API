@@ -389,11 +389,20 @@ router.post("/duplicar", async (req, res) => {
       contatos,
       mapPosition: mapPosition ? [mapPosition.lat, mapPosition.lng] : null,
       contatoPrincipal,
-      dataInicio: new Date(dataInicio),
-      previsaoTermino: previsaoTermino ? new Date(previsaoTermino) : null,
+      dataInicio: new Date(dataInicio.split("/").reverse().join("-")),
+      previsaoTermino: previsaoTermino
+        ? new Date(previsaoTermino.split("/").reverse().join("-"))
+        : null,
       dataPrevisao: dataPrevisao ? new Date(dataPrevisao) : null,
       imagem,
-      orcamento,
+      orcamento: orcamento
+        ? {
+            ...orcamento,
+            _id: undefined,
+            dataCriacao: new Date(),
+            dataAtualizacao: new Date(),
+          }
+        : null,
       receitas: receitas || [],
       pagamentos: pagamentos || [],
       registrosDiarios: registrosDiarios || [],
@@ -404,7 +413,7 @@ router.post("/duplicar", async (req, res) => {
     const savedObra = await obra.save();
     res.status(201).json(savedObra);
   } catch (error) {
-    console.error("Erro ao criar obra:", error);
+    console.error("Erro ao duplicar obra:", error);
     res.status(500).json({
       message: error.message,
       error: error.name,
