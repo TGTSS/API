@@ -366,12 +366,14 @@ router.post("/duplicar", async (req, res) => {
       responsavelObra,
       arquiteto,
       ceiCno,
-      areaConstruida: areaConstruida
-        ? parseFloat(areaConstruida.replace(",", "."))
-        : null,
-      areaTerreno: areaTerreno
-        ? parseFloat(areaTerreno.replace(",", "."))
-        : null,
+      areaConstruida:
+        typeof areaConstruida === "string"
+          ? parseFloat(areaConstruida.replace(",", "."))
+          : Number(areaConstruida),
+      areaTerreno:
+        typeof areaTerreno === "string"
+          ? parseFloat(areaTerreno.replace(",", "."))
+          : Number(areaTerreno),
       numeroPavimentos: numeroPavimentos ? parseInt(numeroPavimentos) : null,
       numeroUnidades: numeroUnidades ? parseInt(numeroUnidades) : null,
       endereco,
