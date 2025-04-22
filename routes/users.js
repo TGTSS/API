@@ -72,12 +72,17 @@ router.put("/email/:email/permissao", async (req, res) => {
       `Rota PUT /api/users/email/${req.params.email}/permissao chamada`
     );
     const { email } = req.params;
-    const { permissao } = req.body;
-    const updatedUser = await User.findOneAndUpdate(
-      { email },
-      { permissao },
-      { new: true }
-    );
+    const { permissao, modulos } = req.body;
+
+    const updateData = { permissao };
+    if (modulos) {
+      updateData.modulos = modulos;
+    }
+
+    const updatedUser = await User.findOneAndUpdate({ email }, updateData, {
+      new: true,
+    });
+
     if (!updatedUser) {
       return res.status(404).json({ message: "Usuário não encontrado" });
     }

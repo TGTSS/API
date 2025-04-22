@@ -33,7 +33,15 @@ const ReceitaSchema = new mongoose.Schema({
     ref: "Cliente",
   },
   documento: { type: String },
-  anexos: [{ type: String }],
+  anexos: [
+    {
+      nome: { type: String },
+      tipo: { type: String },
+      tamanho: { type: Number },
+      caminho: { type: String },
+      dataUpload: { type: Date, default: Date.now },
+    },
+  ],
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -166,7 +174,15 @@ const PagamentoSchema = new mongoose.Schema({
     enum: ["Fornecedor", "Funcionario"],
   },
   documento: { type: String },
-  anexos: [{ type: String }],
+  anexos: [
+    {
+      nome: { type: String },
+      tipo: { type: String },
+      tamanho: { type: Number },
+      caminho: { type: String },
+      dataUpload: { type: Date, default: Date.now },
+    },
+  ],
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

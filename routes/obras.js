@@ -575,7 +575,7 @@ router.get("/:id/receitas", async (req, res) => {
 });
 
 // Rota para adicionar uma receita
-router.post("/:id/receitas", async (req, res) => {
+router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -603,29 +603,16 @@ router.post("/:id/receitas", async (req, res) => {
       }
     }
 
-    // Validar valores monetários
-    if (isNaN(req.body.valor) || req.body.valor <= 0) {
-      return res.status(400).json({ message: "Valor inválido" });
-    }
-
-    if (
-      req.body.valorRecebido &&
-      (isNaN(req.body.valorRecebido) || req.body.valorRecebido < 0)
-    ) {
-      return res.status(400).json({ message: "Valor recebido inválido" });
-    }
-
-    // Validar datas
-    if (isNaN(new Date(req.body.data).getTime())) {
-      return res.status(400).json({ message: "Data inválida" });
-    }
-
-    if (
-      req.body.dataVencimento &&
-      isNaN(new Date(req.body.dataVencimento).getTime())
-    ) {
-      return res.status(400).json({ message: "Data de vencimento inválida" });
-    }
+    // Processar anexos se existirem
+    const anexos = req.files
+      ? req.files.map((file) => ({
+          nome: file.originalname,
+          tipo: file.mimetype,
+          tamanho: file.size,
+          caminho: file.path,
+          dataUpload: new Date(),
+        }))
+      : [];
 
     const novaReceita = {
       ...req.body,
@@ -636,6 +623,7 @@ router.post("/:id/receitas", async (req, res) => {
         : null,
       beneficiario: new mongoose.Types.ObjectId(req.body.beneficiario),
       centroCusto: obra.nome,
+      anexos: anexos,
     };
 
     obra.receitas.push(novaReceita);
@@ -649,41 +637,61 @@ router.post("/:id/receitas", async (req, res) => {
 });
 
 // Rota para atualizar uma receita
-router.put("/:id/receitas/:receitaId", async (req, res) => {
-  try {
-    const { id, receitaId } = req.params;
-    if (
-      !mongoose.Types.ObjectId.isValid(id) ||
-      !mongoose.Types.ObjectId.isValid(receitaId)
-    ) {
-      return res.status(400).json({ message: "ID inválido" });
+router.put(
+  "/:id/receitas/:receitaId",
+  upload.array("anexos", 5),
+  async (req, res) => {
+    try {
+      const { id, receitaId } = req.params;
+      if (
+        !mongoose.Types.ObjectId.isValid(id) ||
+        !mongoose.Types.ObjectId.isValid(receitaId)
+      ) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      const obra = await Obra.findById(id);
+      if (!obra) {
+        return res.status(404).json({ message: "Obra não encontrada" });
+      }
+
+      const receitaIndex = obra.receitas.findIndex(
+        (r) => r._id.toString() === receitaId
+      );
+      if (receitaIndex === -1) {
+        return res.status(404).json({ message: "Receita não encontrada" });
+      }
+
+      // Processar anexos se existirem
+      const anexos = req.files
+        ? req.files.map((file) => ({
+            nome: file.originalname,
+            tipo: file.mimetype,
+            tamanho: file.size,
+            caminho: file.path,
+            dataUpload: new Date(),
+          }))
+        : [];
+
+      // Se houver anexos existentes, mantê-los
+      const anexosExistentes = obra.receitas[receitaIndex].anexos || [];
+      const todosAnexos = [...anexosExistentes, ...anexos];
+
+      obra.receitas[receitaIndex] = {
+        ...obra.receitas[receitaIndex],
+        ...req.body,
+        _id: new mongoose.Types.ObjectId(receitaId),
+        anexos: todosAnexos,
+      };
+
+      await obra.save();
+      res.json(obra.receitas[receitaIndex]);
+    } catch (error) {
+      console.error("Erro ao atualizar receita:", error);
+      res.status(500).json({ message: error.message });
     }
-
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    const receitaIndex = obra.receitas.findIndex(
-      (r) => r._id.toString() === receitaId
-    );
-    if (receitaIndex === -1) {
-      return res.status(404).json({ message: "Receita não encontrada" });
-    }
-
-    obra.receitas[receitaIndex] = {
-      ...obra.receitas[receitaIndex],
-      ...req.body,
-      _id: new mongoose.Types.ObjectId(receitaId),
-    };
-
-    await obra.save();
-    res.json(obra.receitas[receitaIndex]);
-  } catch (error) {
-    console.error("Erro ao atualizar receita:", error);
-    res.status(500).json({ message: error.message });
   }
-});
+);
 
 // Rota para excluir uma receita
 router.delete("/:id/receitas/:receitaId", async (req, res) => {
@@ -735,7 +743,7 @@ router.get("/:id/pagamentos", async (req, res) => {
 });
 
 // Rota para adicionar um pagamento
-router.post("/:id/pagamentos", async (req, res) => {
+router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -764,34 +772,16 @@ router.post("/:id/pagamentos", async (req, res) => {
       }
     }
 
-    // Validar valores monetários
-    if (isNaN(req.body.valor) || req.body.valor <= 0) {
-      return res.status(400).json({ message: "Valor inválido" });
-    }
-
-    if (
-      req.body.valorPago &&
-      (isNaN(req.body.valorPago) || req.body.valorPago < 0)
-    ) {
-      return res.status(400).json({ message: "Valor pago inválido" });
-    }
-
-    // Validar datas
-    if (isNaN(new Date(req.body.data).getTime())) {
-      return res.status(400).json({ message: "Data inválida" });
-    }
-
-    if (
-      req.body.dataVencimento &&
-      isNaN(new Date(req.body.dataVencimento).getTime())
-    ) {
-      return res.status(400).json({ message: "Data de vencimento inválida" });
-    }
-
-    // Validar beneficiarioTipo
-    if (!["Fornecedor", "Funcionario"].includes(req.body.beneficiarioTipo)) {
-      return res.status(400).json({ message: "Tipo de beneficiário inválido" });
-    }
+    // Processar anexos se existirem
+    const anexos = req.files
+      ? req.files.map((file) => ({
+          nome: file.originalname,
+          tipo: file.mimetype,
+          tamanho: file.size,
+          caminho: file.path,
+          dataUpload: new Date(),
+        }))
+      : [];
 
     const novoPagamento = {
       ...req.body,
@@ -802,6 +792,7 @@ router.post("/:id/pagamentos", async (req, res) => {
         : null,
       beneficiario: new mongoose.Types.ObjectId(req.body.beneficiario),
       centroCusto: obra.nome,
+      anexos: anexos,
     };
 
     obra.pagamentos.push(novoPagamento);
@@ -815,41 +806,61 @@ router.post("/:id/pagamentos", async (req, res) => {
 });
 
 // Rota para atualizar um pagamento
-router.put("/:id/pagamentos/:pagamentoId", async (req, res) => {
-  try {
-    const { id, pagamentoId } = req.params;
-    if (
-      !mongoose.Types.ObjectId.isValid(id) ||
-      !mongoose.Types.ObjectId.isValid(pagamentoId)
-    ) {
-      return res.status(400).json({ message: "ID inválido" });
+router.put(
+  "/:id/pagamentos/:pagamentoId",
+  upload.array("anexos", 5),
+  async (req, res) => {
+    try {
+      const { id, pagamentoId } = req.params;
+      if (
+        !mongoose.Types.ObjectId.isValid(id) ||
+        !mongoose.Types.ObjectId.isValid(pagamentoId)
+      ) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      const obra = await Obra.findById(id);
+      if (!obra) {
+        return res.status(404).json({ message: "Obra não encontrada" });
+      }
+
+      const pagamentoIndex = obra.pagamentos.findIndex(
+        (p) => p._id.toString() === pagamentoId
+      );
+      if (pagamentoIndex === -1) {
+        return res.status(404).json({ message: "Pagamento não encontrado" });
+      }
+
+      // Processar anexos se existirem
+      const anexos = req.files
+        ? req.files.map((file) => ({
+            nome: file.originalname,
+            tipo: file.mimetype,
+            tamanho: file.size,
+            caminho: file.path,
+            dataUpload: new Date(),
+          }))
+        : [];
+
+      // Se houver anexos existentes, mantê-los
+      const anexosExistentes = obra.pagamentos[pagamentoIndex].anexos || [];
+      const todosAnexos = [...anexosExistentes, ...anexos];
+
+      obra.pagamentos[pagamentoIndex] = {
+        ...obra.pagamentos[pagamentoIndex],
+        ...req.body,
+        _id: new mongoose.Types.ObjectId(pagamentoId),
+        anexos: todosAnexos,
+      };
+
+      await obra.save();
+      res.json(obra.pagamentos[pagamentoIndex]);
+    } catch (error) {
+      console.error("Erro ao atualizar pagamento:", error);
+      res.status(500).json({ message: error.message });
     }
-
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    const pagamentoIndex = obra.pagamentos.findIndex(
-      (p) => p._id.toString() === pagamentoId
-    );
-    if (pagamentoIndex === -1) {
-      return res.status(404).json({ message: "Pagamento não encontrado" });
-    }
-
-    obra.pagamentos[pagamentoIndex] = {
-      ...obra.pagamentos[pagamentoIndex],
-      ...req.body,
-      _id: new mongoose.Types.ObjectId(pagamentoId),
-    };
-
-    await obra.save();
-    res.json(obra.pagamentos[pagamentoIndex]);
-  } catch (error) {
-    console.error("Erro ao atualizar pagamento:", error);
-    res.status(500).json({ message: error.message });
   }
-});
+);
 
 // Rota para excluir um pagamento
 router.delete("/:id/pagamentos/:pagamentoId", async (req, res) => {
