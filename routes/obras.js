@@ -13,7 +13,12 @@ const router = express.Router();
 // Configuração do multer para upload de arquivos
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), "uploads", "documentos");
+    const uploadDir = path.join(
+      process.cwd(),
+      "public",
+      "uploads",
+      "documentos"
+    );
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -43,6 +48,24 @@ const upload = multer({
       )
     );
   },
+});
+
+// Rota para servir arquivos
+router.get("/uploads/documentos/:filename", (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(
+    process.cwd(),
+    "public",
+    "uploads",
+    "documentos",
+    filename
+  );
+
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ message: "Arquivo não encontrado" });
+  }
 });
 
 // Rota para listar todos os tipos de obra
@@ -1058,126 +1081,110 @@ router.get("/lancamentos/independentes", async (req, res) => {
 });
 
 // Rota para criar uma transação independente
-router.post("/lancamentos/independentes", async (req, res) => {
-  try {
-    // Verificar se é uma única transação ou um array de transações
-    const transacoes = Array.isArray(req.body) ? req.body : [req.body];
-    const resultados = [];
+router.post(
+  "/lancamentos/independentes",
+  upload.array("anexos", 5),
+  async (req, res) => {
+    try {
+      const transacoes = Array.isArray(req.body) ? req.body : [req.body];
+      const resultados = [];
 
-    for (const transacao of transacoes) {
-      const {
-        descricao,
-        valor,
-        tipo,
-        data,
-        status,
-        categoria,
-        categoriaOutros,
-        centroCusto,
-        dataVencimento,
-        formaPagamento,
-        beneficiario,
-        documento,
-        obraId, // Novo campo para identificar a obra
-      } = transacao;
+      for (const transacao of transacoes) {
+        // Processar anexos se existirem
+        const anexos = req.files
+          ? req.files.map((file) => ({
+              nome: file.originalname,
+              tipo: file.mimetype,
+              tamanho: file.size,
+              caminho: `/uploads/documentos/${file.filename}`,
+              dataUpload: new Date(),
+            }))
+          : [];
 
-      // Validar campos obrigatórios
-      const camposObrigatorios = {
-        descricao: "Descrição é obrigatória",
-        valor: "Valor é obrigatório",
-        tipo: "Tipo é obrigatório",
-        data: "Data é obrigatória",
-        status: "Status é obrigatório",
-        categoria: "Categoria é obrigatória",
-        beneficiario: "Beneficiário é obrigatório",
-      };
+        const transacaoData = {
+          ...transacao,
+          valor:
+            typeof transacao.valor === "string"
+              ? parseFloat(
+                  transacao.valor.replace("R$", "").replace(",", ".").trim()
+                )
+              : transacao.valor,
+          data: new Date(transacao.data),
+          dataVencimento: transacao.dataVencimento
+            ? new Date(transacao.dataVencimento)
+            : null,
+          beneficiario: transacao.beneficiario
+            ? new mongoose.Types.ObjectId(transacao.beneficiario)
+            : null,
+          status: transacao.status || "pendente",
+          categoria: transacao.categoria || "Outros",
+          formaPagamento: transacao.formaPagamento || "Não especificado",
+          documento: transacao.documento || "",
+          centroCusto:
+            transacao.centroCusto || (transacao.obraId ? obra.nome : "Empresa"),
+          anexos: anexos,
+        };
 
-      for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
-        if (!transacao[campo]) {
-          return res.status(400).json({ message: mensagem });
+        // Validar valores monetários
+        if (isNaN(transacaoData.valor) || transacaoData.valor <= 0) {
+          return res.status(400).json({ message: "Valor inválido" });
         }
-      }
 
-      // Transformar os dados recebidos
-      const transacaoData = {
-        ...transacao,
-        valor:
-          typeof transacao.valor === "string"
-            ? parseFloat(
-                transacao.valor.replace("R$", "").replace(",", ".").trim()
-              )
-            : transacao.valor,
-        data: new Date(transacao.data),
-        dataVencimento: transacao.dataVencimento
-          ? new Date(transacao.dataVencimento)
-          : null,
-        beneficiario: transacao.beneficiario
-          ? new mongoose.Types.ObjectId(transacao.beneficiario)
-          : null,
-        status: transacao.status || "pendente",
-        categoria: transacao.categoria || "Outros",
-        formaPagamento: transacao.formaPagamento || "Não especificado",
-        documento: transacao.documento || "",
-        centroCusto: transacao.centroCusto || (obraId ? obra.nome : "Empresa"), // Preservar o centroCusto enviado pelo frontend
-      };
-
-      // Validar valores monetários
-      if (isNaN(transacaoData.valor) || transacaoData.valor <= 0) {
-        return res.status(400).json({ message: "Valor inválido" });
-      }
-
-      // Validar datas
-      if (isNaN(transacaoData.data.getTime())) {
-        return res.status(400).json({ message: "Data inválida" });
-      }
-
-      if (
-        transacaoData.dataVencimento &&
-        isNaN(transacaoData.dataVencimento.getTime())
-      ) {
-        return res.status(400).json({ message: "Data de vencimento inválida" });
-      }
-
-      let obra;
-      if (obraId) {
-        // Se uma obraId foi fornecida, buscar a obra específica
-        obra = await Obra.findById(obraId);
-        if (!obra) {
-          return res.status(404).json({ message: "Obra não encontrada" });
+        // Validar datas
+        if (isNaN(transacaoData.data.getTime())) {
+          return res.status(400).json({ message: "Data inválida" });
         }
-      } else {
-        // Se não houver obraId, usar a obra de transações independentes
-        obra = await Obra.findOne({
-          nome: "Transações Independentes",
-        });
 
-        if (!obra) {
-          obra = new Obra({
+        if (
+          transacaoData.dataVencimento &&
+          isNaN(transacaoData.dataVencimento.getTime())
+        ) {
+          return res
+            .status(400)
+            .json({ message: "Data de vencimento inválida" });
+        }
+
+        let obra;
+        if (transacao.obraId) {
+          // Se uma obraId foi fornecida, buscar a obra específica
+          obra = await Obra.findById(transacao.obraId);
+          if (!obra) {
+            return res.status(404).json({ message: "Obra não encontrada" });
+          }
+        } else {
+          // Se não houver obraId, usar a obra de transações independentes
+          obra = await Obra.findOne({
             nome: "Transações Independentes",
-            status: "Ativo",
-            centroCusto: "Empresa",
           });
-          await obra.save();
+
+          if (!obra) {
+            obra = new Obra({
+              nome: "Transações Independentes",
+              status: "Ativo",
+              centroCusto: "Empresa",
+            });
+            await obra.save();
+          }
         }
+
+        // Adicionar a transação à obra
+        if (transacao.tipo === "receita") {
+          obra.receitas.push(transacaoData);
+        } else {
+          obra.pagamentos.push(transacaoData);
+        }
+
+        await obra.save();
+        resultados.push(transacaoData);
       }
 
-      // Adicionar a transação à obra
-      if (tipo === "receita") {
-        obra.receitas.push(transacaoData);
-      } else {
-        obra.pagamentos.push(transacaoData);
-      }
-
-      await obra.save();
-      resultados.push(transacaoData);
+      res.status(201).json(resultados);
+    } catch (error) {
+      console.error("Erro ao criar transação(ões) independente(s):", error);
+      res.status(500).json({ message: error.message });
     }
-
-    res.status(201).json(resultados);
-  } catch (error) {
-    console.error("Erro ao criar transação(ões) independente(s):", error);
-    res.status(500).json({ message: error.message });
   }
-});
+);
 
 // Rota para atualizar uma transação independente
 router.put("/lancamentos/independentes/:id", async (req, res) => {
