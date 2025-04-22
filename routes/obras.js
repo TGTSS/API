@@ -635,6 +635,7 @@ router.post("/:id/receitas", async (req, res) => {
         ? new Date(req.body.dataVencimento)
         : null,
       beneficiario: new mongoose.Types.ObjectId(req.body.beneficiario),
+      centroCusto: obra.nome,
     };
 
     obra.receitas.push(novaReceita);
@@ -800,6 +801,7 @@ router.post("/:id/pagamentos", async (req, res) => {
         ? new Date(req.body.dataVencimento)
         : null,
       beneficiario: new mongoose.Types.ObjectId(req.body.beneficiario),
+      centroCusto: obra.nome,
     };
 
     obra.pagamentos.push(novoPagamento);
@@ -1105,7 +1107,7 @@ router.post("/lancamentos/independentes", async (req, res) => {
         categoria: transacao.categoria || "Outros",
         formaPagamento: transacao.formaPagamento || "Não especificado",
         documento: transacao.documento || "",
-        centroCusto: obraId ? obraId : "Empresa", // Usar obraId se fornecido, senão "Empresa"
+        centroCusto: obraId ? obra.nome : "Empresa", // Usar o nome da obra se obraId fornecida, senão "Empresa"
       };
 
       // Validar valores monetários
