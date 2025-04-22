@@ -1096,7 +1096,7 @@ router.post(
               nome: file.originalname,
               tipo: file.mimetype,
               tamanho: file.size,
-              caminho: `/uploads/documentos/${file.filename}`,
+              caminho: `/api/obras/uploads/documentos/${file.filename}`,
               dataUpload: new Date(),
             }))
           : [];
