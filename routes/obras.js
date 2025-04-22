@@ -62,6 +62,14 @@ router.get("/uploads/documentos/:filename", (req, res) => {
   );
 
   if (fs.existsSync(filePath)) {
+    // Verificar se é um arquivo PDF
+    if (path.extname(filename).toLowerCase() === ".pdf") {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        'inline; filename="' + filename + '"'
+      );
+    }
     res.sendFile(filePath);
   } else {
     res.status(404).json({ message: "Arquivo não encontrado" });
