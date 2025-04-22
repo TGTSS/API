@@ -1107,7 +1107,7 @@ router.post("/lancamentos/independentes", async (req, res) => {
         categoria: transacao.categoria || "Outros",
         formaPagamento: transacao.formaPagamento || "Não especificado",
         documento: transacao.documento || "",
-        centroCusto: obraId ? obra.nome : "Empresa", // Usar o nome da obra se obraId fornecida, senão "Empresa"
+        centroCusto: transacao.centroCusto || (obraId ? obra.nome : "Empresa"), // Preservar o centroCusto enviado pelo frontend
       };
 
       // Validar valores monetários
