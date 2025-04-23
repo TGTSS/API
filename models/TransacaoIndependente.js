@@ -7,7 +7,7 @@ const TransacaoIndependenteSchema = new mongoose.Schema({
   valorRecebido: { type: Number, default: 0 },
   tipo: {
     type: String,
-    enum: ["receita", "pagamento"],
+    enum: ["receita", "despesa"],
   },
   data: { type: Date },
   dataVencimento: { type: Date },

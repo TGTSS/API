@@ -123,10 +123,9 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
     }
 
     // Validar tipo de transação
-    if (!["receita", "pagamento"].includes(req.body.tipo)) {
+    if (!["receita", "despesa"].includes(req.body.tipo)) {
       return res.status(400).json({
-        message:
-          "Tipo de transação inválido. Deve ser 'receita' ou 'pagamento'",
+        message: "Tipo de transação inválido. Deve ser 'receita' 'despesa'",
         receivedType: req.body.tipo,
       });
     }
