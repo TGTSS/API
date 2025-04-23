@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
       process.cwd(),
       "public",
       "uploads",
-      "documentos"
+      "transacoes"
     );
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -86,23 +86,41 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
           nome: file.originalname,
           tipo: file.mimetype,
           tamanho: file.size,
-          caminho: `/api/obras/uploads/documentos/${file.filename}`,
+          caminho: `/api/transacoes/uploads/${file.filename}`,
           dataUpload: new Date(),
         }))
       : [];
 
+    // Validate required fields
+    const requiredFields = ["descricao", "valor", "tipo", "data"];
+    const missingFields = requiredFields.filter((field) => !req.body[field]);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: `Campos obrigatórios faltando: ${missingFields.join(", ")}`,
+      });
+    }
+
     const transacaoData = {
-      ...req.body,
+      descricao: req.body.descricao,
       valor: parseFloat(req.body.valor),
       valorPago: parseFloat(req.body.valorPago || 0),
       valorRecebido: parseFloat(req.body.valorRecebido || 0),
+      tipo: req.body.tipo,
       data: new Date(req.body.data),
       dataVencimento: req.body.dataVencimento
         ? new Date(req.body.dataVencimento)
         : null,
+      status: req.body.status || "pendente",
+      categoria: req.body.categoria || "Outros",
+      categoriaOutros: req.body.categoriaOutros || "",
+      centroCusto: req.body.centroCusto || "Empresa",
+      formaPagamento: req.body.formaPagamento || "",
       beneficiario: req.body.beneficiario
         ? new mongoose.Types.ObjectId(req.body.beneficiario)
         : null,
+      beneficiarioTipo: req.body.beneficiarioTipo || "Fornecedor",
+      documento: req.body.documento || "",
       anexos: anexos,
     };
 
@@ -129,7 +147,7 @@ router.put("/:id", upload.array("anexos", 5), async (req, res) => {
           nome: file.originalname,
           tipo: file.mimetype,
           tamanho: file.size,
-          caminho: `/api/obras/uploads/documentos/${file.filename}`,
+          caminho: `/api/transacoes/uploads/${file.filename}`,
           dataUpload: new Date(),
         }))
       : [];
@@ -176,60 +194,6 @@ router.delete("/:id", async (req, res) => {
     res.json({ message: "Transação excluída com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir transação independente:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get transactions by date range
-router.get("/periodo/:inicio/:fim", async (req, res) => {
-  try {
-    const inicio = new Date(req.params.inicio);
-    const fim = new Date(req.params.fim);
-
-    const transacoes = await TransacaoIndependente.find({
-      data: {
-        $gte: inicio,
-        $lte: fim,
-      },
-    })
-      .populate("beneficiario")
-      .sort({ data: -1 });
-
-    res.json(transacoes);
-  } catch (error) {
-    console.error("Erro ao buscar transações por período:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get transactions by status
-router.get("/status/:status", async (req, res) => {
-  try {
-    const transacoes = await TransacaoIndependente.find({
-      status: req.params.status,
-    })
-      .populate("beneficiario")
-      .sort({ data: -1 });
-
-    res.json(transacoes);
-  } catch (error) {
-    console.error("Erro ao buscar transações por status:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get transactions by type
-router.get("/tipo/:tipo", async (req, res) => {
-  try {
-    const transacoes = await TransacaoIndependente.find({
-      tipo: req.params.tipo,
-    })
-      .populate("beneficiario")
-      .sort({ data: -1 });
-
-    res.json(transacoes);
-  } catch (error) {
-    console.error("Erro ao buscar transações por tipo:", error);
     res.status(500).json({ message: error.message });
   }
 });
