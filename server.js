@@ -1011,7 +1011,7 @@ app.use("/api/diarios", diariosRouter);
 app.use("/api/orcamentos", orcamentosRouter);
 app.use("/api/cotacoes", cotacoesRouter);
 app.use("/api/ordens-compra", ordensCompraRouter);
-app.use("/api/transacoes-independentes", transacoesIndependentesRoutes);
+app.use("/api/transacoes", transacoesIndependentesRoutes);
 
 // Emitir evento de atualização de recibos
 const emitirAtualizacaoRecibos = async () => {
