@@ -101,6 +101,17 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
       });
     }
 
+    // Garantir que o beneficiario seja um ObjectId válido
+    let beneficiarioId = null;
+    if (req.body.beneficiario) {
+      try {
+        beneficiarioId = new mongoose.Types.ObjectId(req.body.beneficiario);
+      } catch (error) {
+        console.error("Erro ao converter ID do beneficiário:", error);
+        return res.status(400).json({ message: "ID do beneficiário inválido" });
+      }
+    }
+
     const transacaoData = {
       descricao: req.body.descricao,
       valor: parseFloat(req.body.valor),
@@ -116,9 +127,7 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
       categoriaOutros: req.body.categoriaOutros || "",
       centroCusto: req.body.centroCusto || "Empresa",
       formaPagamento: req.body.formaPagamento || "",
-      beneficiario: req.body.beneficiario
-        ? new mongoose.Types.ObjectId(req.body.beneficiario)
-        : null,
+      beneficiario: beneficiarioId,
       beneficiarioTipo: req.body.beneficiarioTipo || "Fornecedor",
       documento: req.body.documento || "",
       anexos: anexos,
