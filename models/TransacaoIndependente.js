@@ -24,6 +24,7 @@ const TransacaoIndependenteSchema = new mongoose.Schema({
   beneficiarioTipo: {
     type: String,
     enum: ["Fornecedor", "Funcionario"],
+    default: "Fornecedor",
   },
   documento: { type: String },
   anexos: [
@@ -35,7 +36,6 @@ const TransacaoIndependenteSchema = new mongoose.Schema({
       dataUpload: { type: Date, default: Date.now },
     },
   ],
-  obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

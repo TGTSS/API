@@ -3,6 +3,7 @@ import TransacaoIndependente from "../models/TransacaoIndependente.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
@@ -93,12 +94,8 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
     const transacaoData = {
       ...req.body,
       valor: parseFloat(req.body.valor),
-      valorPago:
-        req.body.tipo === "pagamento" ? parseFloat(req.body.valorPago || 0) : 0,
-      valorRecebido:
-        req.body.tipo === "receita"
-          ? parseFloat(req.body.valorRecebido || 0)
-          : 0,
+      valorPago: parseFloat(req.body.valorPago || 0),
+      valorRecebido: parseFloat(req.body.valorRecebido || 0),
       data: new Date(req.body.data),
       dataVencimento: req.body.dataVencimento
         ? new Date(req.body.dataVencimento)
