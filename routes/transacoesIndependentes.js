@@ -80,6 +80,9 @@ router.get("/:id", async (req, res) => {
 // Create a new independent transaction
 router.post("/", upload.array("anexos", 5), async (req, res) => {
   try {
+    console.log("Dados recebidos no body:", req.body);
+    console.log("Dados recebidos nos files:", req.files);
+
     // Processar anexos se existirem
     const anexos = req.files
       ? req.files.map((file) => ({
@@ -96,6 +99,7 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
     const missingFields = requiredFields.filter((field) => !req.body[field]);
 
     if (missingFields.length > 0) {
+      console.log("Campos obrigatórios faltando:", missingFields);
       return res.status(400).json({
         message: `Campos obrigatórios faltando: ${missingFields.join(", ")}`,
       });
@@ -103,13 +107,28 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
 
     // Garantir que o beneficiario seja um ObjectId válido
     let beneficiarioId = null;
-    if (req.body.beneficiario) {
+    if (req.body.beneficiario && req.body.beneficiario.trim() !== "") {
+      console.log("Beneficiario recebido:", req.body.beneficiario);
       try {
         beneficiarioId = new mongoose.Types.ObjectId(req.body.beneficiario);
+        console.log("Beneficiario convertido para ObjectId:", beneficiarioId);
       } catch (error) {
         console.error("Erro ao converter ID do beneficiário:", error);
-        return res.status(400).json({ message: "ID do beneficiário inválido" });
+        return res.status(400).json({
+          message: "ID do beneficiário inválido",
+          error: error.message,
+          receivedId: req.body.beneficiario,
+        });
       }
+    }
+
+    // Validar tipo de transação
+    if (!["receita", "pagamento"].includes(req.body.tipo)) {
+      return res.status(400).json({
+        message:
+          "Tipo de transação inválido. Deve ser 'receita' ou 'pagamento'",
+        receivedType: req.body.tipo,
+      });
     }
 
     const transacaoData = {
@@ -133,12 +152,19 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
       anexos: anexos,
     };
 
+    console.log("Dados da transação antes de salvar:", transacaoData);
+
     const transacao = new TransacaoIndependente(transacaoData);
     const novaTransacao = await transacao.save();
+    console.log("Transação salva com sucesso:", novaTransacao);
     res.status(201).json(novaTransacao);
   } catch (error) {
-    console.error("Erro ao criar transação independente:", error);
-    res.status(400).json({ message: error.message });
+    console.error("Erro detalhado ao criar transação:", error);
+    res.status(400).json({
+      message: "Erro ao criar transação",
+      error: error.message,
+      stack: error.stack,
+    });
   }
 });
 
