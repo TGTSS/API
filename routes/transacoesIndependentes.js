@@ -80,9 +80,6 @@ router.get("/:id", async (req, res) => {
 // Create a new independent transaction
 router.post("/", upload.array("anexos", 5), async (req, res) => {
   try {
-    console.log("Dados recebidos no body:", req.body);
-    console.log("Dados recebidos nos files:", req.files);
-
     // Processar anexos se existirem
     const anexos = req.files
       ? req.files.map((file) => ({
@@ -99,7 +96,6 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
     const missingFields = requiredFields.filter((field) => !req.body[field]);
 
     if (missingFields.length > 0) {
-      console.log("Campos obrigatórios faltando:", missingFields);
       return res.status(400).json({
         message: `Campos obrigatórios faltando: ${missingFields.join(", ")}`,
       });
@@ -111,7 +107,6 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
       console.log("Beneficiario recebido:", req.body.beneficiario);
       try {
         beneficiarioId = new mongoose.Types.ObjectId(req.body.beneficiario);
-        console.log("Beneficiario convertido para ObjectId:", beneficiarioId);
       } catch (error) {
         console.error("Erro ao converter ID do beneficiário:", error);
         return res.status(400).json({
@@ -151,11 +146,8 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
       anexos: anexos,
     };
 
-    console.log("Dados da transação antes de salvar:", transacaoData);
-
     const transacao = new TransacaoIndependente(transacaoData);
     const novaTransacao = await transacao.save();
-    console.log("Transação salva com sucesso:", novaTransacao);
     res.status(201).json(novaTransacao);
   } catch (error) {
     console.error("Erro detalhado ao criar transação:", error);
