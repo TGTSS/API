@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
 
 const TransacaoIndependenteSchema = new mongoose.Schema({
-  descricao: { type: String, required: true },
-  valor: { type: Number, required: true },
+  descricao: { type: String },
+  valor: { type: Number },
   valorPago: { type: Number, default: 0 },
   valorRecebido: { type: Number, default: 0 },
-  tipo: { type: String, enum: ["receita", "pagamento"], required: true },
-  data: { type: Date, required: true },
+  tipo: { type: String, enum: ["receita", "pagamento"] },
+  data: { type: Date },
   dataVencimento: { type: Date },
   status: {
     type: String,
