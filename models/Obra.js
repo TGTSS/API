@@ -199,7 +199,7 @@ const RegistroDiarioSchema = new mongoose.Schema({
       {
         tipo: { type: String },
         outroTipo: { type: String },
-        quantidade: { type: Number },
+        quantidade: { type: Number, default: 0 },
       },
     ],
     observacoes: { type: String },
@@ -209,8 +209,8 @@ const RegistroDiarioSchema = new mongoose.Schema({
       {
         tipo: { type: String },
         outroTipo: { type: String },
-        quantidade: { type: Number },
-        horasUso: { type: Number },
+        quantidade: { type: Number, default: 0 },
+        horasUso: { type: Number, default: 0 },
       },
     ],
     observacoes: { type: String },
@@ -227,25 +227,32 @@ const RegistroDiarioSchema = new mongoose.Schema({
     {
       id: { type: Number },
       nome: { type: String },
-      progresso: { type: Number },
+      progresso: { type: Number, default: 0 },
+      items: [
+        {
+          id: { type: Number },
+          nome: { type: String },
+          progresso: { type: Number, default: 0 },
+        },
+      ],
       subetapas: [
         {
           id: { type: Number },
           nome: { type: String },
-          progresso: { type: Number },
+          progresso: { type: Number, default: 0 },
           itens: [
             {
               id: { type: Number },
               nome: { type: String },
-              progresso: { type: Number },
+              progresso: { type: Number, default: 0 },
             },
           ],
         },
       ],
     },
   ],
-  progressoGeral: { type: Number },
-  timestamp: { type: Number },
+  progressoGeral: { type: Number, default: 0 },
+  timestamp: { type: Number, required: true },
 });
 
 const MedicaoSchema = new mongoose.Schema({
