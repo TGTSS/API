@@ -18,6 +18,7 @@ const ReceitaSchema = new mongoose.Schema({
   valorRecebido: { type: Number, default: 0, min: 0 },
   tipo: { type: String, default: "receita" },
   data: { type: Date, default: Date.now },
+  dataPagamentoRecebimento: { type: Date },
   status: {
     type: String,
     enum: ["pendente", "recebido", "atrasado"],
@@ -155,6 +156,7 @@ const PagamentoSchema = new mongoose.Schema({
   valorPago: { type: Number, default: 0, min: 0 },
   tipo: { type: String, default: "pagamento" },
   data: { type: Date, default: Date.now },
+  dataPagamentoRecebimento: { type: Date },
   status: {
     type: String,
     enum: ["pendente", "pago", "atrasado", "a_pagar"],
