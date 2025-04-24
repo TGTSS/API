@@ -1329,4 +1329,49 @@ router.delete("/:obraId/registros-diarios/:registroId", async (req, res) => {
   }
 });
 
+// Rota para criar um novo registro diário
+router.post("/:obraId/registros-diarios", async (req, res) => {
+  try {
+    const { obraId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(obraId)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(obraId);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Validar campos obrigatórios
+    const camposObrigatorios = {
+      data: "Data é obrigatória",
+      titulo: "Título é obrigatório",
+      descricao: "Descrição é obrigatória",
+      clima: "Clima é obrigatório",
+    };
+
+    for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+      if (!req.body[campo]) {
+        return res.status(400).json({ message: mensagem });
+      }
+    }
+
+    const novoRegistro = {
+      ...req.body,
+      _id: new mongoose.Types.ObjectId(),
+      data: new Date(req.body.data),
+      fotos: req.body.fotos || [],
+      etapasAtualizadas: req.body.etapasAtualizadas || [],
+    };
+
+    obra.registrosDiarios.push(novoRegistro);
+    await obra.save();
+
+    res.status(201).json(novoRegistro);
+  } catch (error) {
+    console.error("Erro ao criar registro diário:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
