@@ -189,39 +189,63 @@ const PagamentoSchema = new mongoose.Schema({
 });
 
 const RegistroDiarioSchema = new mongoose.Schema({
-  data: { type: Date },
-  clima: { type: String },
-  titulo: { type: String },
-  descricao: { type: String },
+  data: { type: Date, required: true },
+  clima: { type: String, required: true },
+  titulo: { type: String, required: true },
+  descricao: { type: String, required: true },
+  maoDeObra: {
+    tercerizados: { type: String },
+    trabalhadores: [
+      {
+        tipo: { type: String },
+        outroTipo: { type: String },
+        quantidade: { type: Number },
+      },
+    ],
+    observacoes: { type: String },
+  },
+  equipamentos: {
+    itens: [
+      {
+        tipo: { type: String },
+        outroTipo: { type: String },
+        quantidade: { type: Number },
+        horasUso: { type: Number },
+      },
+    ],
+    observacoes: { type: String },
+  },
+  ocorrencias: {
+    descricao: { type: String },
+    tipo: { type: String },
+    gravidade: { type: String },
+    grauReincidencia: { type: String },
+    numeroReincidencias: { type: Number, default: 0 },
+  },
   fotos: [{ type: String }],
   etapas: [
     {
-      id: Number,
-      nome: String,
-      progresso: Number,
+      id: { type: Number },
+      nome: { type: String },
+      progresso: { type: Number },
       subetapas: [
         {
-          nome: String,
-          progresso: Number,
+          id: { type: Number },
+          nome: { type: String },
+          progresso: { type: Number },
+          itens: [
+            {
+              id: { type: Number },
+              nome: { type: String },
+              progresso: { type: Number },
+            },
+          ],
         },
       ],
     },
   ],
-  maoDeObra: [
-    {
-      tipo: { type: String },
-      quantidade: { type: Number },
-      outroTipo: { type: String },
-    },
-  ],
-  equipamentos: [
-    {
-      tipo: { type: String },
-      quantidade: { type: Number },
-      horasUso: { type: Number },
-      outroTipo: { type: String },
-    },
-  ],
+  progressoGeral: { type: Number },
+  timestamp: { type: Number },
 });
 
 const MedicaoSchema = new mongoose.Schema({

@@ -1360,8 +1360,26 @@ router.post("/:obraId/registros-diarios", async (req, res) => {
       ...req.body,
       _id: new mongoose.Types.ObjectId(),
       data: new Date(req.body.data),
+      maoDeObra: {
+        tercerizados: req.body.maoDeObra?.tercerizados || "",
+        trabalhadores: req.body.maoDeObra?.trabalhadores || [],
+        observacoes: req.body.maoDeObra?.observacoes || "",
+      },
+      equipamentos: {
+        itens: req.body.equipamentos?.itens || [],
+        observacoes: req.body.equipamentos?.observacoes || "",
+      },
+      ocorrencias: {
+        descricao: req.body.ocorrencias?.descricao || "",
+        tipo: req.body.ocorrencias?.tipo || "",
+        gravidade: req.body.ocorrencias?.gravidade || "",
+        grauReincidencia: req.body.ocorrencias?.grauReincidencia || "",
+        numeroReincidencias: req.body.ocorrencias?.numeroReincidencias || 0,
+      },
       fotos: req.body.fotos || [],
-      etapasAtualizadas: req.body.etapasAtualizadas || [],
+      etapas: req.body.etapas || [],
+      progressoGeral: req.body.progressoGeral || 0,
+      timestamp: req.body.timestamp || Date.now(),
     };
 
     obra.registrosDiarios.push(novoRegistro);
@@ -1370,6 +1388,50 @@ router.post("/:obraId/registros-diarios", async (req, res) => {
     res.status(201).json(novoRegistro);
   } catch (error) {
     console.error("Erro ao criar registro diário:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para atualizar o progresso de uma etapa
+router.put("/:id/etapas/:etapaId/progresso", async (req, res) => {
+  try {
+    const { id, etapaId } = req.params;
+    const { progresso } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID da obra inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Encontrar a etapa pelo ID
+    const etapaIndex = obra.etapas.findIndex(
+      (etapa) => etapa.id === parseInt(etapaId)
+    );
+    if (etapaIndex === -1) {
+      return res.status(404).json({ message: "Etapa não encontrada" });
+    }
+
+    // Validar o valor do progresso
+    if (typeof progresso !== "number" || progresso < 0 || progresso > 100) {
+      return res
+        .status(400)
+        .json({ message: "Progresso deve ser um número entre 0 e 100" });
+    }
+
+    // Atualizar o progresso da etapa
+    obra.etapas[etapaIndex].progresso = progresso;
+    await obra.save();
+
+    res.json({
+      message: "Progresso atualizado com sucesso",
+      etapa: obra.etapas[etapaIndex],
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar progresso:", error);
     res.status(500).json({ message: error.message });
   }
 });
