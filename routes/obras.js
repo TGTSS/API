@@ -1398,10 +1398,7 @@ router.put("/:id/etapas/:etapaId/progresso", async (req, res) => {
     const { id, etapaId } = req.params;
     const { progresso } = req.body;
 
-    if (
-      !mongoose.Types.ObjectId.isValid(id) ||
-      !mongoose.Types.ObjectId.isValid(etapaId)
-    ) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
@@ -1410,11 +1407,11 @@ router.put("/:id/etapas/:etapaId/progresso", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    // Encontrar a etapa pelo _id
-    const etapaIndex = obra.etapas.findIndex(
-      (etapa) => etapa._id.toString() === etapaId
+    // Encontrar a etapa pelo id
+    const etapa = obra.orcamento.stages.find(
+      (stage) => stage.id === parseInt(etapaId)
     );
-    if (etapaIndex === -1) {
+    if (!etapa) {
       return res.status(404).json({ message: "Etapa não encontrada" });
     }
 
@@ -1426,15 +1423,49 @@ router.put("/:id/etapas/:etapaId/progresso", async (req, res) => {
     }
 
     // Atualizar o progresso da etapa
-    obra.etapas[etapaIndex].progresso = progresso;
+    etapa.progresso = progresso;
     await obra.save();
 
     res.json({
       message: "Progresso atualizado com sucesso",
-      etapa: obra.etapas[etapaIndex],
+      etapa: etapa,
     });
   } catch (error) {
     console.error("Erro ao atualizar progresso:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para buscar o último progresso da obra
+router.get("/:id/ultimo-progresso", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Ordena os registros diários por data (mais recente primeiro)
+    const registrosOrdenados = obra.registrosDiarios.sort((a, b) => {
+      return new Date(b.data) - new Date(a.data);
+    });
+
+    // Pega o registro mais recente
+    const ultimoRegistro = registrosOrdenados[0];
+
+    if (!ultimoRegistro) {
+      return res
+        .status(404)
+        .json({ message: "Nenhum registro de progresso encontrado" });
+    }
+
+    res.json([ultimoRegistro]);
+  } catch (error) {
+    console.error("Erro ao buscar último progresso:", error);
     res.status(500).json({ message: error.message });
   }
 });
