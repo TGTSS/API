@@ -1398,8 +1398,11 @@ router.put("/:id/etapas/:etapaId/progresso", async (req, res) => {
     const { id, etapaId } = req.params;
     const { progresso } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID da obra inválido" });
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(etapaId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
     }
 
     const obra = await Obra.findById(id);
@@ -1407,9 +1410,9 @@ router.put("/:id/etapas/:etapaId/progresso", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    // Encontrar a etapa pelo ID
+    // Encontrar a etapa pelo _id
     const etapaIndex = obra.etapas.findIndex(
-      (etapa) => etapa.id === parseInt(etapaId)
+      (etapa) => etapa._id.toString() === etapaId
     );
     if (etapaIndex === -1) {
       return res.status(404).json({ message: "Etapa não encontrada" });
