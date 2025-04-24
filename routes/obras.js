@@ -1290,4 +1290,43 @@ router.delete("/lancamentos/independentes/:id", async (req, res) => {
   }
 });
 
+// Rota para excluir um registro diário específico de uma obra
+router.delete("/:obraId/registros-diarios/:registroId", async (req, res) => {
+  try {
+    const { obraId, registroId } = req.params;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(obraId) ||
+      !mongoose.Types.ObjectId.isValid(registroId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(obraId);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Encontrar o índice do registro diário
+    const registroIndex = obra.registrosDiarios.findIndex(
+      (registro) => registro._id.toString() === registroId
+    );
+
+    if (registroIndex === -1) {
+      return res
+        .status(404)
+        .json({ message: "Registro diário não encontrado" });
+    }
+
+    // Remover o registro diário
+    obra.registrosDiarios.splice(registroIndex, 1);
+    await obra.save();
+
+    res.status(200).json({ message: "Registro diário excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir registro diário:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
