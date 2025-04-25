@@ -1483,25 +1483,34 @@ router.post("/:id/documentos", upload.array("anexos", 5), async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    // Processar anexos se existirem
-    const anexos = req.files
-      ? req.files.map((file) => ({
-          nome: file.originalname,
-          tipo: file.mimetype,
-          tamanho: file.size,
-          caminho: `/api/obras/uploads/documentos/${file.filename}`,
-          dataUpload: new Date(),
-        }))
-      : [];
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "Nenhum arquivo enviado" });
+    }
+
+    // Processar anexos
+    const anexos = req.files.map((file) => ({
+      nome: file.originalname,
+      tipo: file.mimetype,
+      tamanho: file.size,
+      caminho: `/api/obras/uploads/documentos/${file.filename}`,
+      dataUpload: new Date(),
+    }));
 
     // Adicionar os documentos à obra
-    obra.documentos = [...(obra.documentos || []), ...anexos];
+    if (!obra.documentos) {
+      obra.documentos = [];
+    }
+    obra.documentos.push(...anexos);
     await obra.save();
 
     res.status(201).json(anexos);
   } catch (error) {
     console.error("Erro ao adicionar documentos:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+      error: error.name,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
   }
 });
 
