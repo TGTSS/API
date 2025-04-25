@@ -380,10 +380,17 @@ const ObraSchema = new mongoose.Schema(
     },
     registrosDiarios: [RegistroDiarioSchema],
     galeria: [{ type: mongoose.Schema.Types.ObjectId, ref: "Galeria" }],
-    documentos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Documento" }],
+    documentos: [
+      {
+        nome: { type: String },
+        tipo: { type: String },
+        tamanho: { type: Number },
+        caminho: { type: String },
+        dataUpload: { type: Date, default: Date.now },
+      },
+    ],
     dataPrevisao: { type: Date }, // Novo campo
     imagem: { type: String },
-    documentos: [DocumentoSchema],
     orcamento: OrcamentoSchema,
     pagamentos: [PagamentoSchema],
     medicoes: [MedicaoSchema],
