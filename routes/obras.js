@@ -1471,7 +1471,7 @@ router.get("/:id/ultimo-progresso", async (req, res) => {
 });
 
 // Rota para adicionar documentos a uma obra
-router.post("/:id/documentos", upload.array("anexos", 5), async (req, res) => {
+router.post("/:id/documentos", upload.any(), async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
