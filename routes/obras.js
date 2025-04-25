@@ -1514,4 +1514,41 @@ router.post("/:id/documentos", upload.any(), async (req, res) => {
   }
 });
 
+// Rota para excluir um documento de uma obra
+router.delete("/:id/documentos/:documentoId", async (req, res) => {
+  try {
+    const { id, documentoId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID da obra inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Encontrar o índice do documento
+    const documentoIndex = obra.documentos.findIndex(
+      (doc) => doc._id.toString() === documentoId
+    );
+
+    if (documentoIndex === -1) {
+      return res.status(404).json({ message: "Documento não encontrado" });
+    }
+
+    // Remover o documento
+    obra.documentos.splice(documentoIndex, 1);
+    await obra.save();
+
+    res.status(200).json({ message: "Documento excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir documento:", error);
+    res.status(500).json({
+      message: error.message,
+      error: error.name,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+});
+
 export default router;
