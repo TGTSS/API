@@ -62,14 +62,45 @@ router.get("/uploads/documentos/:filename", (req, res) => {
   );
 
   if (fs.existsSync(filePath)) {
-    // Verificar se é um arquivo PDF
-    if (path.extname(filename).toLowerCase() === ".pdf") {
-      res.setHeader("Content-Type", "application/pdf");
+    // Determinar o tipo MIME com base na extensão do arquivo
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = "application/octet-stream";
+
+    switch (ext) {
+      case ".jpg":
+      case ".jpeg":
+        contentType = "image/jpeg";
+        break;
+      case ".png":
+        contentType = "image/png";
+        break;
+      case ".pdf":
+        contentType = "application/pdf";
+        break;
+      case ".doc":
+      case ".docx":
+        contentType = "application/msword";
+        break;
+      case ".xls":
+      case ".xlsx":
+        contentType = "application/vnd.ms-excel";
+        break;
+    }
+
+    // Definir os headers corretos
+    res.setHeader("Content-Type", contentType);
+
+    // Para imagens e PDFs, permitir visualização inline
+    if (contentType.startsWith("image/") || contentType === "application/pdf") {
+      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    } else {
       res.setHeader(
         "Content-Disposition",
-        'inline; filename="' + filename + '"'
+        `attachment; filename="${filename}"`
       );
     }
+
+    // Enviar o arquivo
     res.sendFile(filePath);
   } else {
     res.status(404).json({ message: "Arquivo não encontrado" });
