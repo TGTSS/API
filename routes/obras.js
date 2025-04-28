@@ -1330,67 +1330,99 @@ router.delete("/:obraId/registros-diarios/:registroId", async (req, res) => {
 });
 
 // Rota para criar um novo registro diário
-router.post("/:obraId/registros-diarios", async (req, res) => {
-  try {
-    const { obraId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(obraId)) {
-      return res.status(400).json({ message: "ID inválido" });
-    }
-
-    const obra = await Obra.findById(obraId);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Validar campos obrigatórios
-    const camposObrigatorios = {
-      data: "Data é obrigatória",
-      titulo: "Título é obrigatório",
-      descricao: "Descrição é obrigatória",
-      clima: "Clima é obrigatório",
-    };
-
-    for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
-      if (!req.body[campo]) {
-        return res.status(400).json({ message: mensagem });
+router.post(
+  "/:obraId/registros-diarios",
+  upload.array("fotos", 10),
+  async (req, res) => {
+    try {
+      const { obraId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(obraId)) {
+        return res.status(400).json({ message: "ID inválido" });
       }
+
+      const obra = await Obra.findById(obraId);
+      if (!obra) {
+        return res.status(404).json({ message: "Obra não encontrada" });
+      }
+
+      // Processar os dados do formulário
+      const data = JSON.parse(req.body.data);
+
+      // Validar e formatar a data
+      if (!data.data) {
+        return res.status(400).json({ message: "Data é obrigatória" });
+      }
+
+      // Converter a data para o formato correto
+      const dataFormatada = new Date(data.data);
+      if (isNaN(dataFormatada.getTime())) {
+        return res.status(400).json({ message: "Data inválida" });
+      }
+
+      // Processar fotos se existirem
+      const fotos = req.files
+        ? req.files.map(
+            (file) => `/api/obras/uploads/documentos/${file.filename}`
+          )
+        : [];
+
+      const novoRegistro = {
+        ...data,
+        data: dataFormatada,
+        fotos: fotos,
+        timestamp: Date.now(),
+        maoDeObra: {
+          tercerizados: data.maoDeObra?.tercerizados || "nao",
+          trabalhadores: data.maoDeObra?.trabalhadores || [],
+          observacoes: data.maoDeObra?.observacoes || "",
+        },
+        equipamentos: {
+          itens: data.equipamentos?.itens || [],
+          observacoes: data.equipamentos?.observacoes || "",
+        },
+        ocorrencias: {
+          descricao: data.ocorrencias?.descricao || "",
+          tipo: data.ocorrencias?.tipo || "",
+          gravidade: data.ocorrencias?.gravidade || "",
+          grauReincidencia: data.ocorrencias?.grauReincidencia || "",
+          numeroReincidencias: data.ocorrencias?.numeroReincidencias || 0,
+        },
+      };
+
+      // Validar campos obrigatórios
+      const camposObrigatorios = {
+        clima: "Clima é obrigatório",
+        titulo: "Título é obrigatório",
+        descricao: "Descrição é obrigatória",
+      };
+
+      for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+        if (!novoRegistro[campo]) {
+          return res.status(400).json({ message: mensagem });
+        }
+      }
+
+      // Adicionar o registro à obra
+      obra.registrosDiarios.push(novoRegistro);
+      await obra.save();
+
+      // Atualizar o progresso geral da obra
+      if (novoRegistro.progressoGeral !== undefined) {
+        obra.progressoGeral = novoRegistro.progressoGeral;
+        await obra.save();
+      }
+
+      res.status(201).json(novoRegistro);
+    } catch (error) {
+      console.error("Erro ao criar registro diário:", error);
+      res.status(500).json({
+        message: error.message,
+        error: error.name,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      });
     }
-
-    const novoRegistro = {
-      ...req.body,
-      _id: new mongoose.Types.ObjectId(),
-      data: new Date(req.body.data),
-      maoDeObra: {
-        tercerizados: req.body.maoDeObra?.tercerizados || "",
-        trabalhadores: req.body.maoDeObra?.trabalhadores || [],
-        observacoes: req.body.maoDeObra?.observacoes || "",
-      },
-      equipamentos: {
-        itens: req.body.equipamentos?.itens || [],
-        observacoes: req.body.equipamentos?.observacoes || "",
-      },
-      ocorrencias: {
-        descricao: req.body.ocorrencias?.descricao || "",
-        tipo: req.body.ocorrencias?.tipo || "",
-        gravidade: req.body.ocorrencias?.gravidade || "",
-        grauReincidencia: req.body.ocorrencias?.grauReincidencia || "",
-        numeroReincidencias: req.body.ocorrencias?.numeroReincidencias || 0,
-      },
-      fotos: req.body.fotos || [],
-      etapas: req.body.etapas || [],
-      progressoGeral: req.body.progressoGeral || 0,
-      timestamp: req.body.timestamp || Date.now(),
-    };
-
-    obra.registrosDiarios.push(novoRegistro);
-    await obra.save();
-
-    res.status(201).json(novoRegistro);
-  } catch (error) {
-    console.error("Erro ao criar registro diário:", error);
-    res.status(500).json({ message: error.message });
   }
-});
+);
 
 // Rota para atualizar o progresso de uma etapa
 router.put("/:id/etapas/:etapaId/progresso", async (req, res) => {
