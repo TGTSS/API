@@ -191,12 +191,28 @@ const PagamentoSchema = new mongoose.Schema({
 });
 
 const RegistroDiarioSchema = new mongoose.Schema({
-  data: { type: Date, required: true },
-  clima: { type: String, required: true },
-  titulo: { type: String, required: true },
-  descricao: { type: String, required: true },
+  data: {
+    type: Date,
+    required: true,
+    default: Date.now,
+  },
+  clima: {
+    type: String,
+    required: true,
+  },
+  titulo: {
+    type: String,
+    required: true,
+  },
+  descricao: {
+    type: String,
+    required: true,
+  },
   maoDeObra: {
-    tercerizados: { type: String },
+    tercerizados: {
+      type: String,
+      default: "nao",
+    },
     trabalhadores: [
       {
         tipo: { type: String },
@@ -204,7 +220,7 @@ const RegistroDiarioSchema = new mongoose.Schema({
         quantidade: { type: Number, default: 0 },
       },
     ],
-    observacoes: { type: String },
+    observacoes: { type: String, default: "" },
   },
   equipamentos: {
     itens: [
@@ -215,13 +231,13 @@ const RegistroDiarioSchema = new mongoose.Schema({
         horasUso: { type: Number, default: 0 },
       },
     ],
-    observacoes: { type: String },
+    observacoes: { type: String, default: "" },
   },
   ocorrencias: {
-    descricao: { type: String },
-    tipo: { type: String },
-    gravidade: { type: String },
-    grauReincidencia: { type: String },
+    descricao: { type: String, default: "" },
+    tipo: { type: String, default: "" },
+    gravidade: { type: String, default: "" },
+    grauReincidencia: { type: String, default: "" },
     numeroReincidencias: { type: Number, default: 0 },
   },
   fotos: [{ type: String }],
@@ -253,8 +269,16 @@ const RegistroDiarioSchema = new mongoose.Schema({
       ],
     },
   ],
-  progressoGeral: { type: Number, default: 0 },
-  timestamp: { type: Number, required: true },
+  progressoGeral: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
+  },
+  timestamp: {
+    type: Number,
+    default: () => Date.now(),
+  },
 });
 
 const MedicaoSchema = new mongoose.Schema({
