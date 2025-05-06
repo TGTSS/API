@@ -41,6 +41,7 @@ import Obra from "./models/Obra.js";
 import TipoObra from "./models/TipoObra.js";
 import QuemPaga from "./models/QuemPaga.js";
 import Conta from "./models/Conta.js";
+import solicitacoesRouter from "./routes/solicitacoes.js";
 
 dotenv.config();
 
@@ -1012,6 +1013,8 @@ app.use("/api/orcamentos", orcamentosRouter);
 app.use("/api/cotacoes", cotacoesRouter);
 app.use("/api/ordens-compra", ordensCompraRouter);
 app.use("/api/transacoes", transacoesIndependentesRoutes);
+app.use("/api/solicitacoes", solicitacoesRouter);
+app.use("/api/obras/:obraId/solicitacoes", solicitacoesRouter);
 
 // Emitir evento de atualização de recibos
 const emitirAtualizacaoRecibos = async () => {

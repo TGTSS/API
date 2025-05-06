@@ -14,7 +14,11 @@ router.get("/", isAuthenticated, async (req, res) => {
       .sort({ data: -1 });
     res.json(solicitacoes);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Erro ao buscar solicitações:", error);
+    res.status(500).json({
+      message: "Erro ao buscar solicitações",
+      error: error.message,
+    });
   }
 });
 
@@ -27,7 +31,65 @@ router.get("/obra/:obraId", isAuthenticated, async (req, res) => {
       .sort({ data: -1 });
     res.json(solicitacoes);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Erro ao buscar solicitações da obra:", error);
+    res.status(500).json({
+      message: "Erro ao buscar solicitações da obra",
+      error: error.message,
+    });
+  }
+});
+
+// Create new solicitacao for specific obra
+router.post("/obra/:obraId", isAuthenticated, async (req, res) => {
+  try {
+    const obraId = req.params.obraId;
+    const obra = await Obra.findById(obraId);
+
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Get the last numeroSequencial for this obra
+    const lastSolicitacao = await Solicitacao.findOne({ obra: obraId }).sort({
+      numeroSequencial: -1,
+    });
+
+    const numeroSequencial = lastSolicitacao
+      ? lastSolicitacao.numeroSequencial + 1
+      : 1;
+
+    // Calculate total value from items
+    const valor = req.body.items.reduce((total, item) => {
+      return total + item.quantidade * (item.custoUnitario || 0);
+    }, 0);
+
+    const solicitacao = new Solicitacao({
+      ...req.body,
+      obra: obraId,
+      obraNome: obra.nome,
+      numeroSequencial,
+      valor,
+      solicitante: req.user?.name || "Usuário",
+      status: "Pendente",
+      data: new Date(),
+    });
+
+    const newSolicitacao = await solicitacao.save();
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(newSolicitacao._id)
+      .populate("obra", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.status(201).json(populatedSolicitacao);
+  } catch (error) {
+    console.error("Erro ao criar solicitação:", error);
+    res.status(400).json({
+      message: "Erro ao criar solicitação",
+      error: error.message,
+      details: error.errors, // Include validation errors if any
+    });
   }
 });
 
@@ -45,37 +107,11 @@ router.get("/:id", isAuthenticated, async (req, res) => {
 
     res.json(solicitacao);
   } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Create new solicitacao
-router.post("/", isAuthenticated, async (req, res) => {
-  try {
-    const obra = await Obra.findById(req.body.obra);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Get the last numeroSequencial for this obra
-    const lastSolicitacao = await Solicitacao.findOne({
-      obra: req.body.obra,
-    }).sort({ numeroSequencial: -1 });
-
-    const numeroSequencial = lastSolicitacao
-      ? lastSolicitacao.numeroSequencial + 1
-      : 1;
-
-    const solicitacao = new Solicitacao({
-      ...req.body,
-      numeroSequencial,
-      solicitante: req.user.name, // Assuming user info is available in req.user
+    console.error("Erro ao buscar solicitação:", error);
+    res.status(500).json({
+      message: "Erro ao buscar solicitação",
+      error: error.message,
     });
-
-    const newSolicitacao = await solicitacao.save();
-    res.status(201).json(newSolicitacao);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
   }
 });
 
@@ -104,10 +140,31 @@ router.patch("/:id", isAuthenticated, async (req, res) => {
       }
     });
 
+    // Recalculate total value if items were updated
+    if (req.body.items) {
+      solicitacao.valor = solicitacao.items.reduce((total, item) => {
+        return total + item.quantidade * (item.custoUnitario || 0);
+      }, 0);
+    }
+
     const updatedSolicitacao = await solicitacao.save();
-    res.json(updatedSolicitacao);
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(
+      updatedSolicitacao._id
+    )
+      .populate("obra", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.json(populatedSolicitacao);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Erro ao atualizar solicitação:", error);
+    res.status(400).json({
+      message: "Erro ao atualizar solicitação",
+      error: error.message,
+      details: error.errors,
+    });
   }
 });
 
@@ -122,7 +179,11 @@ router.delete("/:id", isAuthenticated, async (req, res) => {
     await solicitacao.deleteOne();
     res.json({ message: "Solicitação excluída com sucesso" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Erro ao excluir solicitação:", error);
+    res.status(500).json({
+      message: "Erro ao excluir solicitação",
+      error: error.message,
+    });
   }
 });
 
@@ -136,9 +197,22 @@ router.post("/:id/cotacoes", isAuthenticated, async (req, res) => {
 
     solicitacao.cotacoes.push(req.body);
     const updatedSolicitacao = await solicitacao.save();
-    res.status(201).json(updatedSolicitacao);
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(
+      updatedSolicitacao._id
+    )
+      .populate("obra", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.status(201).json(populatedSolicitacao);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Erro ao adicionar cotação:", error);
+    res.status(400).json({
+      message: "Erro ao adicionar cotação",
+      error: error.message,
+    });
   }
 });
 
@@ -157,9 +231,22 @@ router.patch("/:id/cotacoes/:cotacaoId", isAuthenticated, async (req, res) => {
 
     Object.assign(cotacao, req.body);
     const updatedSolicitacao = await solicitacao.save();
-    res.json(updatedSolicitacao);
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(
+      updatedSolicitacao._id
+    )
+      .populate("obra", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.json(populatedSolicitacao);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Erro ao atualizar cotação:", error);
+    res.status(400).json({
+      message: "Erro ao atualizar cotação",
+      error: error.message,
+    });
   }
 });
 
@@ -173,9 +260,22 @@ router.delete("/:id/cotacoes/:cotacaoId", isAuthenticated, async (req, res) => {
 
     solicitacao.cotacoes.pull(req.params.cotacaoId);
     const updatedSolicitacao = await solicitacao.save();
-    res.json(updatedSolicitacao);
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(
+      updatedSolicitacao._id
+    )
+      .populate("obra", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.json(populatedSolicitacao);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Erro ao excluir cotação:", error);
+    res.status(400).json({
+      message: "Erro ao excluir cotação",
+      error: error.message,
+    });
   }
 });
 
