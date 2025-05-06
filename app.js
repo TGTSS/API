@@ -1,6 +1,7 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
+import solicitacoesRoutes from "./routes/solicitacoes.js";
 
 const app = express();
 
@@ -10,6 +11,14 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-// ...existing code...
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use("/api/solicitacoes", solicitacoesRoutes);
+
+// Static files
 app.use("/uploads", express.static(uploadDir));
-// ...existing code...
+
+export default app;

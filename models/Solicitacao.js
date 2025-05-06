@@ -20,28 +20,57 @@ const CotacaoSchema = new mongoose.Schema({
   status: String,
 });
 
-const SolicitacaoSchema = new mongoose.Schema({
-  nome: { type: String, required: true },
+const ItemSchema = new mongoose.Schema({
+  insumoId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Insumo",
+    required: true,
+  },
   descricao: { type: String, required: true },
-  data: { type: Date, default: Date.now },
-  status: { type: String, required: true },
-  prioridade: { type: String, required: true },
-  solicitante: { type: String, required: true },
-  valor: { type: Number, required: true },
-  items: [
-    {
-      description: { type: String, required: true },
-      quantity: { type: Number, required: true },
-      unitPrice: { type: Number, required: true },
-      isManual: { type: Boolean, required: true },
-    },
-  ],
-  obra: { type: mongoose.Schema.Types.ObjectId, ref: "Obra", required: true },
-  obraNome: { type: String, required: true },
-  numeroSequencial: { type: Number, required: true },
-  fornecedores: [{ type: mongoose.Schema.Types.ObjectId, ref: "Fornecedor" }],
-  cotacoes: [CotacaoSchema],
+  quantidade: { type: Number, required: true },
+  unidade: { type: String, required: true },
+  custoUnitario: { type: Number, required: true },
+  etapa: { type: String },
+  subetapa: { type: String },
+  item: { type: String },
+  isManual: { type: Boolean, default: false },
 });
+
+const SolicitacaoSchema = new mongoose.Schema(
+  {
+    nome: { type: String, required: true },
+    descricao: { type: String, required: true },
+    data: { type: Date, default: Date.now },
+    status: {
+      type: String,
+      required: true,
+      enum: ["Pendente", "Aprovado", "Rejeitado", "Em cotação"],
+      default: "Pendente",
+    },
+    prioridade: {
+      type: String,
+      required: true,
+      enum: ["Baixa", "Média", "Alta"],
+      default: "Média",
+    },
+    solicitante: { type: String, required: true },
+    valor: { type: Number, required: true },
+    items: [ItemSchema],
+    obra: { type: mongoose.Schema.Types.ObjectId, ref: "Obra", required: true },
+    obraNome: { type: String, required: true },
+    numeroSequencial: { type: Number, required: true },
+    fornecedores: [{ type: mongoose.Schema.Types.ObjectId, ref: "Fornecedor" }],
+    cotacoes: [CotacaoSchema],
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Add indexes for better query performance
+SolicitacaoSchema.index({ obra: 1, numeroSequencial: 1 });
+SolicitacaoSchema.index({ status: 1 });
+SolicitacaoSchema.index({ prioridade: 1 });
 
 const Solicitacao = mongoose.model("Solicitacao", SolicitacaoSchema);
 
