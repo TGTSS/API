@@ -57,8 +57,18 @@ router.post("/obra/:obraId", async (req, res) => {
       ? lastSolicitacao.numeroSequencial + 1
       : 1;
 
+    // Process items to ensure all required fields are present
+    const processedItems = req.body.items.map((item) => ({
+      ...item,
+      custoUnitario: item.custoUnitario || 0, // Set default value if missing
+      unidade: item.unidade || "UN", // Set default unit if missing
+      descricao:
+        item.descricao || item.insumoId?.descricao || "Item sem descrição", // Use insumo description or default
+      quantidade: item.quantidade || 1, // Set default quantity if missing
+    }));
+
     // Calculate total value from items
-    const valor = req.body.items.reduce((total, item) => {
+    const valor = processedItems.reduce((total, item) => {
       return total + item.quantidade * (item.custoUnitario || 0);
     }, 0);
 
@@ -68,7 +78,8 @@ router.post("/obra/:obraId", async (req, res) => {
       obraNome: obra.nome,
       numeroSequencial,
       valor,
-      solicitante: req.user?.name || "Usuário",
+      items: processedItems,
+      solicitante: req.body.solicitante || "Usuário",
       status: "Pendente",
       data: new Date(),
     });
