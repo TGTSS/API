@@ -1,12 +1,11 @@
 import express from "express";
 import Solicitacao from "../models/Solicitacao.js";
 import Obra from "../models/Obra.js";
-import { isAuthenticated } from "../middleware/auth.js";
 
 const router = express.Router();
 
 // Get all solicitacoes
-router.get("/", isAuthenticated, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const solicitacoes = await Solicitacao.find()
       .populate("obra", "nome")
@@ -23,7 +22,7 @@ router.get("/", isAuthenticated, async (req, res) => {
 });
 
 // Get solicitacoes by obra
-router.get("/obra/:obraId", isAuthenticated, async (req, res) => {
+router.get("/obra/:obraId", async (req, res) => {
   try {
     const solicitacoes = await Solicitacao.find({ obra: req.params.obraId })
       .populate("obra", "nome")
@@ -40,7 +39,7 @@ router.get("/obra/:obraId", isAuthenticated, async (req, res) => {
 });
 
 // Create new solicitacao for specific obra
-router.post("/obra/:obraId", isAuthenticated, async (req, res) => {
+router.post("/obra/:obraId", async (req, res) => {
   try {
     const obraId = req.params.obraId;
     const obra = await Obra.findById(obraId);
@@ -94,7 +93,7 @@ router.post("/obra/:obraId", isAuthenticated, async (req, res) => {
 });
 
 // Get single solicitacao
-router.get("/:id", isAuthenticated, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const solicitacao = await Solicitacao.findById(req.params.id)
       .populate("obra", "nome")
@@ -116,7 +115,7 @@ router.get("/:id", isAuthenticated, async (req, res) => {
 });
 
 // Update solicitacao
-router.patch("/:id", isAuthenticated, async (req, res) => {
+router.patch("/:id", async (req, res) => {
   try {
     const solicitacao = await Solicitacao.findById(req.params.id);
     if (!solicitacao) {
@@ -169,7 +168,7 @@ router.patch("/:id", isAuthenticated, async (req, res) => {
 });
 
 // Delete solicitacao
-router.delete("/:id", isAuthenticated, async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const solicitacao = await Solicitacao.findById(req.params.id);
     if (!solicitacao) {
@@ -188,7 +187,7 @@ router.delete("/:id", isAuthenticated, async (req, res) => {
 });
 
 // Add cotacao to solicitacao
-router.post("/:id/cotacoes", isAuthenticated, async (req, res) => {
+router.post("/:id/cotacoes", async (req, res) => {
   try {
     const solicitacao = await Solicitacao.findById(req.params.id);
     if (!solicitacao) {
@@ -217,7 +216,7 @@ router.post("/:id/cotacoes", isAuthenticated, async (req, res) => {
 });
 
 // Update cotacao in solicitacao
-router.patch("/:id/cotacoes/:cotacaoId", isAuthenticated, async (req, res) => {
+router.patch("/:id/cotacoes/:cotacaoId", async (req, res) => {
   try {
     const solicitacao = await Solicitacao.findById(req.params.id);
     if (!solicitacao) {
@@ -251,7 +250,7 @@ router.patch("/:id/cotacoes/:cotacaoId", isAuthenticated, async (req, res) => {
 });
 
 // Delete cotacao from solicitacao
-router.delete("/:id/cotacoes/:cotacaoId", isAuthenticated, async (req, res) => {
+router.delete("/:id/cotacoes/:cotacaoId", async (req, res) => {
   try {
     const solicitacao = await Solicitacao.findById(req.params.id);
     if (!solicitacao) {
