@@ -657,9 +657,8 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
       descricao: "Descrição é obrigatória",
       valor: "Valor é obrigatório",
       categoria: "Categoria é obrigatória",
-      centroCusto: "Centro de custo é obrigatório",
-      formaPagamento: "Forma de pagamento é obrigatória",
-      beneficiario: "Beneficiário é obrigatório",
+      data: "Data é obrigatória",
+      status: "Status é obrigatório",
     };
 
     for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
@@ -686,9 +685,15 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
       dataVencimento: req.body.dataVencimento
         ? new Date(req.body.dataVencimento)
         : null,
-      beneficiario: new mongoose.Types.ObjectId(req.body.beneficiario),
+      beneficiario: req.body.beneficiario
+        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+        : null,
       centroCusto: obra.nome,
       anexos: anexos,
+      associacaoOrcamento: req.body.associacaoOrcamento || null,
+      valorRecebido: req.body.valorRecebido
+        ? parseFloat(req.body.valorRecebido)
+        : 0,
     };
 
     obra.receitas.push(novaReceita);
@@ -720,6 +725,21 @@ router.put(
         return res.status(404).json({ message: "Obra não encontrada" });
       }
 
+      // Validar campos obrigatórios
+      const camposObrigatorios = {
+        descricao: "Descrição é obrigatória",
+        valor: "Valor é obrigatório",
+        categoria: "Categoria é obrigatória",
+        data: "Data é obrigatória",
+        status: "Status é obrigatório",
+      };
+
+      for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+        if (!req.body[campo]) {
+          return res.status(400).json({ message: mensagem });
+        }
+      }
+
       const receitaIndex = obra.receitas.findIndex(
         (r) => r._id.toString() === receitaId
       );
@@ -742,15 +762,27 @@ router.put(
       const anexosExistentes = obra.receitas[receitaIndex].anexos || [];
       const todosAnexos = [...anexosExistentes, ...anexos];
 
-      obra.receitas[receitaIndex] = {
+      const receitaAtualizada = {
         ...obra.receitas[receitaIndex],
         ...req.body,
         _id: new mongoose.Types.ObjectId(receitaId),
         anexos: todosAnexos,
+        data: new Date(req.body.data),
+        dataVencimento: req.body.dataVencimento
+          ? new Date(req.body.dataVencimento)
+          : null,
+        beneficiario: req.body.beneficiario
+          ? new mongoose.Types.ObjectId(req.body.beneficiario)
+          : null,
+        associacaoOrcamento: req.body.associacaoOrcamento || null,
+        valorRecebido: req.body.valorRecebido
+          ? parseFloat(req.body.valorRecebido)
+          : 0,
       };
 
+      obra.receitas[receitaIndex] = receitaAtualizada;
       await obra.save();
-      res.json(obra.receitas[receitaIndex]);
+      res.json(receitaAtualizada);
     } catch (error) {
       console.error("Erro ao atualizar receita:", error);
       res.status(500).json({ message: error.message });
@@ -825,10 +857,8 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
       descricao: "Descrição é obrigatória",
       valor: "Valor é obrigatório",
       categoria: "Categoria é obrigatória",
-      centroCusto: "Centro de custo é obrigatório",
-      formaPagamento: "Forma de pagamento é obrigatória",
-      beneficiario: "Beneficiário é obrigatório",
-      beneficiarioTipo: "Tipo de beneficiário é obrigatório",
+      data: "Data é obrigatória",
+      status: "Status é obrigatório",
     };
 
     for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
@@ -855,9 +885,13 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
       dataVencimento: req.body.dataVencimento
         ? new Date(req.body.dataVencimento)
         : null,
-      beneficiario: new mongoose.Types.ObjectId(req.body.beneficiario),
+      beneficiario: req.body.beneficiario
+        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+        : null,
       centroCusto: obra.nome,
       anexos: anexos,
+      associacaoOrcamento: req.body.associacaoOrcamento || null,
+      valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
     };
 
     obra.pagamentos.push(novoPagamento);
@@ -889,6 +923,21 @@ router.put(
         return res.status(404).json({ message: "Obra não encontrada" });
       }
 
+      // Validar campos obrigatórios
+      const camposObrigatorios = {
+        descricao: "Descrição é obrigatória",
+        valor: "Valor é obrigatório",
+        categoria: "Categoria é obrigatória",
+        data: "Data é obrigatória",
+        status: "Status é obrigatório",
+      };
+
+      for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+        if (!req.body[campo]) {
+          return res.status(400).json({ message: mensagem });
+        }
+      }
+
       const pagamentoIndex = obra.pagamentos.findIndex(
         (p) => p._id.toString() === pagamentoId
       );
@@ -911,15 +960,25 @@ router.put(
       const anexosExistentes = obra.pagamentos[pagamentoIndex].anexos || [];
       const todosAnexos = [...anexosExistentes, ...anexos];
 
-      obra.pagamentos[pagamentoIndex] = {
+      const pagamentoAtualizado = {
         ...obra.pagamentos[pagamentoIndex],
         ...req.body,
         _id: new mongoose.Types.ObjectId(pagamentoId),
         anexos: todosAnexos,
+        data: new Date(req.body.data),
+        dataVencimento: req.body.dataVencimento
+          ? new Date(req.body.dataVencimento)
+          : null,
+        beneficiario: req.body.beneficiario
+          ? new mongoose.Types.ObjectId(req.body.beneficiario)
+          : null,
+        associacaoOrcamento: req.body.associacaoOrcamento || null,
+        valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
       };
 
+      obra.pagamentos[pagamentoIndex] = pagamentoAtualizado;
       await obra.save();
-      res.json(obra.pagamentos[pagamentoIndex]);
+      res.json(pagamentoAtualizado);
     } catch (error) {
       console.error("Erro ao atualizar pagamento:", error);
       res.status(500).json({ message: error.message });

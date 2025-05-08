@@ -34,6 +34,7 @@ const ReceitaSchema = new mongoose.Schema({
     ref: "Cliente",
   },
   documento: { type: String },
+  associacaoOrcamento: { type: String },
   anexos: [
     {
       nome: { type: String },
@@ -176,6 +177,7 @@ const PagamentoSchema = new mongoose.Schema({
     enum: ["Fornecedor", "Funcionario"],
   },
   documento: { type: String },
+  associacaoOrcamento: { type: String },
   anexos: [
     {
       nome: { type: String },
