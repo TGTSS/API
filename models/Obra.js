@@ -34,7 +34,11 @@ const ReceitaSchema = new mongoose.Schema({
     ref: "Cliente",
   },
   documento: { type: String },
-  associacaoOrcamento: { type: String },
+  associacaoOrcamento: {
+    etapa: { type: mongoose.Schema.Types.Mixed },
+    subetapa: { type: mongoose.Schema.Types.Mixed },
+    item: { type: mongoose.Schema.Types.Mixed },
+  },
   anexos: [
     {
       nome: { type: String },
@@ -177,7 +181,11 @@ const PagamentoSchema = new mongoose.Schema({
     enum: ["Fornecedor", "Funcionario"],
   },
   documento: { type: String },
-  associacaoOrcamento: { type: String },
+  associacaoOrcamento: {
+    etapa: { type: mongoose.Schema.Types.Mixed },
+    subetapa: { type: mongoose.Schema.Types.Mixed },
+    item: { type: mongoose.Schema.Types.Mixed },
+  },
   anexos: [
     {
       nome: { type: String },

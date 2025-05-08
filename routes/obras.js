@@ -678,6 +678,19 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
         }))
       : [];
 
+    // Processar associacaoOrcamento
+    let associacaoOrcamento = null;
+    if (req.body.associacaoOrcamento) {
+      try {
+        associacaoOrcamento =
+          typeof req.body.associacaoOrcamento === "string"
+            ? JSON.parse(req.body.associacaoOrcamento)
+            : req.body.associacaoOrcamento;
+      } catch (error) {
+        console.error("Erro ao processar associacaoOrcamento:", error);
+      }
+    }
+
     const novaReceita = {
       ...req.body,
       id: new mongoose.Types.ObjectId(),
@@ -690,7 +703,7 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
         : null,
       centroCusto: obra.nome,
       anexos: anexos,
-      associacaoOrcamento: req.body.associacaoOrcamento || null,
+      associacaoOrcamento: associacaoOrcamento,
       valorRecebido: req.body.valorRecebido
         ? parseFloat(req.body.valorRecebido)
         : 0,
@@ -762,6 +775,19 @@ router.put(
       const anexosExistentes = obra.receitas[receitaIndex].anexos || [];
       const todosAnexos = [...anexosExistentes, ...anexos];
 
+      // Processar associacaoOrcamento
+      let associacaoOrcamento = null;
+      if (req.body.associacaoOrcamento) {
+        try {
+          associacaoOrcamento =
+            typeof req.body.associacaoOrcamento === "string"
+              ? JSON.parse(req.body.associacaoOrcamento)
+              : req.body.associacaoOrcamento;
+        } catch (error) {
+          console.error("Erro ao processar associacaoOrcamento:", error);
+        }
+      }
+
       const receitaAtualizada = {
         ...obra.receitas[receitaIndex],
         ...req.body,
@@ -774,7 +800,7 @@ router.put(
         beneficiario: req.body.beneficiario
           ? new mongoose.Types.ObjectId(req.body.beneficiario)
           : null,
-        associacaoOrcamento: req.body.associacaoOrcamento || null,
+        associacaoOrcamento: associacaoOrcamento,
         valorRecebido: req.body.valorRecebido
           ? parseFloat(req.body.valorRecebido)
           : 0,
@@ -878,6 +904,19 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
         }))
       : [];
 
+    // Processar associacaoOrcamento
+    let associacaoOrcamento = null;
+    if (req.body.associacaoOrcamento) {
+      try {
+        associacaoOrcamento =
+          typeof req.body.associacaoOrcamento === "string"
+            ? JSON.parse(req.body.associacaoOrcamento)
+            : req.body.associacaoOrcamento;
+      } catch (error) {
+        console.error("Erro ao processar associacaoOrcamento:", error);
+      }
+    }
+
     const novoPagamento = {
       ...req.body,
       id: new mongoose.Types.ObjectId(),
@@ -890,7 +929,7 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
         : null,
       centroCusto: obra.nome,
       anexos: anexos,
-      associacaoOrcamento: req.body.associacaoOrcamento || null,
+      associacaoOrcamento: associacaoOrcamento,
       valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
     };
 
@@ -960,6 +999,19 @@ router.put(
       const anexosExistentes = obra.pagamentos[pagamentoIndex].anexos || [];
       const todosAnexos = [...anexosExistentes, ...anexos];
 
+      // Processar associacaoOrcamento
+      let associacaoOrcamento = null;
+      if (req.body.associacaoOrcamento) {
+        try {
+          associacaoOrcamento =
+            typeof req.body.associacaoOrcamento === "string"
+              ? JSON.parse(req.body.associacaoOrcamento)
+              : req.body.associacaoOrcamento;
+        } catch (error) {
+          console.error("Erro ao processar associacaoOrcamento:", error);
+        }
+      }
+
       const pagamentoAtualizado = {
         ...obra.pagamentos[pagamentoIndex],
         ...req.body,
@@ -972,7 +1024,7 @@ router.put(
         beneficiario: req.body.beneficiario
           ? new mongoose.Types.ObjectId(req.body.beneficiario)
           : null,
-        associacaoOrcamento: req.body.associacaoOrcamento || null,
+        associacaoOrcamento: associacaoOrcamento,
         valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
       };
 
