@@ -389,7 +389,7 @@ const ObraSchema = new mongoose.Schema(
     tipo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TipoObra",
-      required: true, // Campo obrigatório
+
     },
     art: { type: String },
     responsavelTecnico: { type: String },
@@ -415,7 +415,6 @@ const ObraSchema = new mongoose.Schema(
     cliente: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Cliente",
-      required: true, // Campo obrigatório
     },
     contatos: [ContatoSchema],
     receitas: [ReceitaSchema],
