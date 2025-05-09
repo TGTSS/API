@@ -349,7 +349,7 @@ const MedicaoSchema = new mongoose.Schema({
 
 const ObraSchema = new mongoose.Schema(
   {
-    nome: { type: String, required: true },
+    nome: { type: String },
     descricao: String,
     dataInicio: { type: Date, required: true },
     dataFim: Date,
