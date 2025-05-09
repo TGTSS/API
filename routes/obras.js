@@ -1734,45 +1734,100 @@ router.delete("/:id/documentos/:documentoId", async (req, res) => {
   }
 });
 
-// Rota para atualizar a imagem de uma obra
-router.put("/:id/imagem", upload.single("imagem"), async (req, res) => {
-  try {
-    const { id } = req.params;
+// Rota para atualizar imagens de um registro diário
+router.put(
+  "/:obraId/registros-diarios/:registroId/imagens",
+  upload.array("fotos", 10),
+  async (req, res) => {
+    try {
+      const { obraId, registroId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
+      if (
+        !mongoose.Types.ObjectId.isValid(obraId) ||
+        !mongoose.Types.ObjectId.isValid(registroId)
+      ) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      // Processar as novas fotos
+      const novasFotos = req.files
+        ? req.files.map(
+            (file) => `/api/obras/uploads/documentos/${file.filename}`
+          )
+        : [];
+
+      // Construir o objeto de atualização
+      let updateOperation = {};
+
+      if (req.body.modo === "adicionar") {
+        // Adicionar novas fotos às existentes
+        updateOperation = {
+          $push: {
+            "registrosDiarios.$[registro].fotos": {
+              $each: novasFotos,
+            },
+          },
+        };
+      } else {
+        // Substituir todas as fotos
+        updateOperation = {
+          $set: {
+            "registrosDiarios.$[registro].fotos": novasFotos,
+          },
+        };
+      }
+
+      // Se houver fotos para remover
+      if (req.body.fotosParaRemover) {
+        const fotosParaRemover = JSON.parse(req.body.fotosParaRemover);
+        updateOperation = {
+          $pull: {
+            "registrosDiarios.$[registro].fotos": {
+              $in: fotosParaRemover,
+            },
+          },
+        };
+      }
+
+      // Atualizar apenas o registro específico
+      const obra = await Obra.findOneAndUpdate(
+        { _id: obraId },
+        updateOperation,
+        {
+          arrayFilters: [{ "registro._id": registroId }],
+          new: true,
+          runValidators: false, // Desabilitar validação do documento inteiro
+        }
+      );
+
+      if (!obra) {
+        return res.status(404).json({ message: "Obra não encontrada" });
+      }
+
+      // Encontrar o registro atualizado
+      const registroAtualizado = obra.registrosDiarios.find(
+        (registro) => registro._id.toString() === registroId
+      );
+
+      if (!registroAtualizado) {
+        return res
+          .status(404)
+          .json({ message: "Registro diário não encontrado" });
+      }
+
+      res.json({
+        message: "Imagens atualizadas com sucesso",
+        registro: registroAtualizado,
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar imagens:", error);
+      res.status(500).json({
+        message: error.message,
+        error: error.name,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      });
     }
-
-    // Verificar se a obra existe
-    const obra = await Obra.findById(id);
-    if (!obra) {
-      return res.status(404).json({ message: "Obra não encontrada" });
-    }
-
-    // Verificar se uma nova imagem foi enviada
-    if (!req.file) {
-      return res.status(400).json({ message: "Nenhuma imagem foi enviada" });
-    }
-
-    // Construir o novo caminho da imagem
-    const novaImagem = `/api/obras/uploads/documentos/${req.file.filename}`;
-
-    // Atualizar a imagem da obra
-    obra.imagem = novaImagem;
-    await obra.save();
-
-    res.json({
-      message: "Imagem atualizada com sucesso",
-      imagem: novaImagem,
-    });
-  } catch (error) {
-    console.error("Erro ao atualizar imagem:", error);
-    res.status(500).json({
-      message: error.message,
-      error: error.name,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
   }
-});
+);
 
 export default router;
