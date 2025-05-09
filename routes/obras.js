@@ -253,55 +253,14 @@ router.get("/:id", async (req, res) => {
 // Rota para criar uma nova obra
 router.post("/", upload.single("imagem"), async (req, res) => {
   try {
-    const {
-      nome,
-      status,
-      codigoObras,
-      tipo,
-      art,
-      responsavelTecnico,
-      responsavelObra,
-      arquiteto,
-      ceiCno,
-      areaConstruida,
-      areaTerreno,
-      numeroPavimentos,
-      numeroUnidades,
-      endereco,
-      quemPaga,
-      conta,
-      comentario,
-      visivelPara,
-      cliente,
-      contatos,
-      mapPosition,
-      contatoPrincipal,
-      dataInicio,
-      previsaoTermino,
-      dataPrevisao,
-      orcamento,
-      receitas,
-      pagamentos,
-      registrosDiarios,
-      medicoes,
-    } = req.body;
-
-    // Validar campos obrigatórios
-    if (!nome) {
-      return res.status(400).json({ message: "Nome é obrigatório" });
-    }
-
-    if (!tipo) {
-      return res.status(400).json({ message: "Tipo é obrigatório" });
-    }
-
-    if (!cliente) {
-      return res.status(400).json({ message: "Cliente é obrigatório" });
-    }
-
-    if (!dataInicio) {
-      return res.status(400).json({ message: "Data de início é obrigatória" });
-    }
+    // Parse JSON strings from FormData
+    const parseFormData = (value) => {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        return value;
+      }
+    };
 
     // Processar a imagem se existir
     let imagem = null;
@@ -309,52 +268,74 @@ router.post("/", upload.single("imagem"), async (req, res) => {
       imagem = `/api/obras/uploads/documentos/${req.file.filename}`;
     }
 
-    // Converter valores numéricos
+    // Converter os dados do FormData
     const obraData = {
-      nome,
-      status,
-      codigoObras,
-      tipo: mongoose.Types.ObjectId.isValid(tipo)
-        ? new mongoose.Types.ObjectId(tipo)
+      nome: req.body.nome,
+      status: req.body.status,
+      codigoObras: req.body.codigoObras,
+      tipo: mongoose.Types.ObjectId.isValid(req.body.tipo)
+        ? new mongoose.Types.ObjectId(req.body.tipo)
         : null,
-      art,
-      responsavelTecnico,
-      responsavelObra,
-      arquiteto,
-      ceiCno,
-      areaConstruida: areaConstruida
-        ? parseFloat(areaConstruida.replace(",", "."))
+      art: req.body.art,
+      responsavelTecnico: req.body.responsavelTecnico,
+      responsavelObra: req.body.responsavelObra,
+      arquiteto: req.body.arquiteto,
+      ceiCno: req.body.ceiCno,
+      areaConstruida: req.body.areaConstruida
+        ? parseFloat(req.body.areaConstruida.replace(",", "."))
         : null,
-      areaTerreno: areaTerreno
-        ? parseFloat(areaTerreno.replace(",", "."))
+      areaTerreno: req.body.areaTerreno
+        ? parseFloat(req.body.areaTerreno.replace(",", "."))
         : null,
-      numeroPavimentos: numeroPavimentos ? parseInt(numeroPavimentos) : null,
-      numeroUnidades: numeroUnidades ? parseInt(numeroUnidades) : null,
-      endereco,
-      quemPaga: mongoose.Types.ObjectId.isValid(quemPaga)
-        ? new mongoose.Types.ObjectId(quemPaga)
+      numeroPavimentos: req.body.numeroPavimentos
+        ? parseInt(req.body.numeroPavimentos)
         : null,
-      conta: mongoose.Types.ObjectId.isValid(conta)
-        ? new mongoose.Types.ObjectId(conta)
+      numeroUnidades: req.body.numeroUnidades
+        ? parseInt(req.body.numeroUnidades)
         : null,
-      comentario,
-      visivelPara,
-      cliente: mongoose.Types.ObjectId.isValid(cliente)
-        ? new mongoose.Types.ObjectId(cliente)
+      endereco: parseFormData(req.body.endereco),
+      quemPaga: mongoose.Types.ObjectId.isValid(req.body.quemPaga)
+        ? new mongoose.Types.ObjectId(req.body.quemPaga)
         : null,
-      contatos,
-      mapPosition: mapPosition ? [mapPosition.lat, mapPosition.lng] : null,
-      contatoPrincipal,
-      dataInicio: new Date(dataInicio),
-      previsaoTermino: previsaoTermino ? new Date(previsaoTermino) : null,
-      dataPrevisao: dataPrevisao ? new Date(dataPrevisao) : null,
+      conta: mongoose.Types.ObjectId.isValid(req.body.conta)
+        ? new mongoose.Types.ObjectId(req.body.conta)
+        : null,
+      comentario: req.body.comentario,
+      visivelPara: req.body.visivelPara,
+      cliente: mongoose.Types.ObjectId.isValid(req.body.cliente)
+        ? new mongoose.Types.ObjectId(req.body.cliente)
+        : null,
+      contatos: parseFormData(req.body.contatos),
+      mapPosition: parseFormData(req.body.mapPosition),
+      contatoPrincipal: req.body.contatoPrincipal
+        ? parseInt(req.body.contatoPrincipal)
+        : null,
+      dataInicio: new Date(req.body.dataInicio),
+      previsaoTermino: req.body.previsaoTermino
+        ? new Date(req.body.previsaoTermino)
+        : null,
+      dataPrevisao: req.body.dataPrevisao
+        ? new Date(req.body.dataPrevisao)
+        : null,
       imagem,
-      orcamento,
-      receitas: receitas || [],
-      pagamentos: pagamentos || [],
-      registrosDiarios: registrosDiarios || [],
-      medicoes: medicoes || [],
     };
+
+    // Validar campos obrigatórios
+    if (!obraData.nome) {
+      return res.status(400).json({ message: "Nome é obrigatório" });
+    }
+
+    if (!obraData.tipo) {
+      return res.status(400).json({ message: "Tipo é obrigatório" });
+    }
+
+    if (!obraData.cliente) {
+      return res.status(400).json({ message: "Cliente é obrigatório" });
+    }
+
+    if (!obraData.dataInicio) {
+      return res.status(400).json({ message: "Data de início é obrigatória" });
+    }
 
     const obra = new Obra(obraData);
     const savedObra = await obra.save();
