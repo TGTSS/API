@@ -209,6 +209,7 @@ const RegistroDiarioSchema = new mongoose.Schema({
   clima: {
     type: String,
     required: true,
+    enum: ["ensolarado", "nublado", "chuvoso", "tempestade"],
   },
   titulo: {
     type: String,
@@ -221,13 +222,15 @@ const RegistroDiarioSchema = new mongoose.Schema({
   maoDeObra: {
     tercerizados: {
       type: String,
-      default: "nao",
+      enum: ["sim", "não"],
+      default: "não",
     },
     trabalhadores: [
       {
-        tipo: { type: String },
-        outroTipo: { type: String },
-        quantidade: { type: Number, default: 0 },
+        id: { type: Number },
+        nome: { type: String },
+        funcao: { type: String },
+        horas: { type: Number, default: 8 },
       },
     ],
     observacoes: { type: String, default: "" },
@@ -235,9 +238,21 @@ const RegistroDiarioSchema = new mongoose.Schema({
   equipamentos: {
     itens: [
       {
-        tipo: { type: String },
-        outroTipo: { type: String },
-        quantidade: { type: Number, default: 0 },
+        id: { type: Number },
+        tipo: {
+          type: String,
+          enum: [
+            "betoneira",
+            "guindaste",
+            "escavadeira",
+            "retroescavadeira",
+            "caminhao",
+            "bomba",
+            "gerador",
+            "outro",
+          ],
+        },
+        quantidade: { type: Number, default: 1 },
         horasUso: { type: Number, default: 0 },
       },
     ],
@@ -245,9 +260,18 @@ const RegistroDiarioSchema = new mongoose.Schema({
   },
   ocorrencias: {
     descricao: { type: String, default: "" },
-    tipo: { type: String, default: "" },
-    gravidade: { type: String, default: "" },
-    grauReincidencia: { type: String, default: "" },
+    tipo: {
+      type: String,
+      enum: ["seguranca", "material", "equipamento", "clima", "outro", ""],
+    },
+    gravidade: {
+      type: String,
+      enum: ["baixa", "media", "alta", "critica", ""],
+    },
+    grauReincidencia: {
+      type: String,
+      enum: ["primeira", "recorrente", "frequente", "persistente", ""],
+    },
     numeroReincidencias: { type: Number, default: 0 },
   },
   fotos: [{ type: String }],

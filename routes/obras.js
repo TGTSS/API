@@ -1811,4 +1811,102 @@ router.put(
   }
 );
 
+// Rota para buscar um registro diário específico
+router.get("/:obraId/registros-diarios/:registroId", async (req, res) => {
+  try {
+    const { obraId, registroId } = req.params;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(obraId) ||
+      !mongoose.Types.ObjectId.isValid(registroId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(obraId);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const registro = obra.registrosDiarios.id(registroId);
+    if (!registro) {
+      return res
+        .status(404)
+        .json({ message: "Registro diário não encontrado" });
+    }
+
+    res.json(registro);
+  } catch (error) {
+    console.error("Erro ao buscar registro diário:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para atualizar um registro diário
+router.put("/:obraId/registros-diarios/:registroId", async (req, res) => {
+  try {
+    const { obraId, registroId } = req.params;
+    const dadosAtualizados = req.body;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(obraId) ||
+      !mongoose.Types.ObjectId.isValid(registroId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    // Validar campos obrigatórios
+    const camposObrigatorios = {
+      titulo: "Título é obrigatório",
+      data: "Data é obrigatória",
+      descricao: "Descrição é obrigatória",
+      clima: "Clima é obrigatório",
+    };
+
+    for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+      if (!dadosAtualizados[campo]) {
+        return res.status(400).json({ message: mensagem });
+      }
+    }
+
+    // Converter a data para o formato correto
+    if (dadosAtualizados.data) {
+      dadosAtualizados.data = new Date(dadosAtualizados.data);
+    }
+
+    const obra = await Obra.findById(obraId);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const registroIndex = obra.registrosDiarios.findIndex(
+      (registro) => registro._id.toString() === registroId
+    );
+
+    if (registroIndex === -1) {
+      return res
+        .status(404)
+        .json({ message: "Registro diário não encontrado" });
+    }
+
+    // Atualizar o registro mantendo o _id original
+    const registroAtualizado = {
+      ...obra.registrosDiarios[registroIndex].toObject(),
+      ...dadosAtualizados,
+      _id: obra.registrosDiarios[registroIndex]._id,
+    };
+
+    // Atualizar o registro no array
+    obra.registrosDiarios[registroIndex] = registroAtualizado;
+
+    // Salvar as alterações
+    await obra.save();
+
+    res.json(registroAtualizado);
+  } catch (error) {
+    console.error("Erro ao atualizar registro diário:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
