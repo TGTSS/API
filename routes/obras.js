@@ -1734,4 +1734,45 @@ router.delete("/:id/documentos/:documentoId", async (req, res) => {
   }
 });
 
+// Rota para atualizar a imagem de uma obra
+router.put("/:id/imagem", upload.single("imagem"), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    // Verificar se a obra existe
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Verificar se uma nova imagem foi enviada
+    if (!req.file) {
+      return res.status(400).json({ message: "Nenhuma imagem foi enviada" });
+    }
+
+    // Construir o novo caminho da imagem
+    const novaImagem = `/api/obras/uploads/documentos/${req.file.filename}`;
+
+    // Atualizar a imagem da obra
+    obra.imagem = novaImagem;
+    await obra.save();
+
+    res.json({
+      message: "Imagem atualizada com sucesso",
+      imagem: novaImagem,
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar imagem:", error);
+    res.status(500).json({
+      message: error.message,
+      error: error.name,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+});
+
 export default router;
