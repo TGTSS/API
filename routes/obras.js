@@ -253,6 +253,10 @@ router.get("/:id", async (req, res) => {
 // Rota para criar uma nova obra
 router.post("/", upload.single("imagem"), async (req, res) => {
   try {
+    console.log("Recebendo requisição POST /obras");
+    console.log("Body recebido:", req.body);
+    console.log("Arquivo recebido:", req.file);
+
     // Parse JSON strings from FormData
     const parseFormData = (value) => {
       try {
@@ -320,28 +324,44 @@ router.post("/", upload.single("imagem"), async (req, res) => {
       imagem,
     };
 
+    console.log("Dados processados:", obraData);
+
     // Validar campos obrigatórios
     if (!obraData.nome) {
+      console.error("Erro: Nome é obrigatório");
       return res.status(400).json({ message: "Nome é obrigatório" });
     }
 
     if (!obraData.tipo) {
+      console.error("Erro: Tipo é obrigatório");
       return res.status(400).json({ message: "Tipo é obrigatório" });
     }
 
     if (!obraData.cliente) {
+      console.error("Erro: Cliente é obrigatório");
       return res.status(400).json({ message: "Cliente é obrigatório" });
     }
 
     if (!obraData.dataInicio) {
+      console.error("Erro: Data de início é obrigatória");
       return res.status(400).json({ message: "Data de início é obrigatória" });
     }
 
     const obra = new Obra(obraData);
+    console.log("Obra criada:", obra);
+
     const savedObra = await obra.save();
+    console.log("Obra salva com sucesso:", savedObra);
+
     res.status(201).json(savedObra);
   } catch (error) {
-    console.error("Erro ao criar obra:", error);
+    console.error("Erro detalhado ao criar obra:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+    });
+
     res.status(500).json({
       message: error.message,
       error: error.name,
