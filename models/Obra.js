@@ -222,7 +222,7 @@ const RegistroDiarioSchema = new mongoose.Schema({
   maoDeObra: {
     tercerizados: {
       type: String,
-      enum: ["sim", "não"],
+      enum: ["sim", "não", ""],
       default: "não",
     },
     trabalhadores: [
