@@ -251,7 +251,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Rota para criar uma nova obra
-router.post("/", async (req, res) => {
+router.post("/", upload.single("imagem"), async (req, res) => {
   try {
     const {
       nome,
@@ -279,7 +279,6 @@ router.post("/", async (req, res) => {
       dataInicio,
       previsaoTermino,
       dataPrevisao,
-      imagem,
       orcamento,
       receitas,
       pagamentos,
@@ -302,6 +301,12 @@ router.post("/", async (req, res) => {
 
     if (!dataInicio) {
       return res.status(400).json({ message: "Data de início é obrigatória" });
+    }
+
+    // Processar a imagem se existir
+    let imagem = null;
+    if (req.file) {
+      imagem = `/api/obras/uploads/documentos/${req.file.filename}`;
     }
 
     // Converter valores numéricos
