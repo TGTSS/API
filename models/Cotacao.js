@@ -11,8 +11,12 @@ const CotacaoSchema = new mongoose.Schema({
   solicitacaoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Solicitacao",
+    required: true,
   },
-  nome: { type: String },
+  nome: {
+    type: String,
+    required: true,
+  },
   descricao: { type: String },
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
   obraNome: { type: String },
@@ -28,7 +32,10 @@ const CotacaoSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  arquivos: [ArquivoSchema],
+  arquivos: {
+    type: [ArquivoSchema],
+    default: [],
+  },
   fornecedores: {
     type: [
       {
@@ -61,8 +68,25 @@ const CotacaoSchema = new mongoose.Schema({
     default: [],
   },
   valor: { type: Number, default: 0 },
-  status: { type: String, default: "Em cotação" },
+  status: {
+    type: String,
+    enum: [
+      "Pendente",
+      "Em cotação",
+      "Enviada para fornecedores",
+      "Aprovada",
+      "Recusada",
+    ],
+    default: "Pendente",
+  },
   data: { type: Date, default: Date.now },
+  dataCotacao: { type: Date },
+  dataSolicitacao: { type: Date },
+  dataAprovacao: { type: Date },
+  dataRecusa: { type: Date },
+  aprovadoPor: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  recusadoPor: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  motivoRecusa: { type: String },
   itensFornecedor: {
     type: [
       {
@@ -78,12 +102,12 @@ const CotacaoSchema = new mongoose.Schema({
             prazoPagamento: String,
           },
         ],
-        prazoPagamento: String, // Adicionado para armazenar prazo de pagamento do fornecedor
+        prazoPagamento: String,
       },
     ],
     default: [],
   },
-  numero: { type: Number, unique: true }, // Atualizado para ser obrigatório e único
+  numero: { type: Number, unique: true },
   etapa: {
     nome: { type: String },
     descricao: { type: String },
@@ -93,8 +117,10 @@ const CotacaoSchema = new mongoose.Schema({
     forma: { type: String },
     parcelas: { type: Number, default: 1, min: 1 },
     metodoPagamento: { type: String },
-    valorTotal: { type: Number },
-    descontos: { type: Number },
+    valorTotal: { type: Number, default: 0 },
+    descontos: { type: Number, default: 0 },
+    formaPagamento: { type: String, default: "" },
+    condicaoPagamento: { type: String, default: "" },
   },
   entrega: {
     prazo: { type: String },
@@ -146,6 +172,17 @@ const CotacaoSchema = new mongoose.Schema({
           telefone: { type: String },
           email: { type: String },
         },
+      },
+    ],
+    default: [],
+  },
+  historico: {
+    type: [
+      {
+        data: { type: Date, default: Date.now },
+        status: { type: String },
+        observacao: { type: String },
+        usuario: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       },
     ],
     default: [],

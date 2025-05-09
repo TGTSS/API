@@ -28,9 +28,14 @@ router.post("/", async (req, res) => {
       obraId,
       obraNome,
       prioridade,
-      items, // Atualizado para "items"
+      items,
       status,
       data,
+      dataCotacao,
+      dataSolicitacao,
+      pagamento,
+      progresso,
+      observacoes,
     } = req.body;
 
     // Validações
@@ -53,6 +58,17 @@ router.post("/", async (req, res) => {
     const ultimoNumero = Math.max(...cotacoes.map((c) => c.numero || 0), 0);
     const proximoNumero = ultimoNumero + 1;
 
+    // Preparar os itens da cotação
+    const itensCotacao = Array.isArray(items)
+      ? items.map((item) => ({
+          descricao: item.description || item.descricao,
+          quantidade: item.quantity || item.quantidade || 1,
+          unidade: item.unit || item.unidade || "UN",
+          valor: item.unitPrice || item.valor || 0,
+          _id: item._id,
+        }))
+      : [];
+
     const novaCotacao = new Cotacao({
       solicitacaoId,
       nome,
@@ -60,15 +76,33 @@ router.post("/", async (req, res) => {
       obraId,
       obraNome,
       prioridade,
-      itens: items.map((item) => ({
-        descricao: item.description,
-        quantidade: item.quantity,
-        valor: item.unitPrice,
-        _id: item._id,
-      })),
-      status: status || "Em cotação",
+      itens: itensCotacao,
+      status: status || "Pendente",
       data: data || new Date(),
-      numero: proximoNumero, // Adicionado o número da cotação
+      dataCotacao: dataCotacao || new Date(),
+      dataSolicitacao: dataSolicitacao || new Date(),
+      numero: proximoNumero,
+      pagamento: pagamento || {
+        parcelas: 1,
+        formaPagamento: "",
+        condicaoPagamento: "",
+        valorTotal: 0,
+      },
+      progresso: progresso || {
+        informacoes: true,
+        itens: true,
+        fornecedores: false,
+        custos: false,
+        arquivos: false,
+      },
+      observacoes: observacoes || "",
+      historico: [
+        {
+          data: new Date(),
+          status: status || "Pendente",
+          observacao: "Cotação criada",
+        },
+      ],
     });
 
     const savedCotacao = await novaCotacao.save();
@@ -81,9 +115,11 @@ router.post("/", async (req, res) => {
     res.status(201).json(savedCotacao);
   } catch (error) {
     console.error("Erro ao criar cotação:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao criar cotação", error: error.message });
+    res.status(500).json({
+      message: "Erro ao criar cotação",
+      error: error.message,
+      details: error.stack,
+    });
   }
 });
 
