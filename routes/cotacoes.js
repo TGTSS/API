@@ -415,10 +415,18 @@ router.patch("/:cotacaoId", async (req, res) => {
   }
 });
 
-// Atualizar valor de um item específico de um fornecedor (singular path)
+// Rota para atualizar valor de um item específico de um fornecedor (singular path)
 router.patch(
   "/:cotacaoId/fornecedores/:fornecedorId/item/:itemId",
   async (req, res) => {
+    console.log("=== Iniciando atualização de item ===");
+    console.log("Parâmetros recebidos:", {
+      cotacaoId: req.params.cotacaoId,
+      fornecedorId: req.params.fornecedorId,
+      itemId: req.params.itemId,
+    });
+    console.log("Dados recebidos:", req.body);
+
     try {
       const { cotacaoId, fornecedorId, itemId } = req.params;
       const {
@@ -431,39 +439,71 @@ router.patch(
       } = req.body;
 
       // Verificar se os IDs são válidos
+      console.log("Validando IDs...");
       if (
         !mongoose.Types.ObjectId.isValid(cotacaoId) ||
         !mongoose.Types.ObjectId.isValid(fornecedorId) ||
         !mongoose.Types.ObjectId.isValid(itemId)
       ) {
+        console.log("IDs inválidos detectados");
         return res.status(400).json({ message: "IDs inválidos" });
       }
+      console.log("IDs válidos");
 
       // Buscar a cotação
+      console.log("Buscando cotação...");
       const cotacao = await Cotacao.findById(cotacaoId);
       if (!cotacao) {
+        console.log("Cotação não encontrada");
         return res.status(404).json({ message: "Cotação não encontrada" });
       }
+      console.log("Cotação encontrada:", {
+        id: cotacao._id,
+        nome: cotacao.nome,
+        fornecedoresCount: cotacao.fornecedores.length,
+      });
 
       // Verificar se o fornecedor existe na cotação
+      console.log("Verificando fornecedor...");
+      console.log(
+        "Fornecedores na cotação:",
+        cotacao.fornecedores.map((f) => ({
+          id: f.fornecedorId.toString(),
+          itensCount: f.itens ? f.itens.length : 0,
+        }))
+      );
+
       const fornecedorIndex = cotacao.fornecedores.findIndex(
         (f) => f.fornecedorId.toString() === fornecedorId
       );
 
       if (fornecedorIndex === -1) {
-        return res
-          .status(404)
-          .json({ message: "Fornecedor não encontrado na cotação" });
+        console.log(
+          "Fornecedor não encontrado na cotação. ID buscado:",
+          fornecedorId
+        );
+        return res.status(404).json({
+          message: "Fornecedor não encontrado na cotação",
+          details: {
+            fornecedorId,
+            fornecedoresDisponiveis: cotacao.fornecedores.map((f) =>
+              f.fornecedorId.toString()
+            ),
+          },
+        });
       }
+      console.log("Fornecedor encontrado no índice:", fornecedorIndex);
 
       // Verificar se o item existe para o fornecedor
+      console.log("Verificando item...");
       const itemIndex = cotacao.fornecedores[fornecedorIndex].itens.findIndex(
         (i) => i.itemId.toString() === itemId
       );
 
       if (itemIndex === -1) {
+        console.log("Item não encontrado, criando novo item");
         // Se o item não existe, criar um novo
-        cotacao.fornecedores[fornecedorIndex].itens.push({
+        const novoItem = {
           itemId,
           valor: valor || 0,
           marca: marca || "",
@@ -471,10 +511,15 @@ router.patch(
           condicaoPagamento: condicaoPagamento || "",
           prazoEntrega: prazoEntrega || "",
           prazoPagamento: prazoPagamento || "",
-        });
+        };
+        console.log("Novo item a ser criado:", novoItem);
+        cotacao.fornecedores[fornecedorIndex].itens.push(novoItem);
       } else {
+        console.log("Item encontrado no índice:", itemIndex);
         // Atualizar o item existente
         const item = cotacao.fornecedores[fornecedorIndex].itens[itemIndex];
+        console.log("Item atual antes da atualização:", item);
+
         if (valor !== undefined) item.valor = valor;
         if (marca !== undefined) item.marca = marca;
         if (desconto !== undefined) item.desconto = desconto;
@@ -482,22 +527,30 @@ router.patch(
           item.condicaoPagamento = condicaoPagamento;
         if (prazoEntrega !== undefined) item.prazoEntrega = prazoEntrega;
         if (prazoPagamento !== undefined) item.prazoPagamento = prazoPagamento;
+
+        console.log("Item atualizado:", item);
       }
 
       // Salvar as alterações
+      console.log("Salvando alterações...");
       await cotacao.save();
+      console.log("Alterações salvas com sucesso");
 
       // Retornar o item atualizado
       const updatedItem = cotacao.fornecedores[fornecedorIndex].itens.find(
         (i) => i.itemId.toString() === itemId
       );
+      console.log("Item final a ser retornado:", updatedItem);
 
       res.status(200).json({
         message: "Item atualizado com sucesso",
         item: updatedItem,
       });
+      console.log("=== Atualização de item concluída com sucesso ===");
     } catch (error) {
-      console.error("Erro ao atualizar item do fornecedor:", error);
+      console.error("=== Erro ao atualizar item do fornecedor ===");
+      console.error("Erro:", error);
+      console.error("Stack:", error.stack);
       res.status(500).json({
         message: "Erro ao atualizar item do fornecedor",
         error: error.message,
