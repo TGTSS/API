@@ -415,13 +415,20 @@ router.patch("/:cotacaoId", async (req, res) => {
   }
 });
 
-// Atualizar valor de um item enviado por um fornecedor
+// Atualizar valor de um item específico de um fornecedor (singular path)
 router.patch(
-  "/:cotacaoId/fornecedor/:fornecedorId/item/:itemId",
+  "/:cotacaoId/fornecedores/:fornecedorId/item/:itemId",
   async (req, res) => {
     try {
       const { cotacaoId, fornecedorId, itemId } = req.params;
-      const { valor } = req.body;
+      const {
+        valor,
+        marca,
+        desconto,
+        condicaoPagamento,
+        prazoEntrega,
+        prazoPagamento,
+      } = req.body;
 
       // Verificar se os IDs são válidos
       if (
@@ -439,41 +446,62 @@ router.patch(
       }
 
       // Verificar se o fornecedor existe na cotação
-      const fornecedor = cotacao.itensFornecedor.find(
+      const fornecedorIndex = cotacao.fornecedores.findIndex(
         (f) => f.fornecedorId.toString() === fornecedorId
       );
-      if (!fornecedor) {
+
+      if (fornecedorIndex === -1) {
         return res
           .status(404)
           .json({ message: "Fornecedor não encontrado na cotação" });
       }
 
       // Verificar se o item existe para o fornecedor
-      const item = fornecedor.itens.find((i) => i.itemId.toString() === itemId);
-      if (!item) {
-        return res
-          .status(404)
-          .json({ message: "Item não encontrado para o fornecedor" });
+      const itemIndex = cotacao.fornecedores[fornecedorIndex].itens.findIndex(
+        (i) => i.itemId.toString() === itemId
+      );
+
+      if (itemIndex === -1) {
+        // Se o item não existe, criar um novo
+        cotacao.fornecedores[fornecedorIndex].itens.push({
+          itemId,
+          valor: valor || 0,
+          marca: marca || "",
+          desconto: desconto || 0,
+          condicaoPagamento: condicaoPagamento || "",
+          prazoEntrega: prazoEntrega || "",
+          prazoPagamento: prazoPagamento || "",
+        });
+      } else {
+        // Atualizar o item existente
+        const item = cotacao.fornecedores[fornecedorIndex].itens[itemIndex];
+        if (valor !== undefined) item.valor = valor;
+        if (marca !== undefined) item.marca = marca;
+        if (desconto !== undefined) item.desconto = desconto;
+        if (condicaoPagamento !== undefined)
+          item.condicaoPagamento = condicaoPagamento;
+        if (prazoEntrega !== undefined) item.prazoEntrega = prazoEntrega;
+        if (prazoPagamento !== undefined) item.prazoPagamento = prazoPagamento;
       }
 
-      // Validar o valor recebido
-      if (typeof valor !== "number" || valor <= 0) {
-        return res.status(400).json({ message: "Valor inválido" });
-      }
-
-      // Atualizar o valor do item
-      item.valor = valor;
-
-      // Salvar a cotação atualizada
+      // Salvar as alterações
       await cotacao.save();
-      res
-        .status(200)
-        .json({ message: "Valor atualizado com sucesso", cotacao });
+
+      // Retornar o item atualizado
+      const updatedItem = cotacao.fornecedores[fornecedorIndex].itens.find(
+        (i) => i.itemId.toString() === itemId
+      );
+
+      res.status(200).json({
+        message: "Item atualizado com sucesso",
+        item: updatedItem,
+      });
     } catch (error) {
-      console.error("Erro ao atualizar valor:", error);
-      res
-        .status(500)
-        .json({ message: "Erro ao atualizar valor", error: error.message });
+      console.error("Erro ao atualizar item do fornecedor:", error);
+      res.status(500).json({
+        message: "Erro ao atualizar item do fornecedor",
+        error: error.message,
+      });
     }
   }
 );
@@ -1244,96 +1272,5 @@ router.post("/:cotacaoId/ordem-compra/:fornecedorId", async (req, res) => {
       .json({ message: "Erro ao gerar ordem de compra", error: error.message });
   }
 });
-
-// Rota para atualizar valor de um item específico de um fornecedor
-router.patch(
-  "/:cotacaoId/fornecedores/:fornecedorId/itens/:itemId",
-  async (req, res) => {
-    try {
-      const { cotacaoId, fornecedorId, itemId } = req.params;
-      const {
-        valor,
-        marca,
-        desconto,
-        condicaoPagamento,
-        prazoEntrega,
-        prazoPagamento,
-      } = req.body;
-
-      // Verificar se os IDs são válidos
-      if (
-        !mongoose.Types.ObjectId.isValid(cotacaoId) ||
-        !mongoose.Types.ObjectId.isValid(fornecedorId) ||
-        !mongoose.Types.ObjectId.isValid(itemId)
-      ) {
-        return res.status(400).json({ message: "IDs inválidos" });
-      }
-
-      // Buscar a cotação
-      const cotacao = await Cotacao.findById(cotacaoId);
-      if (!cotacao) {
-        return res.status(404).json({ message: "Cotação não encontrada" });
-      }
-
-      // Verificar se o fornecedor existe na cotação
-      const fornecedorIndex = cotacao.fornecedores.findIndex(
-        (f) => f.fornecedorId.toString() === fornecedorId
-      );
-
-      if (fornecedorIndex === -1) {
-        return res
-          .status(404)
-          .json({ message: "Fornecedor não encontrado na cotação" });
-      }
-
-      // Verificar se o item existe para o fornecedor
-      const itemIndex = cotacao.fornecedores[fornecedorIndex].itens.findIndex(
-        (i) => i.itemId.toString() === itemId
-      );
-
-      if (itemIndex === -1) {
-        // Se o item não existe, criar um novo
-        cotacao.fornecedores[fornecedorIndex].itens.push({
-          itemId,
-          valor: valor || 0,
-          marca: marca || "",
-          desconto: desconto || 0,
-          condicaoPagamento: condicaoPagamento || "",
-          prazoEntrega: prazoEntrega || "",
-          prazoPagamento: prazoPagamento || "",
-        });
-      } else {
-        // Atualizar o item existente
-        const item = cotacao.fornecedores[fornecedorIndex].itens[itemIndex];
-        if (valor !== undefined) item.valor = valor;
-        if (marca !== undefined) item.marca = marca;
-        if (desconto !== undefined) item.desconto = desconto;
-        if (condicaoPagamento !== undefined)
-          item.condicaoPagamento = condicaoPagamento;
-        if (prazoEntrega !== undefined) item.prazoEntrega = prazoEntrega;
-        if (prazoPagamento !== undefined) item.prazoPagamento = prazoPagamento;
-      }
-
-      // Salvar as alterações
-      await cotacao.save();
-
-      // Retornar o item atualizado
-      const updatedItem = cotacao.fornecedores[fornecedorIndex].itens.find(
-        (i) => i.itemId.toString() === itemId
-      );
-
-      res.status(200).json({
-        message: "Item atualizado com sucesso",
-        item: updatedItem,
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar item do fornecedor:", error);
-      res.status(500).json({
-        message: "Erro ao atualizar item do fornecedor",
-        error: error.message,
-      });
-    }
-  }
-);
 
 export default router;
