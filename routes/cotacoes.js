@@ -613,14 +613,16 @@ router.post("/:cotacaoId/detalhes", async (req, res) => {
     // Validações adicionais
     if (
       !pagamento ||
-      !pagamento.prazo ||
-      !pagamento.forma ||
-      !pagamento.metodoPagamento ||
+      !pagamento.condicaoPagamento ||
+      !pagamento.formaPagamento ||
       !pagamento.parcelas
     ) {
       return res
         .status(400)
-        .json({ message: "Informações de pagamento incompletas" });
+        .json({
+          message:
+            "Informações de pagamento incompletas. Verifique se todos os campos obrigatórios foram preenchidos.",
+        });
     }
 
     if (
@@ -630,13 +632,14 @@ router.post("/:cotacaoId/detalhes", async (req, res) => {
       !entrega.endereco ||
       !entrega.endereco.rua ||
       !entrega.endereco.numero ||
-      !entrega.endereco.cidade ||
-      !entrega.endereco.estado ||
-      !entrega.endereco.cep
+      !entrega.endereco.cidade
     ) {
       return res
         .status(400)
-        .json({ message: "Informações de entrega incompletas" });
+        .json({
+          message:
+            "Informações de entrega incompletas. Verifique se todos os campos obrigatórios foram preenchidos.",
+        });
     }
 
     cotacao.pagamento = pagamento;
