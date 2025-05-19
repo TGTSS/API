@@ -18,7 +18,7 @@ const CotacaoSchema = new mongoose.Schema({
     required: true,
   },
   descricao: { type: String },
-  obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
+  obra: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
   obraNome: { type: String },
   prioridade: { type: String },
   itens: {

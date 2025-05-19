@@ -27,6 +27,7 @@ const ReceitaSchema = new mongoose.Schema({
   categoria: { type: String },
   categoriaOutros: { type: String },
   centroCusto: { type: String },
+  dataRecebimento: { type: Date },
   dataVencimento: { type: Date },
   formaPagamento: { type: String },
   beneficiario: {
@@ -71,6 +72,7 @@ const DespesaSchema = new mongoose.Schema({
   categoria: { type: String },
   categoriaOutros: { type: String },
   centroCusto: { type: String },
+  dataPagamentoRecebimento: { type: Date },
   dataVencimento: { type: Date },
   formaPagamento: { type: String },
   beneficiario: {
@@ -170,6 +172,7 @@ const PagamentoSchema = new mongoose.Schema({
   categoria: { type: String },
   categoriaOutros: { type: String },
   centroCusto: { type: String },
+  dataPagamentoRecebimento: { type: Date },
   dataVencimento: { type: Date },
   formaPagamento: { type: String },
   beneficiario: {
@@ -222,7 +225,7 @@ const RegistroDiarioSchema = new mongoose.Schema({
   maoDeObra: {
     tercerizados: {
       type: String,
-      enum: ["sim", "não", "", "nao",],
+      enum: ["sim", "não", "", "nao"],
       default: "não",
     },
     trabalhadores: [

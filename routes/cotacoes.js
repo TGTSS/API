@@ -25,7 +25,7 @@ router.post("/", async (req, res) => {
       solicitacaoId,
       nome,
       descricao,
-      obraId,
+      obra,
       obraNome,
       prioridade,
       itens,
@@ -67,7 +67,7 @@ router.post("/", async (req, res) => {
       solicitacaoId,
       nome,
       descricao,
-      obraId,
+      obra,
       obraNome,
       prioridade,
       itens: itens || [],
@@ -617,12 +617,10 @@ router.post("/:cotacaoId/detalhes", async (req, res) => {
       !pagamento.formaPagamento ||
       !pagamento.parcelas
     ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Informações de pagamento incompletas. Verifique se todos os campos obrigatórios foram preenchidos.",
-        });
+      return res.status(400).json({
+        message:
+          "Informações de pagamento incompletas. Verifique se todos os campos obrigatórios foram preenchidos.",
+      });
     }
 
     if (
@@ -634,12 +632,10 @@ router.post("/:cotacaoId/detalhes", async (req, res) => {
       !entrega.endereco.numero ||
       !entrega.endereco.cidade
     ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Informações de entrega incompletas. Verifique se todos os campos obrigatórios foram preenchidos.",
-        });
+      return res.status(400).json({
+        message:
+          "Informações de entrega incompletas. Verifique se todos os campos obrigatórios foram preenchidos.",
+      });
     }
 
     cotacao.pagamento = pagamento;
