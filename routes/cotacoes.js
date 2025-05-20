@@ -152,7 +152,7 @@ router.get("/:id", async (req, res) => {
 
     const cotacao = await Cotacao.findById(id)
       .populate("solicitacaoId", "numero status")
-      .populate("obraId", "nome")
+      .populate("obra", "nome")
       .lean();
 
     if (!cotacao) {
@@ -161,9 +161,11 @@ router.get("/:id", async (req, res) => {
     res.json(cotacao);
   } catch (error) {
     console.error("Erro ao buscar cotação:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao buscar cotação", error: error.message });
+    res.status(500).json({
+      message: "Erro ao buscar cotação",
+      error: error.message,
+      details: error.stack,
+    });
   }
 });
 
