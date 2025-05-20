@@ -128,14 +128,16 @@ router.get("/", async (req, res) => {
   try {
     const cotacoes = await Cotacao.find()
       .populate("solicitacaoId", "numero status")
-      .populate("obraId", "nome")
+      .populate("obra", "nome")
       .lean();
     res.json(cotacoes);
   } catch (error) {
     console.error("Erro ao buscar cotações:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao buscar cotações", error: error.message });
+    res.status(500).json({
+      message: "Erro ao buscar cotações",
+      error: error.message,
+      details: error.stack,
+    });
   }
 });
 
