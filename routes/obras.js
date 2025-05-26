@@ -551,15 +551,30 @@ router.put("/:id", async (req, res) => {
       return res.status(400).json({ message: "ID inválido" });
     }
 
+    // Validar e converter IDs de referência
+    const tipoId = tipo && mongoose.Types.ObjectId.isValid(tipo) ? new mongoose.Types.ObjectId(tipo) : null;
+    const clienteId = cliente && mongoose.Types.ObjectId.isValid(cliente) ? new mongoose.Types.ObjectId(cliente) : null;
+    const quemPagaId = quemPaga && mongoose.Types.ObjectId.isValid(quemPaga) ? new mongoose.Types.ObjectId(quemPaga) : null;
+    const contaId = conta && mongoose.Types.ObjectId.isValid(conta) ? new mongoose.Types.ObjectId(conta) : null;
+
+    // Validar e converter mapPosition
+    let formattedMapPosition = null;
+    if (mapPosition && Array.isArray(mapPosition)) {
+      const [lat, lng] = mapPosition;
+      if (typeof lat === 'string' && typeof lng === 'string') {
+        formattedMapPosition = [parseFloat(lat), parseFloat(lng)];
+      } else if (typeof lat === 'number' && typeof lng === 'number') {
+        formattedMapPosition = [lat, lng];
+      }
+    }
+
     const updatedObra = await Obra.findByIdAndUpdate(
       id,
       {
         nome,
         status,
         codigoObras,
-        tipo: mongoose.Types.ObjectId.isValid(tipo)
-          ? new mongoose.Types.ObjectId(tipo)
-          : null,
+        tipo: tipoId,
         art,
         responsavelTecnico,
         responsavelObra,
@@ -570,23 +585,17 @@ router.put("/:id", async (req, res) => {
         numeroPavimentos,
         numeroUnidades,
         endereco,
-        quemPaga: mongoose.Types.ObjectId.isValid(quemPaga)
-          ? new mongoose.Types.ObjectId(quemPaga)
-          : null,
-        conta: mongoose.Types.ObjectId.isValid(conta)
-          ? new mongoose.Types.ObjectId(conta)
-          : null,
+        quemPaga: quemPagaId,
+        conta: contaId,
         comentario,
         visivelPara,
-        cliente: mongoose.Types.ObjectId.isValid(cliente)
-          ? new mongoose.Types.ObjectId(cliente)
-          : null,
+        cliente: clienteId,
         contatos,
-        mapPosition,
+        mapPosition: formattedMapPosition,
         contatoPrincipal,
-        dataInicio,
-        previsaoTermino,
-        dataPrevisao,
+        dataInicio: dataInicio ? new Date(dataInicio) : undefined,
+        previsaoTermino: previsaoTermino ? new Date(previsaoTermino) : undefined,
+        dataPrevisao: dataPrevisao ? new Date(dataPrevisao) : undefined,
         imagem,
         orcamento,
         receitas,
