@@ -513,107 +513,99 @@ router.post("/duplicar", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      nome,
-      status,
-      codigoObras,
-      tipo,
-      art,
-      responsavelTecnico,
-      responsavelObra,
-      arquiteto,
-      ceiCno,
-      areaConstruida,
-      areaTerreno,
-      numeroPavimentos,
-      numeroUnidades,
-      endereco,
-      quemPaga,
-      conta,
-      comentario,
-      visivelPara,
-      cliente,
-      contatos,
-      mapPosition,
-      contatoPrincipal,
-      dataInicio,
-      previsaoTermino,
-      dataPrevisao,
-      imagem,
-      orcamento,
-      receitas,
-      pagamentos,
-      registrosDiarios,
-      medicoes,
-    } = req.body;
+    const updateData = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
     // Validar e converter IDs de referência
-    const tipoId = tipo && mongoose.Types.ObjectId.isValid(tipo) ? new mongoose.Types.ObjectId(tipo) : null;
-    const clienteId = cliente && mongoose.Types.ObjectId.isValid(cliente) ? new mongoose.Types.ObjectId(cliente) : null;
-    const quemPagaId = quemPaga && mongoose.Types.ObjectId.isValid(quemPaga) ? new mongoose.Types.ObjectId(quemPaga) : null;
-    const contaId = conta && mongoose.Types.ObjectId.isValid(conta) ? new mongoose.Types.ObjectId(conta) : null;
+    if (updateData.tipo) {
+      updateData.tipo = mongoose.Types.ObjectId.isValid(updateData.tipo)
+        ? new mongoose.Types.ObjectId(updateData.tipo)
+        : null;
+    }
+
+    if (updateData.cliente) {
+      updateData.cliente = mongoose.Types.ObjectId.isValid(updateData.cliente)
+        ? new mongoose.Types.ObjectId(updateData.cliente)
+        : null;
+    }
+
+    if (updateData.quemPaga) {
+      updateData.quemPaga = mongoose.Types.ObjectId.isValid(updateData.quemPaga)
+        ? new mongoose.Types.ObjectId(updateData.quemPaga)
+        : null;
+    }
+
+    if (updateData.conta) {
+      updateData.conta = mongoose.Types.ObjectId.isValid(updateData.conta)
+        ? new mongoose.Types.ObjectId(updateData.conta)
+        : null;
+    }
 
     // Validar e converter mapPosition
-    let formattedMapPosition = null;
-    if (mapPosition && Array.isArray(mapPosition)) {
-      const [lat, lng] = mapPosition;
-      if (typeof lat === 'string' && typeof lng === 'string') {
-        formattedMapPosition = [parseFloat(lat), parseFloat(lng)];
-      } else if (typeof lat === 'number' && typeof lng === 'number') {
-        formattedMapPosition = [lat, lng];
+    if (updateData.mapPosition && Array.isArray(updateData.mapPosition)) {
+      const [lat, lng] = updateData.mapPosition;
+      if (typeof lat === "string" && typeof lng === "string") {
+        updateData.mapPosition = [parseFloat(lat), parseFloat(lng)];
+      } else if (typeof lat === "number" && typeof lng === "number") {
+        updateData.mapPosition = [lat, lng];
       }
     }
 
+    // Converter datas
+    if (updateData.dataInicio) {
+      updateData.dataInicio = new Date(updateData.dataInicio);
+    }
+    if (updateData.previsaoTermino) {
+      updateData.previsaoTermino = new Date(updateData.previsaoTermino);
+    }
+    if (updateData.dataPrevisao) {
+      updateData.dataPrevisao = new Date(updateData.dataPrevisao);
+    }
+
+    // Remover campos undefined ou null que não devem ser atualizados
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key] === undefined || updateData[key] === null) {
+        delete updateData[key];
+      }
+    });
+
+    // Atualizar a obra
     const updatedObra = await Obra.findByIdAndUpdate(
       id,
+      { $set: updateData },
       {
-        nome,
-        status,
-        codigoObras,
-        tipo: tipoId,
-        art,
-        responsavelTecnico,
-        responsavelObra,
-        arquiteto,
-        ceiCno,
-        areaConstruida,
-        areaTerreno,
-        numeroPavimentos,
-        numeroUnidades,
-        endereco,
-        quemPaga: quemPagaId,
-        conta: contaId,
-        comentario,
-        visivelPara,
-        cliente: clienteId,
-        contatos,
-        mapPosition: formattedMapPosition,
-        contatoPrincipal,
-        dataInicio: dataInicio ? new Date(dataInicio) : undefined,
-        previsaoTermino: previsaoTermino ? new Date(previsaoTermino) : undefined,
-        dataPrevisao: dataPrevisao ? new Date(dataPrevisao) : undefined,
-        imagem,
-        orcamento,
-        receitas,
-        pagamentos,
-        registrosDiarios,
-        medicoes,
-      },
-      { new: true }
+        new: true,
+        runValidators: true,
+        context: "query",
+      }
     );
 
     if (!updatedObra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    res.status(200).json(updatedObra);
+    // Retornar a obra atualizada com os campos populados
+    const populatedObra = await Obra.findById(updatedObra._id)
+      .populate("tipo")
+      .populate("cliente")
+      .populate("quemPaga")
+      .populate("conta");
+
+    res.status(200).json({
+      obra: populatedObra,
+      mensagem: "Obra atualizada com sucesso",
+      sucesso: true,
+    });
   } catch (error) {
     console.error("Erro ao atualizar obra:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+      error: error.name,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
   }
 });
 
