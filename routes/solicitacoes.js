@@ -292,9 +292,9 @@ router.delete("/:id/cotacoes/:cotacaoId", async (req, res) => {
 // Create solicitacoes for multiple obras
 router.post("/multiple-obras", async (req, res) => {
   try {
-    const { obraIds, ...solicitacaoData } = req.body;
+    const { obras, ...solicitacaoData } = req.body;
 
-    if (!Array.isArray(obraIds) || obraIds.length === 0) {
+    if (!Array.isArray(obras) || obras.length === 0) {
       return res
         .status(400)
         .json({ message: "É necessário fornecer pelo menos uma obra" });
@@ -302,7 +302,7 @@ router.post("/multiple-obras", async (req, res) => {
 
     const createdSolicitacoes = [];
 
-    for (const obraId of obraIds) {
+    for (const obraId of obras) {
       const obra = await Obra.findById(obraId);
       if (!obra) {
         return res
