@@ -8,7 +8,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const solicitacoes = await Solicitacao.find()
-      .populate("obra", "nome")
+      .populate("obras", "nome")
       .populate("fornecedores", "nome")
       .sort({ data: -1 });
     res.json(solicitacoes);
@@ -24,8 +24,8 @@ router.get("/", async (req, res) => {
 // Get solicitacoes by obra
 router.get("/obra/:obraId", async (req, res) => {
   try {
-    const solicitacoes = await Solicitacao.find({ obra: req.params.obraId })
-      .populate("obra", "nome")
+    const solicitacoes = await Solicitacao.find({ obras: req.params.obraId })
+      .populate("obras", "nome")
       .populate("fornecedores", "nome")
       .sort({ data: -1 });
     res.json(solicitacoes);
@@ -49,7 +49,7 @@ router.post("/obra/:obraId", async (req, res) => {
     }
 
     // Get the last numeroSequencial for this obra
-    const lastSolicitacao = await Solicitacao.findOne({ obra: obraId }).sort({
+    const lastSolicitacao = await Solicitacao.findOne({ obras: obraId }).sort({
       numeroSequencial: -1,
     });
 
@@ -74,7 +74,7 @@ router.post("/obra/:obraId", async (req, res) => {
 
     const solicitacao = new Solicitacao({
       ...req.body,
-      obra: obraId,
+      obras: obraId,
       obraNome: obra.nome,
       numeroSequencial,
       valor,
@@ -88,7 +88,7 @@ router.post("/obra/:obraId", async (req, res) => {
 
     // Populate the response
     const populatedSolicitacao = await Solicitacao.findById(newSolicitacao._id)
-      .populate("obra", "nome")
+      .populate("obras", "nome")
       .populate("fornecedores", "nome")
       .populate("items.insumoId");
 
@@ -107,7 +107,7 @@ router.post("/obra/:obraId", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const solicitacao = await Solicitacao.findById(req.params.id)
-      .populate("obra", "nome")
+      .populate("obras", "nome")
       .populate("fornecedores", "nome")
       .populate("items.insumoId");
 
@@ -163,7 +163,7 @@ router.patch("/:id", async (req, res) => {
     const populatedSolicitacao = await Solicitacao.findById(
       updatedSolicitacao._id
     )
-      .populate("obra", "nome")
+      .populate("obras", "nome")
       .populate("fornecedores", "nome")
       .populate("items.insumoId");
 
@@ -212,7 +212,7 @@ router.post("/:id/cotacoes", async (req, res) => {
     const populatedSolicitacao = await Solicitacao.findById(
       updatedSolicitacao._id
     )
-      .populate("obra", "nome")
+      .populate("obras", "nome")
       .populate("fornecedores", "nome")
       .populate("items.insumoId");
 
@@ -246,7 +246,7 @@ router.patch("/:id/cotacoes/:cotacaoId", async (req, res) => {
     const populatedSolicitacao = await Solicitacao.findById(
       updatedSolicitacao._id
     )
-      .populate("obra", "nome")
+      .populate("obras", "nome")
       .populate("fornecedores", "nome")
       .populate("items.insumoId");
 
@@ -275,7 +275,7 @@ router.delete("/:id/cotacoes/:cotacaoId", async (req, res) => {
     const populatedSolicitacao = await Solicitacao.findById(
       updatedSolicitacao._id
     )
-      .populate("obra", "nome")
+      .populate("obras", "nome")
       .populate("fornecedores", "nome")
       .populate("items.insumoId");
 
@@ -292,7 +292,7 @@ router.delete("/:id/cotacoes/:cotacaoId", async (req, res) => {
 // Create solicitacoes for multiple obras
 router.post("/multiple-obras", async (req, res) => {
   try {
-    const { obras, ...solicitacaoData } = req.body;
+    const { obras, obrasNomes, ...solicitacaoData } = req.body;
 
     if (!Array.isArray(obras) || obras.length === 0) {
       return res
@@ -300,8 +300,7 @@ router.post("/multiple-obras", async (req, res) => {
         .json({ message: "É necessário fornecer pelo menos uma obra" });
     }
 
-    const createdSolicitacoes = [];
-
+    // Verificar se todas as obras existem
     for (const obraId of obras) {
       const obra = await Obra.findById(obraId);
       if (!obra) {
@@ -309,56 +308,43 @@ router.post("/multiple-obras", async (req, res) => {
           .status(404)
           .json({ message: `Obra com ID ${obraId} não encontrada` });
       }
-
-      // Get the last numeroSequencial for this obra
-      const lastSolicitacao = await Solicitacao.findOne({ obra: obraId }).sort({
-        numeroSequencial: -1,
-      });
-
-      const numeroSequencial = lastSolicitacao
-        ? lastSolicitacao.numeroSequencial + 1
-        : 1;
-
-      // Process items to ensure all required fields are present
-      const processedItems = solicitacaoData.items.map((item) => ({
-        ...item,
-        custoUnitario: item.custoUnitario || 0,
-        unidade: item.unidade || "UN",
-        descricao:
-          item.descricao || item.insumoId?.descricao || "Item sem descrição",
-        quantidade: item.quantidade || 1,
-      }));
-
-      // Calculate total value from items
-      const valor = processedItems.reduce((total, item) => {
-        return total + item.quantidade * (item.custoUnitario || 0);
-      }, 0);
-
-      const solicitacao = new Solicitacao({
-        ...solicitacaoData,
-        obra: obraId,
-        obraNome: obra.nome,
-        numeroSequencial,
-        valor,
-        items: processedItems,
-        solicitante: solicitacaoData.solicitante || "Usuário",
-        status: "Pendente",
-        data: new Date(),
-      });
-
-      const newSolicitacao = await solicitacao.save();
-      createdSolicitacoes.push(newSolicitacao);
     }
 
-    // Populate all created solicitacoes
-    const populatedSolicitacoes = await Solicitacao.find({
-      _id: { $in: createdSolicitacoes.map((s) => s._id) },
-    })
-      .populate("obra", "nome")
+    // Process items to ensure all required fields are present
+    const processedItems = solicitacaoData.items.map((item) => ({
+      ...item,
+      custoUnitario: item.custoUnitario || 0,
+      unidade: item.unidade || "UN",
+      descricao:
+        item.descricao || item.insumoId?.descricao || "Item sem descrição",
+      quantidade: item.quantidade || 1,
+    }));
+
+    // Calculate total value from items
+    const valor = processedItems.reduce((total, item) => {
+      return total + item.quantidade * (item.custoUnitario || 0);
+    }, 0);
+
+    const solicitacao = new Solicitacao({
+      ...solicitacaoData,
+      obras,
+      obrasNomes,
+      valor,
+      items: processedItems,
+      solicitante: solicitacaoData.solicitante || "Usuário",
+      status: "Pendente",
+      data: new Date(),
+    });
+
+    const newSolicitacao = await solicitacao.save();
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(newSolicitacao._id)
+      .populate("obras", "nome")
       .populate("fornecedores", "nome")
       .populate("items.insumoId");
 
-    res.status(201).json(populatedSolicitacoes);
+    res.status(201).json(populatedSolicitacao);
   } catch (error) {
     console.error("Erro ao criar solicitações:", error);
     res.status(400).json({
