@@ -57,9 +57,18 @@ const SolicitacaoSchema = new mongoose.Schema(
     valor: { type: Number },
     items: [ItemSchema],
     obras: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "Obra", required: true },
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Obra",
+        required: true,
+      },
     ],
-    obrasNomes: [{ type: String, required: true }],
+    obrasNomes: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
     numeroSequencial: { type: Number, required: true },
     fornecedores: [{ type: mongoose.Schema.Types.ObjectId, ref: "Fornecedor" }],
     cotacoes: [CotacaoSchema],

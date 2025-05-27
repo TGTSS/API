@@ -325,10 +325,11 @@ router.post("/multiple-obras", async (req, res) => {
       return total + item.quantidade * (item.custoUnitario || 0);
     }, 0);
 
+    // Criar a solicitação com os arrays de obras e nomes
     const solicitacao = new Solicitacao({
       ...solicitacaoData,
-      obras,
-      obrasNomes,
+      obras: obras, // Garantir que o array de obras seja salvo
+      obrasNomes: obrasNomes,
       valor,
       items: processedItems,
       solicitante: solicitacaoData.solicitante || "Usuário",
