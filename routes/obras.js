@@ -510,59 +510,82 @@ router.post("/duplicar", async (req, res) => {
 });
 
 // Rota para atualizar uma obra
-router.put("/:id", async (req, res) => {
+router.put("/:id", upload.single("imagem"), async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    // Validar e converter IDs de referência
-    if (updateData.tipo) {
-      updateData.tipo = mongoose.Types.ObjectId.isValid(updateData.tipo)
-        ? new mongoose.Types.ObjectId(updateData.tipo)
-        : null;
-    }
-
-    if (updateData.cliente) {
-      updateData.cliente = mongoose.Types.ObjectId.isValid(updateData.cliente)
-        ? new mongoose.Types.ObjectId(updateData.cliente)
-        : null;
-    }
-
-    if (updateData.quemPaga) {
-      updateData.quemPaga = mongoose.Types.ObjectId.isValid(updateData.quemPaga)
-        ? new mongoose.Types.ObjectId(updateData.quemPaga)
-        : null;
-    }
-
-    if (updateData.conta) {
-      updateData.conta = mongoose.Types.ObjectId.isValid(updateData.conta)
-        ? new mongoose.Types.ObjectId(updateData.conta)
-        : null;
-    }
-
-    // Validar e converter mapPosition
-    if (updateData.mapPosition && Array.isArray(updateData.mapPosition)) {
-      const [lat, lng] = updateData.mapPosition;
-      if (typeof lat === "string" && typeof lng === "string") {
-        updateData.mapPosition = [parseFloat(lat), parseFloat(lng)];
-      } else if (typeof lat === "number" && typeof lng === "number") {
-        updateData.mapPosition = [lat, lng];
+    // Parse JSON strings from FormData
+    const parseFormData = (value) => {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        return value;
       }
+    };
+
+    // Processar a imagem se existir
+    let imagem = null;
+    if (req.file) {
+      imagem = `/api/obras/uploads/documentos/${req.file.filename}`;
     }
 
-    // Converter datas
-    if (updateData.dataInicio) {
-      updateData.dataInicio = new Date(updateData.dataInicio);
-    }
-    if (updateData.previsaoTermino) {
-      updateData.previsaoTermino = new Date(updateData.previsaoTermino);
-    }
-    if (updateData.dataPrevisao) {
-      updateData.dataPrevisao = new Date(updateData.dataPrevisao);
+    // Converter os dados do FormData
+    const updateData = {
+      nome: req.body.nome,
+      status: req.body.status,
+      codigoObras: req.body.codigoObras,
+      tipo: mongoose.Types.ObjectId.isValid(req.body.tipo)
+        ? new mongoose.Types.ObjectId(req.body.tipo)
+        : null,
+      art: req.body.art,
+      responsavelTecnico: req.body.responsavelTecnico,
+      responsavelObra: req.body.responsavelObra,
+      arquiteto: req.body.arquiteto,
+      ceiCno: req.body.ceiCno,
+      areaConstruida: req.body.areaConstruida
+        ? parseFloat(req.body.areaConstruida.replace(",", "."))
+        : null,
+      areaTerreno: req.body.areaTerreno
+        ? parseFloat(req.body.areaTerreno.replace(",", "."))
+        : null,
+      numeroPavimentos: req.body.numeroPavimentos
+        ? parseInt(req.body.numeroPavimentos)
+        : null,
+      numeroUnidades: req.body.numeroUnidades
+        ? parseInt(req.body.numeroUnidades)
+        : null,
+      endereco: parseFormData(req.body.endereco),
+      quemPaga: mongoose.Types.ObjectId.isValid(req.body.quemPaga)
+        ? new mongoose.Types.ObjectId(req.body.quemPaga)
+        : null,
+      conta: mongoose.Types.ObjectId.isValid(req.body.conta)
+        ? new mongoose.Types.ObjectId(req.body.conta)
+        : null,
+      comentario: req.body.comentario,
+      visivelPara: req.body.visivelPara,
+      cliente: mongoose.Types.ObjectId.isValid(req.body.cliente)
+        ? new mongoose.Types.ObjectId(req.body.cliente)
+        : null,
+      contatos: parseFormData(req.body.contatos),
+      mapPosition: parseFormData(req.body.mapPosition),
+      contatoPrincipal: req.body.contatoPrincipal
+        ? parseInt(req.body.contatoPrincipal)
+        : null,
+      dataInicio: new Date(req.body.dataInicio),
+      previsaoTermino: req.body.previsaoTermino
+        ? new Date(req.body.previsaoTermino)
+        : null,
+      dataPrevisao: req.body.dataPrevisao
+        ? new Date(req.body.dataPrevisao)
+        : null,
+    };
+
+    // Adicionar imagem apenas se uma nova foi enviada
+    if (imagem) {
+      updateData.imagem = imagem;
     }
 
     // Remover campos undefined ou null que não devem ser atualizados
