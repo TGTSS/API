@@ -289,4 +289,84 @@ router.delete("/:id/cotacoes/:cotacaoId", async (req, res) => {
   }
 });
 
+// Create solicitacoes for multiple obras
+router.post("/multiple-obras", async (req, res) => {
+  try {
+    const { obraIds, ...solicitacaoData } = req.body;
+
+    if (!Array.isArray(obraIds) || obraIds.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "É necessário fornecer pelo menos uma obra" });
+    }
+
+    const createdSolicitacoes = [];
+
+    for (const obraId of obraIds) {
+      const obra = await Obra.findById(obraId);
+      if (!obra) {
+        return res
+          .status(404)
+          .json({ message: `Obra com ID ${obraId} não encontrada` });
+      }
+
+      // Get the last numeroSequencial for this obra
+      const lastSolicitacao = await Solicitacao.findOne({ obra: obraId }).sort({
+        numeroSequencial: -1,
+      });
+
+      const numeroSequencial = lastSolicitacao
+        ? lastSolicitacao.numeroSequencial + 1
+        : 1;
+
+      // Process items to ensure all required fields are present
+      const processedItems = solicitacaoData.items.map((item) => ({
+        ...item,
+        custoUnitario: item.custoUnitario || 0,
+        unidade: item.unidade || "UN",
+        descricao:
+          item.descricao || item.insumoId?.descricao || "Item sem descrição",
+        quantidade: item.quantidade || 1,
+      }));
+
+      // Calculate total value from items
+      const valor = processedItems.reduce((total, item) => {
+        return total + item.quantidade * (item.custoUnitario || 0);
+      }, 0);
+
+      const solicitacao = new Solicitacao({
+        ...solicitacaoData,
+        obra: obraId,
+        obraNome: obra.nome,
+        numeroSequencial,
+        valor,
+        items: processedItems,
+        solicitante: solicitacaoData.solicitante || "Usuário",
+        status: "Pendente",
+        data: new Date(),
+      });
+
+      const newSolicitacao = await solicitacao.save();
+      createdSolicitacoes.push(newSolicitacao);
+    }
+
+    // Populate all created solicitacoes
+    const populatedSolicitacoes = await Solicitacao.find({
+      _id: { $in: createdSolicitacoes.map((s) => s._id) },
+    })
+      .populate("obra", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.status(201).json(populatedSolicitacoes);
+  } catch (error) {
+    console.error("Erro ao criar solicitações:", error);
+    res.status(400).json({
+      message: "Erro ao criar solicitações",
+      error: error.message,
+      details: error.errors,
+    });
+  }
+});
+
 export default router;
