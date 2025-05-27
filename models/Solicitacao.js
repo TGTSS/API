@@ -56,8 +56,10 @@ const SolicitacaoSchema = new mongoose.Schema(
     solicitante: { type: String, required: true },
     valor: { type: Number },
     items: [ItemSchema],
-    obra: { type: mongoose.Schema.Types.ObjectId, ref: "Obra", required: true },
-    obraNome: { type: String, required: true },
+    obras: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Obra", required: true },
+    ],
+    obrasNomes: [{ type: String, required: true }],
     numeroSequencial: { type: Number, required: true },
     fornecedores: [{ type: mongoose.Schema.Types.ObjectId, ref: "Fornecedor" }],
     cotacoes: [CotacaoSchema],
@@ -68,7 +70,7 @@ const SolicitacaoSchema = new mongoose.Schema(
 );
 
 // Add indexes for better query performance
-SolicitacaoSchema.index({ obra: 1, numeroSequencial: 1 });
+SolicitacaoSchema.index({ obras: 1, numeroSequencial: 1 });
 SolicitacaoSchema.index({ status: 1 });
 SolicitacaoSchema.index({ prioridade: 1 });
 
