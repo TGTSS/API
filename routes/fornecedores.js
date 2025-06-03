@@ -81,4 +81,33 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Rota para atualizar o número de telefone de um fornecedor
+router.patch("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { telefone1 } = req.body;
+
+    if (!telefone1) {
+      return res
+        .status(400)
+        .json({ message: "Número de telefone é obrigatório" });
+    }
+
+    const updatedFornecedor = await Fornecedor.findByIdAndUpdate(
+      id,
+      { telefone1 },
+      { new: true }
+    );
+
+    if (!updatedFornecedor) {
+      return res.status(404).json({ message: "Fornecedor não encontrado" });
+    }
+
+    res.json(updatedFornecedor);
+  } catch (error) {
+    console.error("Erro ao atualizar número de telefone:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
