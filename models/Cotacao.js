@@ -44,6 +44,13 @@ const CotacaoSchema = new mongoose.Schema({
           type: mongoose.Schema.Types.ObjectId,
           ref: "Fornecedor",
         },
+        responsavel: [
+          {
+            nome: { type: String },
+            cargo: { type: String },
+            telefone: { type: String },
+          },
+        ],
         itens: [
           {
             itemId: { type: mongoose.Schema.Types.ObjectId },

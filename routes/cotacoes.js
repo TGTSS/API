@@ -1329,4 +1329,72 @@ router.post("/:cotacaoId/ordem-compra/:fornecedorId", async (req, res) => {
   }
 });
 
+// Rota para atualizar responsável do fornecedor
+router.patch(
+  "/:cotacaoId/fornecedores/:fornecedorId/responsavel",
+  async (req, res) => {
+    try {
+      const { cotacaoId, fornecedorId } = req.params;
+      const { responsavel } = req.body;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(cotacaoId) ||
+        !mongoose.Types.ObjectId.isValid(fornecedorId)
+      ) {
+        return res.status(400).json({ message: "IDs inválidos" });
+      }
+
+      // Validar dados do responsável
+      if (!responsavel || !Array.isArray(responsavel)) {
+        return res
+          .status(400)
+          .json({ message: "Dados do responsável inválidos" });
+      }
+
+      // Validar cada responsável
+      for (const resp of responsavel) {
+        if (!resp.nome || !resp.cargo || !resp.telefone) {
+          return res.status(400).json({
+            message:
+              "Dados incompletos do responsável. Nome, cargo e telefone são obrigatórios",
+          });
+        }
+      }
+
+      const cotacao = await Cotacao.findById(cotacaoId);
+      if (!cotacao) {
+        return res.status(404).json({ message: "Cotação não encontrada" });
+      }
+
+      const fornecedor = cotacao.fornecedores.find(
+        (f) => f.fornecedorId.toString() === fornecedorId
+      );
+
+      if (!fornecedor) {
+        return res
+          .status(404)
+          .json({ message: "Fornecedor não encontrado na cotação" });
+      }
+
+      // Atualizar responsáveis
+      fornecedor.responsavel = responsavel;
+      await cotacao.save();
+
+      res.status(200).json({
+        message: "Responsável atualizado com sucesso",
+        fornecedor: {
+          fornecedorId: fornecedor.fornecedorId,
+          responsavel: fornecedor.responsavel,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar responsável:", error);
+      res.status(500).json({
+        message: "Erro ao atualizar responsável",
+        error: error.message,
+      });
+    }
+  }
+);
+
 export default router;
