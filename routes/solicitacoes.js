@@ -356,4 +356,38 @@ router.post("/multiple-obras", async (req, res) => {
   }
 });
 
+// Update item in solicitacao
+router.patch("/:id/items/:itemId", async (req, res) => {
+  try {
+    const solicitacao = await Solicitacao.findById(req.params.id);
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+
+    const item = solicitacao.items.id(req.params.itemId);
+    if (!item) {
+      return res.status(404).json({ message: "Item não encontrado" });
+    }
+
+    Object.assign(item, req.body);
+    const updatedSolicitacao = await solicitacao.save();
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(
+      updatedSolicitacao._id
+    )
+      .populate("obras", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.json(populatedSolicitacao);
+  } catch (error) {
+    console.error("Erro ao atualizar item:", error);
+    res.status(400).json({
+      message: "Erro ao atualizar item",
+      error: error.message,
+    });
+  }
+});
+
 export default router;
