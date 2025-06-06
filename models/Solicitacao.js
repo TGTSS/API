@@ -36,6 +36,30 @@ const ItemSchema = new mongoose.Schema({
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
 });
 
+// Add a pre-save middleware to handle manual items
+ItemSchema.pre("save", function (next) {
+  if (this.isManual) {
+    // For manual items, ensure insumoId is treated as a string
+    this.insumoId = String(this.insumoId);
+  } else {
+    // For non-manual items, ensure insumoId is a valid ObjectId
+    if (mongoose.Types.ObjectId.isValid(this.insumoId)) {
+      this.insumoId = new mongoose.Types.ObjectId(this.insumoId);
+    }
+  }
+  next();
+});
+
+// Add a pre-find middleware to handle population
+ItemSchema.pre("find", function () {
+  if (this._conditions && this._conditions.isManual) {
+    // Skip population for manual items
+    this.populate = function () {
+      return this;
+    };
+  }
+});
+
 // Add a virtual for insumoId that handles both manual and regular items
 ItemSchema.virtual("insumo", {
   ref: "Insumo",

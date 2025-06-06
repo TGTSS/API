@@ -318,6 +318,7 @@ router.post("/multiple-obras", async (req, res) => {
       descricao:
         item.descricao || item.insumoId?.descricao || "Item sem descrição",
       quantidade: item.quantidade || 1,
+      isManual: item.isManual || false,
     }));
 
     // Calculate total value from items
@@ -339,11 +340,10 @@ router.post("/multiple-obras", async (req, res) => {
 
     const newSolicitacao = await solicitacao.save();
 
-    // Populate the response using the virtual field
+    // Populate the response
     const populatedSolicitacao = await Solicitacao.findById(newSolicitacao._id)
       .populate("obras", "nome")
-      .populate("fornecedores", "nome")
-      .populate("items.insumo");
+      .populate("fornecedores", "nome");
 
     res.status(201).json(populatedSolicitacao);
   } catch (error) {
