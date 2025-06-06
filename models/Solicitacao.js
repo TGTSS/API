@@ -22,7 +22,7 @@ const CotacaoSchema = new mongoose.Schema({
 
 const ItemSchema = new mongoose.Schema({
   insumoId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.Mixed,
     ref: "Insumo",
     required: true,
   },
@@ -34,6 +34,7 @@ const ItemSchema = new mongoose.Schema({
   subetapa: { type: String },
   item: { type: String },
   isManual: { type: Boolean, default: false },
+  obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
 });
 
 const SolicitacaoSchema = new mongoose.Schema(
