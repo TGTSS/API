@@ -339,14 +339,11 @@ router.post("/multiple-obras", async (req, res) => {
 
     const newSolicitacao = await solicitacao.save();
 
-    // Populate the response, but only populate insumoId for non-manual items
+    // Populate the response using the virtual field
     const populatedSolicitacao = await Solicitacao.findById(newSolicitacao._id)
       .populate("obras", "nome")
       .populate("fornecedores", "nome")
-      .populate({
-        path: "items.insumoId",
-        match: { isManual: { $ne: true } },
-      });
+      .populate("items.insumo");
 
     res.status(201).json(populatedSolicitacao);
   } catch (error) {

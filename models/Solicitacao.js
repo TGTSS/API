@@ -23,7 +23,6 @@ const CotacaoSchema = new mongoose.Schema({
 const ItemSchema = new mongoose.Schema({
   insumoId: {
     type: mongoose.Schema.Types.Mixed,
-    ref: "Insumo",
     required: true,
   },
   descricao: { type: String, required: true },
@@ -36,6 +35,23 @@ const ItemSchema = new mongoose.Schema({
   isManual: { type: Boolean, default: false },
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
 });
+
+// Add a virtual for insumoId that handles both manual and regular items
+ItemSchema.virtual("insumo", {
+  ref: "Insumo",
+  localField: "insumoId",
+  foreignField: "_id",
+  justOne: true,
+  options: {
+    match: function () {
+      return { isManual: { $ne: true } };
+    },
+  },
+});
+
+// Ensure virtuals are included when converting to JSON
+ItemSchema.set("toJSON", { virtuals: true });
+ItemSchema.set("toObject", { virtuals: true });
 
 const SolicitacaoSchema = new mongoose.Schema(
   {
