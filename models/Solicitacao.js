@@ -50,7 +50,7 @@ const SolicitacaoSchema = new mongoose.Schema(
     prioridade: {
       type: String,
       required: true,
-      enum: ["Baixa", "Média", "Alta"],
+      enum: ["Baixa", "Média", "Alta", "Urgente"],
       default: "Média",
     },
     solicitante: { type: String, required: true },
