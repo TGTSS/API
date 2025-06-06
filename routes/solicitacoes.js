@@ -339,11 +339,14 @@ router.post("/multiple-obras", async (req, res) => {
 
     const newSolicitacao = await solicitacao.save();
 
-    // Populate the response
+    // Populate the response, but only populate insumoId for non-manual items
     const populatedSolicitacao = await Solicitacao.findById(newSolicitacao._id)
       .populate("obras", "nome")
       .populate("fornecedores", "nome")
-      .populate("items.insumoId");
+      .populate({
+        path: "items.insumoId",
+        match: { isManual: { $ne: true } },
+      });
 
     res.status(201).json(populatedSolicitacao);
   } catch (error) {
