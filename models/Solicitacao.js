@@ -24,7 +24,9 @@ const ItemSchema = new mongoose.Schema({
   insumoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Insumo",
-    required: true,
+    required: function () {
+      return !this.isManual;
+    },
   },
   descricao: { type: String, required: true },
   quantidade: { type: Number, required: true },

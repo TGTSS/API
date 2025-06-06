@@ -315,9 +315,10 @@ router.post("/multiple-obras", async (req, res) => {
       ...item,
       custoUnitario: item.custoUnitario || 0,
       unidade: item.unidade || "UN",
-      descricao:
-        item.descricao || item.insumoId?.descricao || "Item sem descrição",
+      descricao: item.descricao || "Item sem descrição",
       quantidade: item.quantidade || 1,
+      // Only include insumoId if it's not a manual item
+      ...(item.isManual ? {} : { insumoId: item.insumoId }),
     }));
 
     // Calculate total value from items
@@ -328,7 +329,7 @@ router.post("/multiple-obras", async (req, res) => {
     // Criar a solicitação com os arrays de obras e nomes
     const solicitacao = new Solicitacao({
       ...solicitacaoData,
-      obras: obras, // Garantir que o array de obras seja salvo
+      obras: obras,
       obrasNomes: obrasNomes,
       valor,
       items: processedItems,
