@@ -4,11 +4,9 @@ const TransacaoBrutaSchema = new mongoose.Schema(
   {
     descricao: {
       type: String,
-      required: true,
     },
     valor: {
       type: Number,
-      required: true,
     },
     valorPago: {
       type: Number,
@@ -32,32 +30,26 @@ const TransacaoBrutaSchema = new mongoose.Schema(
     },
     categoria: {
       type: String,
-      required: true,
     },
     categoriaOutros: {
       type: String,
     },
     centroCusto: {
       type: String,
-      required: true,
     },
     dataVencimento: {
       type: Date,
-      required: true,
     },
     formaPagamento: {
       type: String,
-      required: true,
     },
     beneficiario: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "beneficiarioTipo",
-      required: true,
     },
     beneficiarioTipo: {
       type: String,
       enum: ["Fornecedor", "Cliente", "Funcionario"],
-      required: true,
     },
     documento: {
       type: String,
@@ -95,11 +87,9 @@ const TransacaoBrutaSchema = new mongoose.Schema(
     },
     numeroParcela: {
       type: Number,
-      required: true,
     },
     totalParcelas: {
       type: Number,
-      required: true,
     },
     transacoesDivididas: [
       {
