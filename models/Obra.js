@@ -172,7 +172,6 @@ const PagamentoSchema = new mongoose.Schema({
   categoria: { type: String },
   categoriaOutros: { type: String },
   centroCusto: { type: String },
-  dataPagamentoRecebimento: { type: Date },
   dataVencimento: { type: Date },
   formaPagamento: { type: String },
   beneficiario: {
@@ -201,6 +200,16 @@ const PagamentoSchema = new mongoose.Schema({
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  isTransacaoBruta: { type: Boolean, default: false },
+  transacaoBrutaId: { type: mongoose.Schema.Types.ObjectId },
+  numeroParcela: { type: Number },
+  totalParcelas: { type: Number },
+  nfeInfo: {
+    numero: { type: String },
+    serie: { type: String },
+    dataEmissao: { type: Date },
+    chaveAcesso: { type: String },
+  },
 });
 
 const RegistroDiarioSchema = new mongoose.Schema({
@@ -392,7 +401,6 @@ const ObraSchema = new mongoose.Schema(
     tipo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TipoObra",
-
     },
     art: { type: String },
     responsavelTecnico: { type: String },
