@@ -78,13 +78,6 @@ const CotacaoSchema = new mongoose.Schema({
   valor: { type: Number, default: 0 },
   status: {
     type: String,
-    enum: [
-      "Pendente",
-      "Em cotação",
-      "Enviada para fornecedores",
-      "Aprovada",
-      "Recusada",
-    ],
     default: "Pendente",
   },
   data: { type: Date, default: Date.now },
