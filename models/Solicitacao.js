@@ -85,7 +85,6 @@ const SolicitacaoSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ["Pendente", "Aprovado", "Rejeitado", "Em cotação"],
       default: "Pendente",
     },
     prioridade: {
