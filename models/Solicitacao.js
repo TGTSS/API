@@ -110,7 +110,7 @@ const SolicitacaoSchema = new mongoose.Schema(
         required: true,
       },
     ],
-    numeroSequencial: { type: Number, required: true },
+    numeroSequencial: { type: Number, required: true, unique: true },
     fornecedores: [{ type: mongoose.Schema.Types.ObjectId, ref: "Fornecedor" }],
     cotacoes: [CotacaoSchema],
   },
