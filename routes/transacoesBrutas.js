@@ -25,6 +25,8 @@ const upload = multer({ storage: storage });
 // Criar uma nova transação bruta
 router.post("/duplicatas", upload.array("anexos"), async (req, res) => {
   try {
+    console.log("Dados recebidos:", req.body);
+
     const {
       descricao,
       valor,
@@ -59,55 +61,88 @@ router.post("/duplicatas", upload.array("anexos"), async (req, res) => {
       !numeroParcela ||
       !totalParcelas
     ) {
+      console.log("Campos faltando:", {
+        descricao: !descricao,
+        valor: !valor,
+        categoria: !categoria,
+        centroCusto: !centroCusto,
+        dataVencimento: !dataVencimento,
+        formaPagamento: !formaPagamento,
+        beneficiario: !beneficiario,
+        beneficiarioTipo: !beneficiarioTipo,
+        numeroParcela: !numeroParcela,
+        totalParcelas: !totalParcelas,
+      });
       return res.status(400).json({
         error: "Campos obrigatórios não preenchidos",
+        camposFaltantes: {
+          descricao: !descricao,
+          valor: !valor,
+          categoria: !categoria,
+          centroCusto: !centroCusto,
+          dataVencimento: !dataVencimento,
+          formaPagamento: !formaPagamento,
+          beneficiario: !beneficiario,
+          beneficiarioTipo: !beneficiarioTipo,
+          numeroParcela: !numeroParcela,
+          totalParcelas: !totalParcelas,
+        },
       });
     }
 
-    // Processar anexos se houver
-    const anexos = req.files
-      ? req.files.map((file) => ({
-          nome: file.originalname,
-          tipo: file.mimetype,
-          tamanho: file.size,
-          caminho: file.path,
-          dataUpload: new Date(),
-        }))
-      : [];
+    try {
+      // Criar a transação bruta
+      const transacaoBruta = new TransacaoBruta({
+        descricao,
+        valor: Number(valor),
+        valorPago: Number(valorPago) || 0,
+        tipo,
+        data: data ? new Date(data) : new Date(),
+        dataPagamentoRecebimento: dataPagamentoRecebimento
+          ? new Date(dataPagamentoRecebimento)
+          : null,
+        status,
+        categoria,
+        categoriaOutros,
+        centroCusto,
+        dataVencimento: new Date(dataVencimento),
+        formaPagamento,
+        beneficiario: new mongoose.Types.ObjectId(beneficiario),
+        beneficiarioTipo,
+        documento,
+        anexos: req.files
+          ? req.files.map((file) => ({
+              nome: file.originalname,
+              tipo: file.mimetype,
+              tamanho: file.size,
+              caminho: file.path,
+              dataUpload: new Date(),
+            }))
+          : [],
+        numeroParcela: Number(numeroParcela),
+        totalParcelas: Number(totalParcelas),
+        nfeInfo: nfeInfo ? JSON.parse(nfeInfo) : null,
+      });
 
-    // Criar a transação bruta
-    const transacaoBruta = new TransacaoBruta({
-      descricao,
-      valor: Number(valor),
-      valorPago: Number(valorPago) || 0,
-      tipo,
-      data: data ? new Date(data) : new Date(),
-      dataPagamentoRecebimento: dataPagamentoRecebimento
-        ? new Date(dataPagamentoRecebimento)
-        : null,
-      status,
-      categoria,
-      categoriaOutros,
-      centroCusto,
-      dataVencimento: new Date(dataVencimento),
-      formaPagamento,
-      beneficiario: new mongoose.Types.ObjectId(beneficiario),
-      beneficiarioTipo,
-      documento,
-      anexos,
-      numeroParcela: Number(numeroParcela),
-      totalParcelas: Number(totalParcelas),
-      nfeInfo: nfeInfo ? JSON.parse(nfeInfo) : null,
-    });
+      console.log("Transação bruta criada:", transacaoBruta);
+      await transacaoBruta.save();
+      console.log("Transação bruta salva com sucesso");
 
-    await transacaoBruta.save();
-
-    res.status(201).json(transacaoBruta);
+      res.status(201).json(transacaoBruta);
+    } catch (error) {
+      console.error("Erro ao criar transação bruta:", error);
+      res.status(500).json({
+        error: "Erro ao criar transação bruta",
+        details: error.message,
+        stack: error.stack,
+      });
+    }
   } catch (error) {
-    console.error("Erro ao criar transação bruta:", error);
+    console.error("Erro geral:", error);
     res.status(500).json({
-      error: "Erro ao criar transação bruta",
+      error: "Erro interno do servidor",
       details: error.message,
+      stack: error.stack,
     });
   }
 });
