@@ -121,7 +121,7 @@ router.post("/duplicatas", upload.array("anexos"), async (req, res) => {
           : [],
         numeroParcela: Number(numeroParcela),
         totalParcelas: Number(totalParcelas),
-        nfeInfo: nfeInfo ? JSON.parse(nfeInfo) : null,
+        nfeInfo: nfeInfo || null,
       });
 
       console.log("Transação bruta criada:", transacaoBruta);
