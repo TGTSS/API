@@ -1015,7 +1015,7 @@ app.use("/api/orcamentos", orcamentosRouter);
 app.use("/api/cotacoes", cotacoesRouter);
 app.use("/api/ordens-compra", ordensCompraRouter);
 app.use("/api/transacoes", transacoesIndependentesRoutes);
-app.use("/api/transacoes", transacoesBrutasRoutes);
+app.use("/api/duplicatas", transacoesBrutasRoutes);
 app.use("/api/solicitacoes", solicitacoesRouter);
 app.use("/api/obras/:obraId/solicitacoes", solicitacoesRouter);
 app.use("/api/nfe", nfeRouter);
