@@ -895,6 +895,30 @@ router.get("/:id/pagamentos", async (req, res) => {
   }
 });
 
+router.get("/:id/pagamentos/:pagamentoId", async (req, res) => {
+  try {
+    const { id, pagamentoId } = req.params;
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(pagamentoId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id).select("pagamentos");
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const pagamento = obra.pagamentos.find(
+      (p) => p._id.toString() === pagamentoId
+    );
+  } catch (error) {
+    console.error("Erro ao buscar pagamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para adicionar um pagamento
 router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
   try {
