@@ -7,10 +7,15 @@ import path from "path";
 import fs from "fs";
 import Cliente from "../models/Cliente.js";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
+import { importarCertificadoPFX } from "../utils/certificateUtils.js";
 
 dotenv.config();
 
 const router = express.Router();
+
+// Rotas de certificados com prefixo específico
+const certificadosRouter = express.Router();
 
 // Criar diretório de uploads se não existir
 const uploadDir = "uploads/certificates";
@@ -48,6 +53,186 @@ const upload = multer({
   { name: "certificado", maxCount: 1 },
   { name: "certificate", maxCount: 1 },
 ]);
+
+// Registrar as rotas de certificados primeiro
+router.use("/certificados", certificadosRouter);
+
+// Listar todos os certificados
+certificadosRouter.get("/", async (req, res) => {
+  try {
+    console.log("Iniciando busca de certificados...");
+    const certificados = await Certificado.find(
+      {},
+      "-certificadoBase64 -senha"
+    );
+    console.log(`Certificados encontrados: ${certificados.length}`);
+    res.json(certificados);
+  } catch (error) {
+    console.error("Erro detalhado ao listar certificados:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+    res.status(500).json({
+      message: "Erro ao listar certificados",
+      error: error.message,
+      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+});
+
+// Cadastrar novo certificado
+certificadosRouter.post("/", async (req, res) => {
+  try {
+    const { empresa, cnpj, ufAutor, certificadoBase64, senha, dataValidade } =
+      req.body;
+
+    const certificado = new Certificado({
+      empresa,
+      cnpj,
+      ufAutor,
+      certificadoBase64,
+      senha,
+      dataValidade: new Date(dataValidade),
+    });
+
+    await certificado.save();
+    res.status(201).json(certificado);
+  } catch (error) {
+    console.error("Erro ao cadastrar certificado:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Obter certificado específico
+certificadosRouter.get("/:id", async (req, res) => {
+  try {
+    const certificado = await Certificado.findById(
+      req.params.id,
+      "-certificadoBase64 -senha"
+    );
+    if (!certificado) {
+      return res.status(404).json({ message: "Certificado não encontrado" });
+    }
+    res.json(certificado);
+  } catch (error) {
+    console.error("Erro ao buscar certificado:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Atualizar certificado
+certificadosRouter.put("/:id", async (req, res) => {
+  try {
+    const { nome, cnpj, ufAutor, ativo, observacoes } = req.body;
+    const certificado = await Certificado.findById(req.params.id);
+
+    if (!certificado) {
+      return res.status(404).json({ message: "Certificado não encontrado" });
+    }
+
+    if (nome) certificado.nome = nome;
+    if (cnpj) certificado.cnpj = cnpj;
+    if (ufAutor) certificado.ufAutor = ufAutor;
+    if (typeof ativo === "boolean") certificado.ativo = ativo;
+    if (observacoes !== undefined) certificado.observacoes = observacoes;
+
+    await certificado.save();
+
+    const certificadoResponse = certificado.toObject();
+    delete certificadoResponse.certificadoBase64;
+    delete certificadoResponse.senha;
+
+    res.json(certificadoResponse);
+  } catch (error) {
+    console.error("Erro ao atualizar certificado:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Excluir certificado
+certificadosRouter.delete("/:id", async (req, res) => {
+  try {
+    const certificado = await Certificado.findByIdAndDelete(req.params.id);
+    if (!certificado) {
+      return res.status(404).json({ message: "Certificado não encontrado" });
+    }
+    res.json({ message: "Certificado excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir certificado:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Importar certificado PFX
+certificadosRouter.post("/importar-pfx", async (req, res) => {
+  try {
+    const { filePath, senha } = req.body;
+    const certificado = await importarCertificadoPFX(filePath, senha);
+    res.status(201).json(certificado);
+  } catch (error) {
+    console.error("Erro ao importar certificado PFX:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Consultar notas fiscais recentes
+router.get("/consultar-notas/:certificadoId", async (req, res) => {
+  try {
+    const { certificadoId } = req.params;
+    console.log("Iniciando consulta de notas para certificado:", certificadoId);
+
+    if (!mongoose.Types.ObjectId.isValid(certificadoId)) {
+      console.error("ID de certificado inválido:", certificadoId);
+      return res.status(400).json({
+        message: "ID de certificado inválido",
+        details: "O ID fornecido não é um ObjectId válido do MongoDB",
+      });
+    }
+
+    const certificado = await Certificado.findById(certificadoId);
+    if (!certificado) {
+      console.error("Certificado não encontrado:", certificadoId);
+      return res.status(404).json({
+        message: "Certificado não encontrado",
+        details: "Não foi encontrado um certificado com o ID fornecido",
+      });
+    }
+
+    if (!certificado.ativo) {
+      console.error("Certificado inativo:", certificadoId);
+      return res.status(400).json({
+        message: "Certificado está inativo",
+        details: "O certificado existe mas está marcado como inativo",
+      });
+    }
+
+    if (new Date() > certificado.dataValidade) {
+      console.error("Certificado expirado:", certificadoId);
+      return res.status(400).json({
+        message: "Certificado expirado",
+        details: `Data de validade: ${certificado.dataValidade}`,
+      });
+    }
+
+    console.log("Certificado válido, iniciando consulta de notas...");
+    const resultado = await consultarNotasRecentes(certificadoId);
+    console.log("Consulta de notas concluída com sucesso");
+
+    res.json(resultado);
+  } catch (error) {
+    console.error("Erro detalhado ao consultar notas fiscais:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+    res.status(500).json({
+      message: "Erro ao consultar notas fiscais",
+      error: error.message,
+      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+});
 
 // Listar todas as notas fiscais
 router.get("/", async (req, res) => {
@@ -164,260 +349,6 @@ router.get("/destinatario/:cnpj", async (req, res) => {
     console.error("Erro ao buscar notas fiscais do destinatário:", error);
     res.status(500).json({ message: "Erro ao buscar notas fiscais" });
   }
-});
-
-// Rota para cadastrar um novo certificado
-router.post("/certificados", async (req, res) => {
-  try {
-    const { empresa, cnpj, ufAutor, certificadoBase64, senha, dataValidade } =
-      req.body;
-
-    const certificado = new Certificado({
-      empresa,
-      cnpj,
-      ufAutor,
-      certificadoBase64,
-      senha,
-      dataValidade: new Date(dataValidade),
-    });
-
-    await certificado.save();
-    res.status(201).json(certificado);
-  } catch (error) {
-    console.error("Erro ao cadastrar certificado:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para listar todos os certificados
-router.get("/certificados", async (req, res) => {
-  try {
-    const certificados = await Certificado.find(
-      {},
-      "-certificadoBase64 -senha"
-    );
-    res.json(certificados);
-  } catch (error) {
-    console.error("Erro ao listar certificados:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para obter um certificado específico
-router.get("/certificados/:id", async (req, res) => {
-  try {
-    const certificado = await Certificado.findById(
-      req.params.id,
-      "-certificadoBase64 -senha"
-    );
-    if (!certificado) {
-      return res.status(404).json({ message: "Certificado não encontrado" });
-    }
-    res.json(certificado);
-  } catch (error) {
-    console.error("Erro ao buscar certificado:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para atualizar um certificado
-router.put("/certificados/:id", async (req, res) => {
-  try {
-    const { nome, cnpj, ufAutor, ativo, observacoes } = req.body;
-    const certificado = await Certificado.findById(req.params.id);
-
-    if (!certificado) {
-      return res.status(404).json({ message: "Certificado não encontrado" });
-    }
-
-    // Atualizar apenas os campos permitidos
-    if (nome) certificado.nome = nome;
-    if (cnpj) certificado.cnpj = cnpj;
-    if (ufAutor) certificado.ufAutor = ufAutor;
-    if (typeof ativo === "boolean") certificado.ativo = ativo;
-    if (observacoes !== undefined) certificado.observacoes = observacoes;
-
-    await certificado.save();
-
-    const certificadoResponse = certificado.toObject();
-    delete certificadoResponse.certificadoBase64;
-    delete certificadoResponse.senha;
-
-    res.json(certificadoResponse);
-  } catch (error) {
-    console.error("Erro ao atualizar certificado:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para excluir um certificado
-router.delete("/certificados/:id", async (req, res) => {
-  try {
-    const certificado = await Certificado.findByIdAndDelete(req.params.id);
-    if (!certificado) {
-      return res.status(404).json({ message: "Certificado não encontrado" });
-    }
-    res.json({ message: "Certificado excluído com sucesso" });
-  } catch (error) {
-    console.error("Erro ao excluir certificado:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Rota para consultar notas fiscais recentes usando um certificado específico
-router.get("/consultar-notas/:certificadoId", async (req, res) => {
-  try {
-    const { certificadoId } = req.params;
-
-    // Verificar se o certificado existe
-    const certificado = await Certificado.findById(certificadoId);
-    if (!certificado) {
-      return res.status(404).json({ message: "Certificado não encontrado" });
-    }
-
-    // Verificar se o certificado está ativo
-    if (!certificado.ativo) {
-      return res.status(400).json({ message: "Certificado está inativo" });
-    }
-
-    // Consultar notas fiscais recentes
-    const resultado = await consultarNotasRecentes(certificadoId);
-
-    res.json(resultado);
-  } catch (error) {
-    console.error("Erro ao consultar notas fiscais:", error);
-    res.status(500).json({
-      message: "Erro ao consultar notas fiscais",
-      error: error.message,
-    });
-  }
-});
-
-// Rota para importar certificado PFX
-router.post("/importar-certificado", (req, res) => {
-  upload(req, res, async function (err) {
-    if (err instanceof multer.MulterError) {
-      // Erro do Multer
-      console.error("Erro do Multer:", err);
-      return res.status(400).json({
-        message: `Erro no upload do arquivo: ${err.message}`,
-      });
-    } else if (err) {
-      // Outro erro
-      console.error("Erro no upload:", err);
-      return res.status(400).json({
-        message: err.message,
-      });
-    }
-
-    try {
-      console.log("Iniciando importação do certificado...");
-      console.log("Body recebido:", {
-        ...req.body,
-        senha: req.body.senha ? "***" : undefined,
-        password: req.body.password ? "***" : undefined,
-      });
-      console.log(
-        "Arquivo recebido:",
-        req.files?.certificado?.[0] || req.files?.certificate?.[0]
-          ? {
-              fieldname:
-                req.files?.certificado?.[0] ||
-                req.files?.certificate?.[0].fieldname,
-              originalname:
-                req.files?.certificado?.[0] ||
-                req.files?.certificate?.[0].originalname,
-              size:
-                req.files?.certificado?.[0] || req.files?.certificate?.[0].size,
-              mimetype:
-                req.files?.certificado?.[0] ||
-                req.files?.certificate?.[0].mimetype,
-            }
-          : "Nenhum arquivo recebido"
-      );
-
-      const certificadoFile =
-        req.files?.certificado?.[0] || req.files?.certificate?.[0];
-      const senha =
-        req.body.senha || req.body.password || process.env.CERTIFICATE_PASSWORD;
-
-      if (!certificadoFile) {
-        return res.status(400).json({
-          message: "Arquivo do certificado é obrigatório",
-        });
-      }
-
-      if (!senha) {
-        return res.status(400).json({
-          message: "Senha do certificado é obrigatória",
-        });
-      }
-
-      // Extrair CNPJ do nome do arquivo ou usar do .env
-      const cnpj =
-        process.env.CNPJ_EMPRESA ||
-        certificadoFile.originalname.match(/\d{14}/)?.[0];
-      if (!cnpj) {
-        return res.status(400).json({
-          message:
-            "CNPJ não encontrado no nome do arquivo e não configurado no .env",
-        });
-      }
-
-      console.log("Convertendo arquivo para base64...");
-      // Converter o buffer do arquivo para base64
-      const certificadoBase64 = certificadoFile.buffer.toString("base64");
-      console.log(
-        "Arquivo convertido para base64. Tamanho:",
-        certificadoBase64.length
-      );
-
-      console.log("Criando novo certificado no banco de dados...");
-      // Criar novo certificado no banco de dados
-      const certificado = new Certificado({
-        nome: certificadoFile.originalname.split(".")[0], // Nome do arquivo sem extensão
-        cnpj,
-        ufAutor: process.env.UF_AUTOR || "24", // UF padrão do .env ou 24
-        certificadoBase64,
-        senha,
-        dataValidade: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 ano de validade
-        ativo: true,
-        ultimoNSU: 0,
-        maxNSU: 0,
-      });
-
-      console.log("Salvando certificado no banco de dados...");
-      // Salvar no banco de dados
-      await certificado.save();
-      console.log("Certificado salvo com sucesso. ID:", certificado._id);
-
-      // Retornar o certificado sem os dados sensíveis
-      const certificadoResponse = certificado.toObject();
-      delete certificadoResponse.certificadoBase64;
-      delete certificadoResponse.senha;
-
-      res.status(201).json(certificadoResponse);
-    } catch (error) {
-      console.error("Erro detalhado ao importar certificado:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-      });
-
-      // Verificar se é um erro de validação do Mongoose
-      if (error.name === "ValidationError") {
-        return res.status(400).json({
-          message: "Erro de validação",
-          details: Object.values(error.errors).map((err) => err.message),
-        });
-      }
-
-      res.status(500).json({
-        message: error.message,
-        details: error.stack,
-      });
-    }
-  });
 });
 
 export default router;
