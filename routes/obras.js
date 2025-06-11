@@ -913,6 +913,12 @@ router.get("/:id/pagamentos/:pagamentoId", async (req, res) => {
     const pagamento = obra.pagamentos.find(
       (p) => p._id.toString() === pagamentoId
     );
+
+    if (!pagamento) {
+      return res.status(404).json({ message: "Pagamento não encontrado" });
+    }
+
+    res.json(pagamento);
   } catch (error) {
     console.error("Erro ao buscar pagamento:", error);
     res.status(500).json({ message: error.message });
