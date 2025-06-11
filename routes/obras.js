@@ -910,10 +910,7 @@ router.get("/:id/pagamentos/:pagamentoId", async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    const pagamento = obra.pagamentos.find(
-      (p) => p._id.toString() === pagamentoId
-    );
-
+    const pagamento = obra.pagamentos.id(pagamentoId);
     if (!pagamento) {
       return res.status(404).json({ message: "Pagamento não encontrado" });
     }
