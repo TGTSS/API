@@ -973,7 +973,6 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
 
     const novoPagamento = {
       ...req.body,
-      id: new mongoose.Types.ObjectId(),
       data: new Date(req.body.data),
       dataVencimento: req.body.dataVencimento
         ? new Date(req.body.dataVencimento)
@@ -990,7 +989,9 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
     obra.pagamentos.push(novoPagamento);
     await obra.save();
 
-    res.status(201).json(novoPagamento);
+    const pagamentoSalvo = obra.pagamentos[obra.pagamentos.length - 1];
+
+    res.status(201).json(pagamentoSalvo);
   } catch (error) {
     console.error("Erro ao adicionar pagamento:", error);
     res.status(500).json({ message: error.message });
