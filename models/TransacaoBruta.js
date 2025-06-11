@@ -93,8 +93,14 @@ const TransacaoBrutaSchema = new mongoose.Schema(
     },
     transacoesDivididas: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Transacao",
+        obraId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Obra",
+        },
+        transacaoDivididaId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Transacao",
+        },
       },
     ],
     nfeInfo: {
@@ -102,6 +108,14 @@ const TransacaoBrutaSchema = new mongoose.Schema(
       serie: String,
       dataEmissao: Date,
       chaveAcesso: String,
+    },
+    obraId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Obra",
+    },
+    transacaoBrutaId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TransacaoBruta",
     },
   },
   {
