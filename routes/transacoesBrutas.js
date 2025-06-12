@@ -312,9 +312,12 @@ router.patch("/:id/nfe", async (req, res) => {
       chaveAcesso,
     };
 
-    // Inicializa o array nfeInfo se não existir
+    // Inicializa ou converte o array nfeInfo
     if (!transacao.nfeInfo) {
       transacao.nfeInfo = [];
+    } else if (!Array.isArray(transacao.nfeInfo)) {
+      // Se nfeInfo for um objeto, converte para array
+      transacao.nfeInfo = [transacao.nfeInfo];
     }
 
     // Verifica se a NF-e já existe no array
