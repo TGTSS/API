@@ -299,11 +299,6 @@ router.patch("/:id/nfe", async (req, res) => {
       });
     }
 
-    const transacao = await TransacaoBruta.findById(req.params.id);
-    if (!transacao) {
-      return res.status(404).json({ error: "Transação não encontrada" });
-    }
-
     // Criar o novo objeto nfeInfo
     const novaNfeInfo = {
       numero,
@@ -312,26 +307,39 @@ router.patch("/:id/nfe", async (req, res) => {
       chaveAcesso,
     };
 
-    // Inicializa ou converte o array nfeInfo
-    if (!transacao.nfeInfo) {
-      transacao.nfeInfo = [];
-    } else if (!Array.isArray(transacao.nfeInfo)) {
-      // Se nfeInfo for um objeto, converte para array
-      transacao.nfeInfo = [transacao.nfeInfo];
+    // Primeiro, buscar a transação atual
+    const transacaoAtual = await TransacaoBruta.findById(req.params.id);
+    if (!transacaoAtual) {
+      return res.status(404).json({ error: "Transação não encontrada" });
     }
 
-    // Verifica se a NF-e já existe no array
-    const nfeJaExiste = transacao.nfeInfo.some(
+    // Preparar o array nfeInfo
+    let nfeInfoArray = [];
+    if (transacaoAtual.nfeInfo) {
+      // Se nfeInfo for um objeto, converte para array
+      nfeInfoArray = Array.isArray(transacaoAtual.nfeInfo)
+        ? [...transacaoAtual.nfeInfo]
+        : [transacaoAtual.nfeInfo];
+    }
+
+    // Verificar se a NF-e já existe
+    const nfeJaExiste = nfeInfoArray.some(
       (nfe) => nfe.numero === numero && nfe.serie === serie
     );
 
     // Se a NF-e não existir, adiciona ao array
     if (!nfeJaExiste) {
-      transacao.nfeInfo.push(novaNfeInfo);
+      nfeInfoArray.push(novaNfeInfo);
     }
 
-    await transacao.save();
-    res.json(transacao);
+    // Atualizar a transação usando findOneAndUpdate
+    const transacaoAtualizada = await TransacaoBruta.findOneAndUpdate(
+      { _id: req.params.id },
+      { $set: { nfeInfo: nfeInfoArray } },
+      { new: true, runValidators: true }
+    );
+
+    res.json(transacaoAtualizada);
   } catch (error) {
     console.error("Erro ao adicionar nfeInfo:", error);
     res.status(500).json({
