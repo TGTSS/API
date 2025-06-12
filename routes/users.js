@@ -65,6 +65,21 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Rota para buscar um usuário pelo id
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).lean();
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("Erro ao buscar usuário por id:", error);
+    res.status(500).json({ message: "Erro ao buscar usuário" });
+  }
+});
+
 // Rota para atualizar a permissão de um usuário
 router.put("/email/:email/permissao", async (req, res) => {
   try {

@@ -153,64 +153,7 @@ const OrcamentoSchema = new mongoose.Schema({
   dataAtualizacao: Date,
 });
 
-const PagamentoSchema = new mongoose.Schema({
-  id: {
-    type: mongoose.Schema.Types.ObjectId,
-    default: () => new mongoose.Types.ObjectId(),
-  },
-  descricao: { type: String },
-  valor: { type: Number, min: 0 },
-  valorPago: { type: Number, default: 0, min: 0 },
-  tipo: { type: String, default: "pagamento" },
-  data: { type: Date, default: Date.now },
-  dataPagamentoRecebimento: { type: Date },
-  status: {
-    type: String,
-    enum: ["pendente", "pago", "atrasado", "a_pagar"],
-    default: "pendente",
-  },
-  categoria: { type: String },
-  categoriaOutros: { type: String },
-  centroCusto: { type: String },
-  dataVencimento: { type: Date },
-  formaPagamento: { type: String },
-  beneficiario: {
-    type: mongoose.Schema.Types.ObjectId,
-    refPath: "beneficiarioTipo",
-  },
-  beneficiarioTipo: {
-    type: String,
-    enum: ["Fornecedor", "Funcionario"],
-  },
-  documento: { type: String },
-  associacaoOrcamento: {
-    etapa: { type: mongoose.Schema.Types.Mixed },
-    subetapa: { type: mongoose.Schema.Types.Mixed },
-    item: { type: mongoose.Schema.Types.Mixed },
-  },
-  anexos: [
-    {
-      nome: { type: String },
-      tipo: { type: String },
-      tamanho: { type: Number },
-      caminho: { type: String },
-      dataUpload: { type: Date, default: Date.now },
-    },
-  ],
-  obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-  isTransacaoBruta: { type: Boolean, default: false },
-  transacaoBrutaId: { type: mongoose.Schema.Types.ObjectId },
-  numeroParcela: { type: Number },
-  totalParcelas: { type: Number },
-  nfeInfo: {
-    numero: { type: String },
-    serie: { type: String },
-    dataEmissao: { type: Date },
-    chaveAcesso: { type: String },
-  },
-});
+ 
 
 const RegistroDiarioSchema = new mongoose.Schema({
   data: {

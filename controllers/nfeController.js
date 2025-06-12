@@ -1,250 +1,252 @@
 import axios from "axios";
-import { parseStringPromise } from "xml2js";
-import { promisify } from "util";
-import { gunzip } from "zlib";
+import xml2js from "xml2js";
+import util from "util";
+import zlib from "zlib";
 import https from "https";
-import { getAgentOptions, updateNSU } from "../services/certificateService.js";
+import NFe from "../models/NFe.js";
 import Certificado from "../models/Certificado.js";
+import { getAgentOptions, updateNSU } from "../services/certificateService.js";
 
-const gunzipAsync = promisify(gunzip);
+const parseString = util.promisify(xml2js.parseString);
+const gunzip = util.promisify(zlib.gunzip);
 
-const SEFAZ_DIST_DFE_URL =
-  process.env.SEFAZ_DIST_DFE_URL ||
-  "https://www1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx";
+const SEFAZ_URL =
+  "https://www.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx";
 
 const buildSoapEnvelope = (cnpj, ufAutor, ultimoNSU) => {
-  // Garante que o NSU tenha 15 dígitos com zeros à esquerda
-  const nsuFormatado = String(ultimoNSU).padStart(15, "0");
-
-  // Payload XML interno
-  const distDFeIntXml = `
-    <distDFeInt xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01">
-      <tpAmb>1</tpAmb>
-      <cUFAutor>${ufAutor}</cUFAutor>
-      <CNPJ>${cnpj}</CNPJ>
-      <distNSU>
-        <ultNSU>${nsuFormatado}</ultNSU>
-      </distNSU>
-    </distDFeInt>
-  `
-    .replace(/>\s+</g, "><")
-    .trim();
-
-  // SOAP Header XML
-  const soapHeaderXml = `
-    <nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe">
-      <cUF>${ufAutor}</cUF>
-      <versaoDados>1.01</versaoDados>
-    </nfeCabecMsg>
-  `
-    .replace(/>\s+</g, "><")
-    .trim();
-
-  // Envelope SOAP completo
-  const soapEnvelope = `
-    <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope">
-      <soapenv:Header>${soapHeaderXml}</soapenv:Header>
-      <soapenv:Body>
-        <nfeDistDFeInteresse xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe">
-          <nfeDadosMsg>${distDFeIntXml}</nfeDadosMsg>
-        </nfeDistDFeInteresse>
-      </soapenv:Body>
-    </soapenv:Envelope>
-  `;
-
-  // Limpeza final do envelope
-  return soapEnvelope
-    .replace(/\n|\r/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+  return `<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope">
+    <soapenv:Header>
+      <nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe">
+        <cUF>${ufAutor}</cUF>
+        <versaoDados>1.01</versaoDados>
+      </nfeCabecMsg>
+    </soapenv:Header>
+    <soapenv:Body>
+      <nfeDistDFeInteresse xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe">
+        <nfeDadosMsg>
+          <distDFeInt xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01">
+            <tpAmb>1</tpAmb>
+            <cUFAutor>${ufAutor}</cUFAutor>
+            <CNPJ>${cnpj}</CNPJ>
+            <distNSU>
+              <ultNSU>${ultimoNSU.toString().padStart(15, "0")}</ultNSU>
+            </distNSU>
+          </distDFeInt>
+        </nfeDadosMsg>
+      </nfeDistDFeInteresse>
+    </soapenv:Body>
+  </soapenv:Envelope>`;
 };
 
-export const consultarNotasRecentes = async (certificadoId) => {
+const processarNotaFiscal = async (docZip) => {
   try {
+    // Descomprimir o conteúdo
+    const buffer = Buffer.from(docZip._, "base64");
+    const decompressed = await gunzip(buffer);
+    const xml = decompressed.toString("utf-8");
+
+    // Converter XML para objeto
+    const result = await parseString(xml);
+
+    // Extrair dados relevantes
+    const nfe = result.resNFe || result.procEventoNFe;
+    if (!nfe) return null;
+
+    const dados = {
+      chaveAcesso:
+        nfe.chNFe?.[0] || nfe.evento?.[0]?.infEvento?.[0]?.chNFe?.[0],
+      numero: nfe.NFe?.[0]?.infNFe?.[0]?.ide?.[0]?.nNF?.[0],
+      serie: nfe.NFe?.[0]?.infNFe?.[0]?.ide?.[0]?.serie?.[0],
+      dataEmissao: nfe.NFe?.[0]?.infNFe?.[0]?.ide?.[0]?.dhEmi?.[0],
+      valorTotal: nfe.NFe?.[0]?.infNFe?.[0]?.total?.[0]?.ICMSTot?.[0]?.vNF?.[0],
+      emitente: {
+        cnpj: nfe.NFe?.[0]?.infNFe?.[0]?.emit?.[0]?.CNPJ?.[0],
+        nome: nfe.NFe?.[0]?.infNFe?.[0]?.emit?.[0]?.xNome?.[0],
+        endereco: {
+          logradouro:
+            nfe.NFe?.[0]?.infNFe?.[0]?.emit?.[0]?.enderEmit?.[0]?.xLgr?.[0],
+          numero:
+            nfe.NFe?.[0]?.infNFe?.[0]?.emit?.[0]?.enderEmit?.[0]?.nro?.[0],
+          bairro:
+            nfe.NFe?.[0]?.infNFe?.[0]?.emit?.[0]?.enderEmit?.[0]?.xBairro?.[0],
+          municipio:
+            nfe.NFe?.[0]?.infNFe?.[0]?.emit?.[0]?.enderEmit?.[0]?.xMun?.[0],
+          uf: nfe.NFe?.[0]?.infNFe?.[0]?.emit?.[0]?.enderEmit?.[0]?.UF?.[0],
+          cep: nfe.NFe?.[0]?.infNFe?.[0]?.emit?.[0]?.enderEmit?.[0]?.CEP?.[0],
+        },
+      },
+      destinatario: {
+        cnpj: nfe.NFe?.[0]?.infNFe?.[0]?.dest?.[0]?.CNPJ?.[0],
+        nome: nfe.NFe?.[0]?.infNFe?.[0]?.dest?.[0]?.xNome?.[0],
+        endereco: {
+          logradouro:
+            nfe.NFe?.[0]?.infNFe?.[0]?.dest?.[0]?.enderDest?.[0]?.xLgr?.[0],
+          numero:
+            nfe.NFe?.[0]?.infNFe?.[0]?.dest?.[0]?.enderDest?.[0]?.nro?.[0],
+          bairro:
+            nfe.NFe?.[0]?.infNFe?.[0]?.dest?.[0]?.enderDest?.[0]?.xBairro?.[0],
+          municipio:
+            nfe.NFe?.[0]?.infNFe?.[0]?.dest?.[0]?.enderDest?.[0]?.xMun?.[0],
+          uf: nfe.NFe?.[0]?.infNFe?.[0]?.dest?.[0]?.enderDest?.[0]?.UF?.[0],
+          cep: nfe.NFe?.[0]?.infNFe?.[0]?.dest?.[0]?.enderDest?.[0]?.CEP?.[0],
+        },
+      },
+      produtos:
+        nfe.NFe?.[0]?.infNFe?.[0]?.det?.map((det) => ({
+          codigo: det.prod?.[0]?.cProd?.[0],
+          descricao: det.prod?.[0]?.xProd?.[0],
+          quantidade: det.prod?.[0]?.qCom?.[0],
+          valorUnitario: det.prod?.[0]?.vUnCom?.[0],
+          valorTotal: det.prod?.[0]?.vProd?.[0],
+        })) || [],
+      status: nfe.cSitNFe?.[0] || "NORMAL",
+      xml: xml,
+    };
+
+    return dados;
+  } catch (error) {
+    console.error("Erro ao processar nota fiscal:", error);
+    return null;
+  }
+};
+
+export const buscarNotasRecentes = async (req, res) => {
+  try {
+    const { certificadoId } = req.params;
+    const { nsu } = req.query;
+
     console.log(
-      "Iniciando consulta de notas fiscais para certificado:",
+      "Iniciando busca de notas fiscais para certificado:",
       certificadoId
     );
 
     const certificado = await Certificado.findById(certificadoId);
     if (!certificado) {
-      throw new Error("Certificado não encontrado");
+      return res.status(404).json({ message: "Certificado não encontrado" });
     }
 
-    console.log("Certificado encontrado:", {
-      cnpj: certificado.cnpj,
-      ufAutor: certificado.ufAutor,
-      ultimoNSU: certificado.ultimoNSU,
-    });
+    if (!certificado.ativo) {
+      return res.status(400).json({ message: "Certificado inativo" });
+    }
+
+    if (new Date(certificado.dataValidade) < new Date()) {
+      return res.status(400).json({ message: "Certificado expirado" });
+    }
 
     const agentOptions = await getAgentOptions(certificadoId);
-    const soapRequest = buildSoapEnvelope(
+    if (!agentOptions) {
+      return res.status(500).json({ message: "Erro ao carregar certificado" });
+    }
+
+    const ultimoNSU = nsu ? parseInt(nsu) : certificado.ultimoNSU;
+    const envelope = buildSoapEnvelope(
       certificado.cnpj,
       certificado.ufAutor,
-      certificado.ultimoNSU
+      ultimoNSU
     );
 
-    console.log("Envelope SOAP gerado:", soapRequest);
+    console.log("Envelope SOAP gerado:", envelope);
 
-    const response = await axios.post(SEFAZ_DIST_DFE_URL, soapRequest, {
+    const response = await axios.post(SEFAZ_URL, envelope, {
       headers: {
         "Content-Type": "application/soap+xml; charset=utf-8",
+        SOAPAction:
+          "http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe/nfeDistDFeInteresse",
       },
-      httpsAgent: new https.Agent({
-        key: agentOptions.key,
-        cert: agentOptions.cert,
-        ca: agentOptions.ca,
-        rejectUnauthorized: agentOptions.rejectUnauthorized,
-      }),
-      timeout: 30000,
+      httpsAgent: new https.Agent(agentOptions),
     });
 
     console.log("=== LOG DETALHADO DA RESPOSTA SEFAZ ===");
     console.log("Status HTTP:", response.status);
-    console.log("Headers:", JSON.stringify(response.headers, null, 2));
+    console.log("Headers:", response.headers);
     console.log("Resposta bruta:", response.data);
     console.log("================================");
 
-    const parsedResult = await parseStringPromise(response.data, {
-      explicitArray: false,
-      tagNameProcessors: [(key) => key.replace(/^[a-zA-Z0-9]+:/, "")],
-    });
-
+    const parsedResponse = await parseString(response.data);
     console.log("=== LOG DETALHADO DA RESPOSTA PARSEADA ===");
     console.log(
       "Resposta parseada completa:",
-      JSON.stringify(parsedResult, null, 2)
+      JSON.stringify(parsedResponse, null, 2)
     );
+    console.log("================================");
 
-    const soapBody = parsedResult["Envelope"]?.["Body"];
-    const distResult =
-      soapBody?.["nfeDistDFeInteresseResponse"]?.["nfeDistDFeInteresseResult"];
-
-    if (!distResult) {
-      console.error(
-        "Estrutura da resposta SOAP inesperada:",
-        JSON.stringify(soapBody, null, 2)
-      );
-      throw new Error("Estrutura da resposta SOAP inesperada");
-    }
-
-    const cStat = distResult.retDistDFeInt?.cStat;
-    const xMotivo = distResult.retDistDFeInt?.xMotivo;
-    const ultNSU = distResult.retDistDFeInt?.ultNSU;
-    const maxNSU = distResult.retDistDFeInt?.maxNSU;
+    const retDistDFeInt =
+      parsedResponse["soap:Envelope"]["soap:Body"][0][
+        "nfeDistDFeInteresseResponse"
+      ][0]["nfeDistDFeInteresseResult"][0]["retDistDFeInt"][0];
 
     console.log("=== DETALHES DA RESPOSTA SEFAZ ===");
-    console.log("Código de Status (cStat):", cStat);
-    console.log("Motivo (xMotivo):", xMotivo);
-    console.log("Último NSU:", ultNSU);
-    console.log("Máximo NSU:", maxNSU);
+    console.log("Código de Status (cStat):", retDistDFeInt.cStat[0]);
+    console.log("Motivo (xMotivo):", retDistDFeInt.xMotivo[0]);
+    console.log("Último NSU:", retDistDFeInt.ultNSU[0]);
+    console.log("Máximo NSU:", retDistDFeInt.maxNSU[0]);
     console.log("================================");
 
-    if (cStat !== "138") {
-      if (cStat === "137") {
-        console.log("Nenhum documento encontrado (cStat 137)");
-        return {
-          status: cStat,
-          motivo: xMotivo,
-          ultimoNSU: ultNSU || certificado.ultimoNSU,
-          maxNSU: maxNSU,
-          documentos: [],
-        };
-      }
-      console.error("Erro SEFAZ:", { cStat, xMotivo });
-      throw new Error(`Erro SEFAZ: ${xMotivo} (Código: ${cStat})`);
-    }
-
-    const lote = distResult.retDistDFeInt.loteDistDFeInt;
+    const loteDistDFeInt = retDistDFeInt.loteDistDFeInt?.[0];
     console.log("=== DETALHES DO LOTE ===");
-    console.log("Lote encontrado:", lote ? "Sim" : "Não");
-    if (lote) {
-      console.log(
-        "Número de documentos:",
-        Array.isArray(lote.docZip) ? lote.docZip.length : 1
-      );
+    console.log("Lote encontrado:", !!loteDistDFeInt);
+    if (loteDistDFeInt) {
+      console.log("Número de documentos:", loteDistDFeInt.docZip?.length || 0);
     }
     console.log("================================");
 
-    let documentos = [];
+    if (retDistDFeInt.cStat[0] === "138") {
+      const notasProcessadas = [];
 
-    if (lote && lote.docZip) {
-      const docZips = Array.isArray(lote.docZip) ? lote.docZip : [lote.docZip];
-
-      documentos = await Promise.all(
-        docZips.map(async (doc) => {
-          try {
-            const bufferComprimido = Buffer.from(doc._, "base64");
-            const bufferDescomprimido = await gunzipAsync(bufferComprimido);
-            const xmlString = bufferDescomprimido.toString("utf-8");
-
-            const parsedXml = await parseStringPromise(xmlString, {
-              explicitArray: false,
-              tagNameProcessors: [(key) => key.replace(/^[a-zA-Z0-9]+:/, "")],
-            });
-
-            let chaveNFe = null;
-            let resumo = {};
-
-            if (doc.$.schema.startsWith("procNFe")) {
-              chaveNFe = parsedXml?.nfeProc?.NFe?.infNFe?.$?.Id?.replace(
-                "NFe",
-                ""
-              );
-              resumo = {
-                emitente: parsedXml?.nfeProc?.NFe?.infNFe?.emit?.xNome,
-                valor: parsedXml?.nfeProc?.NFe?.infNFe?.total?.ICMSTot?.vNF,
-                dataEmissao: parsedXml?.nfeProc?.NFe?.infNFe?.ide?.dhEmi,
-              };
-            } else if (doc.$.schema.startsWith("resNFe")) {
-              chaveNFe = parsedXml?.resNFe?.chNFe;
-              resumo = {
-                emitente: parsedXml?.resNFe?.xNome,
-                valor: parsedXml?.resNFe?.vNF,
-                dataEmissao: parsedXml?.resNFe?.dhEmi,
-                situacao: parsedXml?.resNFe?.cSitNFe,
-              };
-            }
-
-            return {
-              nsu: doc.$.NSU,
-              schema: doc.$.schema,
-              chaveNFe,
-              resumo,
-              xmlCompleto: xmlString,
-            };
-          } catch (error) {
-            console.error(
-              `Erro ao processar documento NSU ${doc.$.NSU}:`,
-              error
-            );
-            return {
-              nsu: doc.$.NSU,
-              schema: doc.$.schema,
-              error: "Falha ao processar XML",
-              raw: doc._,
-            };
+      for (const docZip of loteDistDFeInt.docZip) {
+        const dadosNota = await processarNotaFiscal(docZip);
+        if (dadosNota) {
+          // Salvar no banco de dados
+          const notaExistente = await NFe.findOne({
+            chaveAcesso: dadosNota.chaveAcesso,
+          });
+          if (!notaExistente) {
+            const novaNota = new NFe(dadosNota);
+            await novaNota.save();
           }
-        })
+          notasProcessadas.push(dadosNota);
+        }
+      }
+
+      // Atualizar NSU
+      await updateNSU(
+        certificadoId,
+        retDistDFeInt.ultNSU[0],
+        retDistDFeInt.maxNSU[0]
       );
+
+      return res.json({
+        success: true,
+        message: "Notas fiscais processadas com sucesso",
+        data: {
+          notas: notasProcessadas,
+          ultimoNSU: retDistDFeInt.ultNSU[0],
+          maxNSU: retDistDFeInt.maxNSU[0],
+        },
+      });
+    } else if (retDistDFeInt.cStat[0] === "137") {
+      return res.json({
+        success: true,
+        message: "Nenhum documento localizado",
+        data: {
+          notas: [],
+          ultimoNSU: retDistDFeInt.ultNSU[0],
+          maxNSU: retDistDFeInt.maxNSU[0],
+        },
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: `Erro na consulta: ${retDistDFeInt.xMotivo[0]}`,
+        codigo: retDistDFeInt.cStat[0],
+      });
     }
-
-    // Atualizar NSUs no banco de dados
-    await updateNSU(
-      certificadoId,
-      distResult.retDistDFeInt.ultNSU,
-      distResult.retDistDFeInt.maxNSU
-    );
-
-    return {
-      status: cStat,
-      motivo: xMotivo,
-      ultimoNSU: distResult.retDistDFeInt.ultNSU,
-      maxNSU: distResult.retDistDFeInt.maxNSU,
-      documentos,
-    };
   } catch (error) {
-    console.error("Erro ao consultar SEFAZ:", error);
-    throw error;
+    console.error("Erro ao buscar notas fiscais:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erro ao buscar notas fiscais",
+      error: error.message,
+    });
   }
 };

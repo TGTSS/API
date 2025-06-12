@@ -1,11 +1,9 @@
 import express from "express";
 import NFe from "../models/NFe.js";
-import { consultarNotasRecentes } from "../controllers/nfeController.js";
+import { buscarNotasRecentes } from "../controllers/nfeController.js";
 import Certificado from "../models/Certificado.js";
 import multer from "multer";
-import path from "path";
 import fs from "fs";
-import Cliente from "../models/Cliente.js";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { importarCertificadoPFX } from "../utils/certificateUtils.js";
@@ -180,7 +178,13 @@ certificadosRouter.post("/importar-pfx", async (req, res) => {
 router.get("/consultar-notas/:certificadoId", async (req, res) => {
   try {
     const { certificadoId } = req.params;
-    console.log("Iniciando consulta de notas para certificado:", certificadoId);
+    const { nsu } = req.query;
+    console.log(
+      "Iniciando consulta de notas para certificado:",
+      certificadoId,
+      "NSU:",
+      nsu
+    );
 
     if (!mongoose.Types.ObjectId.isValid(certificadoId)) {
       console.error("ID de certificado inválido:", certificadoId);
@@ -216,10 +220,13 @@ router.get("/consultar-notas/:certificadoId", async (req, res) => {
     }
 
     console.log("Certificado válido, iniciando consulta de notas...");
-    const resultado = await consultarNotasRecentes(certificadoId);
+    const resultado = await buscarNotasRecentes(
+      { query: { certificadoId, nsu } },
+      res
+    );
     console.log("Consulta de notas concluída com sucesso");
 
-    res.json(resultado);
+    return resultado;
   } catch (error) {
     console.error("Erro detalhado ao consultar notas fiscais:", {
       message: error.message,
