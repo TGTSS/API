@@ -282,7 +282,7 @@ router.delete("/duplicatas/:id", async (req, res) => {
 });
 
 // Adicionar nfeInfo a uma transação bruta
-router.patch("/duplicatas/:id/nfe", async (req, res) => {
+router.patch("/:id/nfe", async (req, res) => {
   try {
     const { numero, serie, dataEmissao, chaveAcesso } = req.body;
 
