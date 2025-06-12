@@ -390,4 +390,79 @@ router.patch("/:id/items/:itemId", async (req, res) => {
   }
 });
 
+// Adicionar rota para deletar item de uma solicitacao
+router.delete("/:id/items/:itemId", async (req, res) => {
+  try {
+    const solicitacao = await Solicitacao.findById(req.params.id);
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+
+    const item = solicitacao.items.id(req.params.itemId);
+    if (!item) {
+      return res.status(404).json({ message: "Item não encontrado" });
+    }
+
+    item.remove();
+    await solicitacao.save();
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(solicitacao._id)
+      .populate("obras", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.json(populatedSolicitacao);
+  } catch (error) {
+    console.error("Erro ao excluir item:", error);
+    res.status(400).json({
+      message: "Erro ao excluir item",
+      error: error.message,
+    });
+  }
+});
+
+// Adicionar rota para adicionar item a uma solicitacao
+router.post("/:id/items", async (req, res) => {
+  try {
+    const solicitacao = await Solicitacao.findById(req.params.id);
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+
+    const itemData = req.body;
+    // Garantir campos obrigatórios e defaults
+    const novoItem = {
+      descricao: itemData.descricao || "Item sem descrição",
+      unidade: itemData.unidade || "UN",
+      custoUnitario: itemData.custoUnitario || 0,
+      quantidade: itemData.quantidade || 1,
+      etapa: itemData.etapa || "Padrão",
+      insumoId: itemData.insumoId || undefined,
+      obraId: itemData.obraId || solicitacao.obra || undefined,
+      obraNome: itemData.obraNome || solicitacao.obraNome || undefined,
+    };
+    solicitacao.items.push(novoItem);
+    // Atualizar valor total
+    solicitacao.valor = solicitacao.items.reduce((total, item) => {
+      return total + (item.quantidade || 1) * (item.custoUnitario || 0);
+    }, 0);
+    await solicitacao.save();
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(solicitacao._id)
+      .populate("obras", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.status(201).json(populatedSolicitacao);
+  } catch (error) {
+    console.error("Erro ao adicionar item:", error);
+    res.status(400).json({
+      message: "Erro ao adicionar item",
+      error: error.message,
+    });
+  }
+});
+
 export default router;
