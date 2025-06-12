@@ -281,4 +281,52 @@ router.delete("/duplicatas/:id", async (req, res) => {
   }
 });
 
+// Adicionar nfeInfo a uma transação bruta
+router.patch("/duplicatas/:id/nfe", async (req, res) => {
+  try {
+    const { numero, serie, dataEmissao, chaveAcesso } = req.body;
+
+    // Validação dos campos obrigatórios
+    if (!numero || !serie || !dataEmissao || !chaveAcesso) {
+      return res.status(400).json({
+        error: "Campos obrigatórios não preenchidos",
+        camposFaltantes: {
+          numero: !numero,
+          serie: !serie,
+          dataEmissao: !dataEmissao,
+          chaveAcesso: !chaveAcesso,
+        },
+      });
+    }
+
+    const transacao = await TransacaoBruta.findById(req.params.id);
+    if (!transacao) {
+      return res.status(404).json({ error: "Transação não encontrada" });
+    }
+
+    // Criar o novo objeto nfeInfo
+    const novaNfeInfo = {
+      numero,
+      serie,
+      dataEmissao: new Date(dataEmissao),
+      chaveAcesso,
+    };
+
+    // Adicionar ao array nfeInfo
+    if (!transacao.nfeInfo) {
+      transacao.nfeInfo = [];
+    }
+    transacao.nfeInfo.push(novaNfeInfo);
+
+    await transacao.save();
+    res.json(transacao);
+  } catch (error) {
+    console.error("Erro ao adicionar nfeInfo:", error);
+    res.status(500).json({
+      error: "Erro ao adicionar nfeInfo",
+      details: error.message,
+    });
+  }
+});
+
 export default router;

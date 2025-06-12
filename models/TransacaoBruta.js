@@ -103,12 +103,14 @@ const TransacaoBrutaSchema = new mongoose.Schema(
         },
       },
     ],
-    nfeInfo: {
-      numero: String,
-      serie: String,
-      dataEmissao: Date,
-      chaveAcesso: String,
-    },
+    nfeInfo: [
+      {
+        numero: String,
+        serie: String,
+        dataEmissao: Date,
+        chaveAcesso: String,
+      },
+    ],
     obraId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Obra",
