@@ -99,42 +99,73 @@ export const consultarNotasRecentes = async (certificadoId) => {
       timeout: 30000,
     });
 
-    console.log("Resposta da SEFAZ recebida:", response.data);
+    console.log("=== LOG DETALHADO DA RESPOSTA SEFAZ ===");
+    console.log("Status HTTP:", response.status);
+    console.log("Headers:", JSON.stringify(response.headers, null, 2));
+    console.log("Resposta bruta:", response.data);
+    console.log("================================");
 
     const parsedResult = await parseStringPromise(response.data, {
       explicitArray: false,
       tagNameProcessors: [(key) => key.replace(/^[a-zA-Z0-9]+:/, "")],
     });
 
-    console.log("Resposta parseada:", JSON.stringify(parsedResult, null, 2));
+    console.log("=== LOG DETALHADO DA RESPOSTA PARSEADA ===");
+    console.log(
+      "Resposta parseada completa:",
+      JSON.stringify(parsedResult, null, 2)
+    );
 
     const soapBody = parsedResult["Envelope"]?.["Body"];
     const distResult =
       soapBody?.["nfeDistDFeInteresseResponse"]?.["nfeDistDFeInteresseResult"];
 
     if (!distResult) {
+      console.error(
+        "Estrutura da resposta SOAP inesperada:",
+        JSON.stringify(soapBody, null, 2)
+      );
       throw new Error("Estrutura da resposta SOAP inesperada");
     }
 
     const cStat = distResult.retDistDFeInt?.cStat;
     const xMotivo = distResult.retDistDFeInt?.xMotivo;
+    const ultNSU = distResult.retDistDFeInt?.ultNSU;
+    const maxNSU = distResult.retDistDFeInt?.maxNSU;
 
-    console.log("Status da resposta:", { cStat, xMotivo });
+    console.log("=== DETALHES DA RESPOSTA SEFAZ ===");
+    console.log("Código de Status (cStat):", cStat);
+    console.log("Motivo (xMotivo):", xMotivo);
+    console.log("Último NSU:", ultNSU);
+    console.log("Máximo NSU:", maxNSU);
+    console.log("================================");
 
     if (cStat !== "138") {
       if (cStat === "137") {
+        console.log("Nenhum documento encontrado (cStat 137)");
         return {
           status: cStat,
           motivo: xMotivo,
-          ultimoNSU: distResult.retDistDFeInt?.ultNSU || certificado.ultimoNSU,
-          maxNSU: distResult.retDistDFeInt?.maxNSU,
+          ultimoNSU: ultNSU || certificado.ultimoNSU,
+          maxNSU: maxNSU,
           documentos: [],
         };
       }
+      console.error("Erro SEFAZ:", { cStat, xMotivo });
       throw new Error(`Erro SEFAZ: ${xMotivo} (Código: ${cStat})`);
     }
 
     const lote = distResult.retDistDFeInt.loteDistDFeInt;
+    console.log("=== DETALHES DO LOTE ===");
+    console.log("Lote encontrado:", lote ? "Sim" : "Não");
+    if (lote) {
+      console.log(
+        "Número de documentos:",
+        Array.isArray(lote.docZip) ? lote.docZip.length : 1
+      );
+    }
+    console.log("================================");
+
     let documentos = [];
 
     if (lote && lote.docZip) {
