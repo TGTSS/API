@@ -60,11 +60,11 @@ router.post("/obra/:obraId", async (req, res) => {
     // Process items to ensure all required fields are present
     const processedItems = req.body.items.map((item) => ({
       ...item,
-      custoUnitario: item.custoUnitario || 0, // Set default value if missing
-      unidade: item.unidade || "UN", // Set default unit if missing
+      custoUnitario: item.custoUnitario || 0,
+      unidade: item.unidade || "UN",
       descricao:
-        item.descricao || item.insumoId?.descricao || "Item sem descrição", // Use insumo description or default
-      quantidade: item.quantidade || 1, // Set default quantity if missing
+        item.descricao || item.insumoId?.descricao || "Item sem descrição",
+      quantidade: item.quantidade || 1,
     }));
 
     // Calculate total value from items
@@ -74,8 +74,8 @@ router.post("/obra/:obraId", async (req, res) => {
 
     const solicitacao = new Solicitacao({
       ...req.body,
-      obras: obraId,
-      obraNome: obra.nome,
+      obras: [obraId], // Ensure it's an array
+      obrasNomes: [obra.nome], // Ensure it's an array
       numeroSequencial,
       valor,
       items: processedItems,
@@ -98,7 +98,7 @@ router.post("/obra/:obraId", async (req, res) => {
     res.status(400).json({
       message: "Erro ao criar solicitação",
       error: error.message,
-      details: error.errors, // Include validation errors if any
+      details: error.errors,
     });
   }
 });
@@ -300,15 +300,32 @@ router.post("/multiple-obras", async (req, res) => {
         .json({ message: "É necessário fornecer pelo menos uma obra" });
     }
 
-    // Verificar se todas as obras existem
-    for (const obraId of obras) {
-      const obra = await Obra.findById(obraId);
-      if (!obra) {
-        return res
-          .status(404)
-          .json({ message: `Obra com ID ${obraId} não encontrada` });
-      }
-    }
+    // Verificar se todas as obras existem e obter o último numeroSequencial para cada obra
+    const obrasInfo = await Promise.all(
+      obras.map(async (obraId) => {
+        const obra = await Obra.findById(obraId);
+        if (!obra) {
+          throw new Error(`Obra com ID ${obraId} não encontrada`);
+        }
+
+        // Get the last numeroSequencial for this obra
+        const lastSolicitacao = await Solicitacao.findOne({
+          obras: obraId,
+        }).sort({
+          numeroSequencial: -1,
+        });
+
+        const numeroSequencial = lastSolicitacao
+          ? lastSolicitacao.numeroSequencial + 1
+          : 1;
+
+        return {
+          obraId,
+          obraNome: obra.nome,
+          numeroSequencial,
+        };
+      })
+    );
 
     // Process items to ensure all required fields are present
     const processedItems = solicitacaoData.items.map((item) => ({
@@ -329,13 +346,14 @@ router.post("/multiple-obras", async (req, res) => {
     // Criar a solicitação com os arrays de obras e nomes
     const solicitacao = new Solicitacao({
       ...solicitacaoData,
-      obras: obras, // Garantir que o array de obras seja salvo
+      obras: obras,
       obrasNomes: obrasNomes,
       valor,
       items: processedItems,
       solicitante: solicitacaoData.solicitante || "Usuário",
       status: "Pendente",
       data: new Date(),
+      numeroSequencial: obrasInfo[0].numeroSequencial, // Use the first obra's numeroSequencial
     });
 
     const newSolicitacao = await solicitacao.save();
@@ -398,12 +416,14 @@ router.delete("/:id/items/:itemId", async (req, res) => {
       return res.status(404).json({ message: "Solicitação não encontrada" });
     }
 
-    const item = solicitacao.items.id(req.params.itemId);
-    if (!item) {
-      return res.status(404).json({ message: "Item não encontrado" });
-    }
+    // Use pull() instead of remove()
+    solicitacao.items.pull(req.params.itemId);
 
-    item.remove();
+    // Recalculate total value after removing the item
+    solicitacao.valor = solicitacao.items.reduce((total, item) => {
+      return total + (item.quantidade || 1) * (item.custoUnitario || 0);
+    }, 0);
+
     await solicitacao.save();
 
     // Populate the response
@@ -460,6 +480,37 @@ router.post("/:id/items", async (req, res) => {
     console.error("Erro ao adicionar item:", error);
     res.status(400).json({
       message: "Erro ao adicionar item",
+      error: error.message,
+    });
+  }
+});
+
+// Delete all items from a solicitação
+router.delete("/:id/items", async (req, res) => {
+  try {
+    const solicitacao = await Solicitacao.findById(req.params.id);
+    if (!solicitacao) {
+      return res.status(404).json({ message: "Solicitação não encontrada" });
+    }
+
+    // Remove all items
+    solicitacao.items = [];
+    // Reset the total value since all items are removed
+    solicitacao.valor = 0;
+
+    await solicitacao.save();
+
+    // Populate the response
+    const populatedSolicitacao = await Solicitacao.findById(solicitacao._id)
+      .populate("obras", "nome")
+      .populate("fornecedores", "nome")
+      .populate("items.insumoId");
+
+    res.json(populatedSolicitacao);
+  } catch (error) {
+    console.error("Erro ao excluir todos os itens:", error);
+    res.status(500).json({
+      message: "Erro ao excluir todos os itens",
       error: error.message,
     });
   }

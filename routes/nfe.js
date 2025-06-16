@@ -220,10 +220,7 @@ router.get("/consultar-notas/:certificadoId", async (req, res) => {
     }
 
     console.log("Certificado válido, iniciando consulta de notas...");
-    const resultado = await buscarNotasRecentes(
-      { query: { certificadoId, nsu } },
-      res
-    );
+    const resultado = await buscarNotasRecentes(req, res);
     console.log("Consulta de notas concluída com sucesso");
 
     return resultado;

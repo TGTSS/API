@@ -93,7 +93,7 @@ const nfeSchema = new mongoose.Schema(
     tipoOperacao: String,
     status: {
       type: String,
-      enum: ["authorized", "cancelled", "pending"],
+      enum: ["authorized", "cancelled", "pending", "1", "2", "3"],
       default: "pending",
     },
     xmlContent: String,

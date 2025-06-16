@@ -109,7 +109,7 @@ const SolicitacaoSchema = new mongoose.Schema(
         required: true,
       },
     ],
-    numeroSequencial: { type: Number, required: true, unique: true },
+    numeroSequencial: { type: Number, required: true },
     fornecedores: [{ type: mongoose.Schema.Types.ObjectId, ref: "Fornecedor" }],
     cotacoes: [CotacaoSchema],
   },
@@ -119,7 +119,7 @@ const SolicitacaoSchema = new mongoose.Schema(
 );
 
 // Add indexes for better query performance
-SolicitacaoSchema.index({ obras: 1, numeroSequencial: 1 });
+SolicitacaoSchema.index({ obras: 1, numeroSequencial: 1 }, { unique: true });
 SolicitacaoSchema.index({ status: 1 });
 SolicitacaoSchema.index({ prioridade: 1 });
 

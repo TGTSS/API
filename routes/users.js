@@ -69,6 +69,28 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Caso especial para o endpoint "me"
+    if (id === "me") {
+      // Obtém o token JWT do cabeçalho Authorization
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json({ message: "Token não fornecido" });
+      }
+
+      try {
+        const decoded = jwt.verify(token, "seu_segredo_jwt");
+        const user = await User.findById(decoded.userId).lean();
+        if (!user) {
+          return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+        return res.json(user);
+      } catch (error) {
+        return res.status(401).json({ message: "Token inválido ou expirado" });
+      }
+    }
+
+    // Caso normal para ID de usuário
     const user = await User.findById(id).lean();
     if (!user) {
       return res.status(404).json({ message: "Usuário não encontrado" });
@@ -76,7 +98,10 @@ router.get("/:id", async (req, res) => {
     res.json(user);
   } catch (error) {
     console.error("Erro ao buscar usuário por id:", error);
-    res.status(500).json({ message: "Erro ao buscar usuário" });
+    res.status(500).json({
+      message: "Erro ao buscar usuário",
+      error: error.message,
+    });
   }
 });
 
