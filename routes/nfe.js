@@ -1,5 +1,6 @@
 import express from "express";
 import NFe from "../models/NFe.js";
+import NFeRecentes from "../models/NFeRecentes.js";
 import { buscarNotasRecentes } from "../controllers/nfeController.js";
 import Certificado from "../models/Certificado.js";
 import multer from "multer";
@@ -178,13 +179,7 @@ certificadosRouter.post("/importar-pfx", async (req, res) => {
 router.get("/consultar-notas/:certificadoId", async (req, res) => {
   try {
     const { certificadoId } = req.params;
-    const { nsu } = req.query;
-    console.log(
-      "Iniciando consulta de notas para certificado:",
-      certificadoId,
-      "NSU:",
-      nsu
-    );
+    console.log("Iniciando consulta de notas para certificado:", certificadoId);
 
     if (!mongoose.Types.ObjectId.isValid(certificadoId)) {
       console.error("ID de certificado inválido:", certificadoId);
@@ -220,10 +215,9 @@ router.get("/consultar-notas/:certificadoId", async (req, res) => {
     }
 
     console.log("Certificado válido, iniciando consulta de notas...");
-    const resultado = await buscarNotasRecentes(req, res);
+    // buscarNotasRecentes já envia a resposta, então não precisamos retornar nada
+    await buscarNotasRecentes(req, res);
     console.log("Consulta de notas concluída com sucesso");
-
-    return resultado;
   } catch (error) {
     console.error("Erro detalhado ao consultar notas fiscais:", {
       message: error.message,
@@ -246,6 +240,112 @@ router.get("/", async (req, res) => {
   } catch (error) {
     console.error("Erro ao buscar notas fiscais:", error);
     res.status(500).json({ message: "Erro ao buscar notas fiscais" });
+  }
+});
+
+// ===== ROTAS PARA NFE RECENTES =====
+
+// Rota principal para buscar NFe recentes
+router.get("/recentes", async (req, res) => {
+  try {
+    console.log("=== DEBUG: Iniciando rota /recentes ===");
+
+    const { certificadoId, status, limit = 100, page = 1 } = req.query;
+
+    console.log("Parâmetros recebidos:", {
+      certificadoId,
+      status,
+      limit,
+      page,
+    });
+
+    // Construir query de filtros
+    let query = {};
+
+    if (certificadoId) {
+      query.certificadoId = certificadoId;
+      console.log("Filtro por certificadoId adicionado:", certificadoId);
+    }
+
+    if (status) {
+      query.status = status;
+      console.log("Filtro por status adicionado:", status);
+    }
+
+    console.log("Query final construída:", JSON.stringify(query, null, 2));
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    console.log("Skip calculado:", skip, "Limit:", parseInt(limit));
+
+    // Verificar se o modelo NFeRecentes está disponível
+    console.log("Modelo NFeRecentes disponível:", !!NFeRecentes);
+    console.log("Tentando executar consulta no banco...");
+
+    // Verificar total de documentos na coleção (sem filtros)
+    const totalGeral = await NFeRecentes.countDocuments({});
+    console.log(
+      "Total geral de documentos na coleção NFeRecentes:",
+      totalGeral
+    );
+
+    // Executar consulta
+    const nfesRecentes = await NFeRecentes.find(query)
+      .sort({ dataConsulta: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate("certificadoId", "empresa cnpj ufAutor");
+
+    console.log("Consulta executada com sucesso");
+    console.log("Número de NFe recentes encontradas:", nfesRecentes.length);
+
+    const total = await NFeRecentes.countDocuments(query);
+    console.log("Total de documentos no banco:", total);
+
+    // Log detalhado dos dados encontrados
+    if (nfesRecentes.length > 0) {
+      console.log("Primeira NFe encontrada:", {
+        _id: nfesRecentes[0]._id,
+        chaveAcesso: nfesRecentes[0].chaveAcesso,
+        nsu: nfesRecentes[0].nsu,
+        status: nfesRecentes[0].status,
+        dataConsulta: nfesRecentes[0].dataConsulta,
+      });
+    } else {
+      console.log("Nenhuma NFe recente encontrada no banco");
+    }
+
+    const response = {
+      success: true,
+      data: {
+        nfes: nfesRecentes,
+        total: total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      },
+    };
+
+    console.log("Resposta preparada:", {
+      success: response.success,
+      totalNfes: response.data.nfes.length,
+      total: response.data.total,
+      page: response.data.page,
+      limit: response.data.limit,
+    });
+
+    console.log("=== DEBUG: Finalizando rota /recentes ===");
+    res.json(response);
+  } catch (error) {
+    console.error("=== ERRO na rota /recentes ===");
+    console.error("Erro detalhado:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+    res.status(500).json({
+      success: false,
+      message: "Erro ao buscar NFe recentes",
+      error: error.message,
+    });
   }
 });
 
