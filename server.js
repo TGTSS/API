@@ -44,6 +44,7 @@ import QuemPaga from "./models/QuemPaga.js";
 import Conta from "./models/Conta.js";
 import solicitacoesRouter from "./routes/solicitacoes.js";
 import nfeRouter from "./routes/nfe.js";
+import materialObraRouter from "./routes/materialObra.js";
 
 dotenv.config();
 
@@ -1019,6 +1020,7 @@ app.use("/api/duplicatas", transacoesBrutasRoutes);
 app.use("/api/solicitacoes", solicitacoesRouter);
 app.use("/api/obras/:obraId/solicitacoes", solicitacoesRouter);
 app.use("/api/nfe", nfeRouter);
+app.use("/api/materialObra", materialObraRouter);
 
 // Emitir evento de atualização de recibos
 const emitirAtualizacaoRecibos = async () => {
