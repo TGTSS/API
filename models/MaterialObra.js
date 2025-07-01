@@ -82,7 +82,6 @@ const materialObraSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Ativo", "Inativo", "Em Manutenção", "Descartado"],
       default: "Ativo",
     },
     valorUnitario: {
