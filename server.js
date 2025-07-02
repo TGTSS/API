@@ -44,7 +44,9 @@ import QuemPaga from "./models/QuemPaga.js";
 import Conta from "./models/Conta.js";
 import solicitacoesRouter from "./routes/solicitacoes.js";
 import nfeRouter from "./routes/nfe.js";
-import materialObraRouter from "./routes/materialObra.js";
+import inventarioRouter from "./routes/inventario.js";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
@@ -77,6 +79,9 @@ app.use(
 );
 app.use(bodyParser.json({ limit: "50mb" })); // Aumentado para 50MB
 app.use(express.json({ limit: "50mb" })); // Aumentado para 50MB
+
+// Servir arquivos estáticos da pasta public
+app.use("/uploads", express.static("public/uploads"));
 
 app.use((req, res, next) => {
   res.setHeader("Content-Type", "application/json");
@@ -1020,7 +1025,104 @@ app.use("/api/duplicatas", transacoesBrutasRoutes);
 app.use("/api/solicitacoes", solicitacoesRouter);
 app.use("/api/obras/:obraId/solicitacoes", solicitacoesRouter);
 app.use("/api/nfe", nfeRouter);
-app.use("/api/materialObra", materialObraRouter);
+app.use("/api/inventario", inventarioRouter);
+
+// Rota para servir arquivos de upload
+app.get("/api/files/:filename", (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = `public/uploads/documentos/${filename}`;
+
+    // Verificar se o arquivo existe
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Arquivo não encontrado" });
+    }
+
+    // Determinar o tipo MIME baseado na extensão
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = "application/octet-stream";
+
+    switch (ext) {
+      case ".pdf":
+        contentType = "application/pdf";
+        break;
+      case ".jpg":
+      case ".jpeg":
+        contentType = "image/jpeg";
+        break;
+      case ".png":
+        contentType = "image/png";
+        break;
+      case ".doc":
+        contentType = "application/msword";
+        break;
+      case ".docx":
+        contentType =
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        break;
+      case ".xls":
+        contentType = "application/vnd.ms-excel";
+        break;
+      case ".xlsx":
+        contentType =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        break;
+    }
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+
+    // Enviar o arquivo
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error("Erro ao servir arquivo:", error);
+    res.status(500).json({ message: "Erro ao carregar arquivo" });
+  }
+});
+
+// Rota para listar arquivos disponíveis
+app.get("/api/files", (req, res) => {
+  try {
+    const documentosPath = "public/uploads/documentos";
+
+    if (!fs.existsSync(documentosPath)) {
+      return res.json({ files: [] });
+    }
+
+    const files = fs
+      .readdirSync(documentosPath)
+      .filter((file) => {
+        const ext = path.extname(file).toLowerCase();
+        return [
+          ".pdf",
+          ".jpg",
+          ".jpeg",
+          ".png",
+          ".doc",
+          ".docx",
+          ".xls",
+          ".xlsx",
+        ].includes(ext);
+      })
+      .map((file) => {
+        const filePath = path.join(documentosPath, file);
+        const stats = fs.statSync(filePath);
+        return {
+          filename: file,
+          size: stats.size,
+          created: stats.birthtime,
+          modified: stats.mtime,
+          url: `/api/files/${file}`,
+        };
+      });
+
+    res.json({ files });
+  } catch (error) {
+    console.error("Erro ao listar arquivos:", error);
+    res.status(500).json({ message: "Erro ao listar arquivos" });
+  }
+});
 
 // Emitir evento de atualização de recibos
 const emitirAtualizacaoRecibos = async () => {
