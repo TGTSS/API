@@ -10,6 +10,11 @@ import Conta from "../models/Conta.js";
 
 const router = express.Router();
 
+// Rota de teste para verificar se as rotas estão funcionando
+router.get("/test", (req, res) => {
+  res.json({ message: "Rotas de obras funcionando!", timestamp: new Date() });
+});
+
 // Configuração do multer para upload de arquivos
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -846,6 +851,89 @@ router.put(
   }
 );
 
+// Rota para excluir anexo de uma receita (DEVE VIR ANTES da rota de excluir receita)
+router.delete(
+  "/:id/receitas/:receitaId/anexos/:anexoIndex",
+  async (req, res) => {
+    try {
+      const { id, receitaId, anexoIndex } = req.params;
+
+      console.log("🔍 DEBUG - Tentando excluir anexo de receita:", {
+        obraId: id,
+        receitaId: receitaId,
+        anexoIndex: anexoIndex,
+      });
+
+      if (
+        !mongoose.Types.ObjectId.isValid(id) ||
+        !mongoose.Types.ObjectId.isValid(receitaId)
+      ) {
+        console.log("❌ ID inválido:", { id, receitaId });
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      const anexoIndexNum = parseInt(anexoIndex);
+      if (isNaN(anexoIndexNum) || anexoIndexNum < 0) {
+        console.log("❌ Índice do anexo inválido:", anexoIndex);
+        return res.status(400).json({ message: "Índice do anexo inválido" });
+      }
+
+      const obra = await Obra.findById(id);
+      if (!obra) {
+        console.log("❌ Obra não encontrada:", id);
+        return res.status(404).json({ message: "Obra não encontrada" });
+      }
+
+      console.log("✅ Obra encontrada:", obra.nome);
+      console.log("📊 Total de receitas:", obra.receitas.length);
+
+      const receitaIndex = obra.receitas.findIndex(
+        (r) => r._id.toString() === receitaId
+      );
+
+      console.log("🔍 Índice da receita encontrada:", receitaIndex);
+
+      if (receitaIndex === -1) {
+        console.log("❌ Receita não encontrada:", receitaId);
+        console.log(
+          "📋 IDs das receitas disponíveis:",
+          obra.receitas.map((r) => r._id.toString())
+        );
+        return res.status(404).json({ message: "Receita não encontrada" });
+      }
+
+      const receita = obra.receitas[receitaIndex];
+      console.log("✅ Receita encontrada:", receita.descricao);
+      console.log(
+        "📎 Total de anexos:",
+        receita.anexos ? receita.anexos.length : 0
+      );
+
+      if (!receita.anexos || anexoIndexNum >= receita.anexos.length) {
+        console.log("❌ Anexo não encontrado:", {
+          anexoIndexNum,
+          totalAnexos: receita.anexos ? receita.anexos.length : 0,
+        });
+        return res.status(404).json({ message: "Anexo não encontrado" });
+      }
+
+      // Remover o anexo do array
+      receita.anexos.splice(anexoIndexNum, 1);
+      await obra.save();
+
+      console.log("✅ Anexo excluído com sucesso");
+
+      res.json({
+        message: "Anexo excluído com sucesso",
+        anexosRestantes: receita.anexos.length,
+      });
+    } catch (error) {
+      console.error("❌ Erro ao excluir anexo da receita:", error);
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
 // Rota para excluir uma receita
 router.delete("/:id/receitas/:receitaId", async (req, res) => {
   try {
@@ -1091,6 +1179,89 @@ router.put(
       res.json(pagamentoAtualizado);
     } catch (error) {
       console.error("Erro ao atualizar pagamento:", error);
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+// Rota para excluir anexo de um pagamento (DEVE VIR ANTES da rota de excluir pagamento)
+router.delete(
+  "/:id/pagamentos/:pagamentoId/anexos/:anexoIndex",
+  async (req, res) => {
+    try {
+      const { id, pagamentoId, anexoIndex } = req.params;
+
+      console.log("🔍 DEBUG - Tentando excluir anexo:", {
+        obraId: id,
+        pagamentoId: pagamentoId,
+        anexoIndex: anexoIndex,
+      });
+
+      if (
+        !mongoose.Types.ObjectId.isValid(id) ||
+        !mongoose.Types.ObjectId.isValid(pagamentoId)
+      ) {
+        console.log("❌ ID inválido:", { id, pagamentoId });
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      const anexoIndexNum = parseInt(anexoIndex);
+      if (isNaN(anexoIndexNum) || anexoIndexNum < 0) {
+        console.log("❌ Índice do anexo inválido:", anexoIndex);
+        return res.status(400).json({ message: "Índice do anexo inválido" });
+      }
+
+      const obra = await Obra.findById(id);
+      if (!obra) {
+        console.log("❌ Obra não encontrada:", id);
+        return res.status(404).json({ message: "Obra não encontrada" });
+      }
+
+      console.log("✅ Obra encontrada:", obra.nome);
+      console.log("📊 Total de pagamentos:", obra.pagamentos.length);
+
+      const pagamentoIndex = obra.pagamentos.findIndex(
+        (p) => p._id.toString() === pagamentoId
+      );
+
+      console.log("🔍 Índice do pagamento encontrado:", pagamentoIndex);
+
+      if (pagamentoIndex === -1) {
+        console.log("❌ Pagamento não encontrado:", pagamentoId);
+        console.log(
+          "📋 IDs dos pagamentos disponíveis:",
+          obra.pagamentos.map((p) => p._id.toString())
+        );
+        return res.status(404).json({ message: "Pagamento não encontrado" });
+      }
+
+      const pagamento = obra.pagamentos[pagamentoIndex];
+      console.log("✅ Pagamento encontrado:", pagamento.descricao);
+      console.log(
+        "📎 Total de anexos:",
+        pagamento.anexos ? pagamento.anexos.length : 0
+      );
+
+      if (!pagamento.anexos || anexoIndexNum >= pagamento.anexos.length) {
+        console.log("❌ Anexo não encontrado:", {
+          anexoIndexNum,
+          totalAnexos: pagamento.anexos ? pagamento.anexos.length : 0,
+        });
+        return res.status(404).json({ message: "Anexo não encontrado" });
+      }
+
+      // Remover o anexo do array
+      pagamento.anexos.splice(anexoIndexNum, 1);
+      await obra.save();
+
+      console.log("✅ Anexo excluído com sucesso");
+
+      res.json({
+        message: "Anexo excluído com sucesso",
+        anexosRestantes: pagamento.anexos.length,
+      });
+    } catch (error) {
+      console.error("❌ Erro ao excluir anexo do pagamento:", error);
       res.status(500).json({ message: error.message });
     }
   }
