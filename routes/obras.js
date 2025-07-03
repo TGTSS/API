@@ -703,7 +703,7 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
           nome: file.originalname,
           tipo: file.mimetype,
           tamanho: file.size,
-          caminho: file.path,
+          caminho: `/api/obras/uploads/documentos/${file.filename}`,
           dataUpload: new Date(),
         }))
       : [];
@@ -796,7 +796,7 @@ router.put(
             nome: file.originalname,
             tipo: file.mimetype,
             tamanho: file.size,
-            caminho: file.path,
+            caminho: `/api/obras/uploads/documentos/${file.filename}`,
             dataUpload: new Date(),
           }))
         : [];
@@ -956,7 +956,7 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
           nome: file.originalname,
           tipo: file.mimetype,
           tamanho: file.size,
-          caminho: file.path,
+          caminho: `/api/obras/uploads/documentos/${file.filename}`,
           dataUpload: new Date(),
         }))
       : [];
@@ -1048,7 +1048,7 @@ router.put(
             nome: file.originalname,
             tipo: file.mimetype,
             tamanho: file.size,
-            caminho: file.path,
+            caminho: `/api/obras/uploads/documentos/${file.filename}`,
             dataUpload: new Date(),
           }))
         : [];
