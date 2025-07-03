@@ -15,6 +15,34 @@ router.get("/test", (req, res) => {
   res.json({ message: "Rotas de obras funcionando!", timestamp: new Date() });
 });
 
+// Rota de debug para verificar IDs de pagamentos
+router.get("/:id/debug-pagamentos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const obra = await Obra.findById(id).select("pagamentos");
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const pagamentosDebug = obra.pagamentos.map((p, index) => ({
+      index,
+      _id: p._id.toString(),
+      id: p.id ? p.id.toString() : null,
+      descricao: p.descricao,
+      anexosCount: p.anexos ? p.anexos.length : 0,
+    }));
+
+    res.json({
+      obraId: id,
+      totalPagamentos: obra.pagamentos.length,
+      pagamentos: pagamentosDebug,
+    });
+  } catch (error) {
+    console.error("Erro no debug:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Configuração do multer para upload de arquivos
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -258,10 +286,6 @@ router.get("/:id", async (req, res) => {
 // Rota para criar uma nova obra
 router.post("/", upload.single("imagem"), async (req, res) => {
   try {
-    console.log("Recebendo requisição POST /obras");
-    console.log("Body recebido:", req.body);
-    console.log("Arquivo recebido:", req.file);
-
     // Parse JSON strings from FormData
     const parseFormData = (value) => {
       try {
@@ -329,8 +353,6 @@ router.post("/", upload.single("imagem"), async (req, res) => {
       imagem,
     };
 
-    console.log("Dados processados:", obraData);
-
     // Validar campos obrigatórios
     if (!obraData.nome) {
       console.error("Erro: Nome é obrigatório");
@@ -353,10 +375,8 @@ router.post("/", upload.single("imagem"), async (req, res) => {
     }
 
     const obra = new Obra(obraData);
-    console.log("Obra criada:", obra);
 
     const savedObra = await obra.save();
-    console.log("Obra salva com sucesso:", savedObra);
 
     res.status(201).json(savedObra);
   } catch (error) {
@@ -858,70 +878,40 @@ router.delete(
     try {
       const { id, receitaId, anexoIndex } = req.params;
 
-      console.log("🔍 DEBUG - Tentando excluir anexo de receita:", {
-        obraId: id,
-        receitaId: receitaId,
-        anexoIndex: anexoIndex,
-      });
-
       if (
         !mongoose.Types.ObjectId.isValid(id) ||
         !mongoose.Types.ObjectId.isValid(receitaId)
       ) {
-        console.log("❌ ID inválido:", { id, receitaId });
         return res.status(400).json({ message: "ID inválido" });
       }
 
       const anexoIndexNum = parseInt(anexoIndex);
       if (isNaN(anexoIndexNum) || anexoIndexNum < 0) {
-        console.log("❌ Índice do anexo inválido:", anexoIndex);
         return res.status(400).json({ message: "Índice do anexo inválido" });
       }
 
       const obra = await Obra.findById(id);
       if (!obra) {
-        console.log("❌ Obra não encontrada:", id);
         return res.status(404).json({ message: "Obra não encontrada" });
       }
-
-      console.log("✅ Obra encontrada:", obra.nome);
-      console.log("📊 Total de receitas:", obra.receitas.length);
 
       const receitaIndex = obra.receitas.findIndex(
         (r) => r._id.toString() === receitaId
       );
 
-      console.log("🔍 Índice da receita encontrada:", receitaIndex);
-
       if (receitaIndex === -1) {
-        console.log("❌ Receita não encontrada:", receitaId);
-        console.log(
-          "📋 IDs das receitas disponíveis:",
-          obra.receitas.map((r) => r._id.toString())
-        );
         return res.status(404).json({ message: "Receita não encontrada" });
       }
 
       const receita = obra.receitas[receitaIndex];
-      console.log("✅ Receita encontrada:", receita.descricao);
-      console.log(
-        "📎 Total de anexos:",
-        receita.anexos ? receita.anexos.length : 0
-      );
 
       if (!receita.anexos || anexoIndexNum >= receita.anexos.length) {
-        console.log("❌ Anexo não encontrado:", {
-          anexoIndexNum,
-          totalAnexos: receita.anexos ? receita.anexos.length : 0,
-        });
         return res.status(404).json({ message: "Anexo não encontrado" });
       }
 
       // Remover o anexo do array
       receita.anexos.splice(anexoIndexNum, 1);
       await obra.save();
-
-      console.log("✅ Anexo excluído com sucesso");
 
       res.json({
         message: "Anexo excluído com sucesso",
@@ -1191,70 +1181,40 @@ router.delete(
     try {
       const { id, pagamentoId, anexoIndex } = req.params;
 
-      console.log("🔍 DEBUG - Tentando excluir anexo:", {
-        obraId: id,
-        pagamentoId: pagamentoId,
-        anexoIndex: anexoIndex,
-      });
-
       if (
         !mongoose.Types.ObjectId.isValid(id) ||
         !mongoose.Types.ObjectId.isValid(pagamentoId)
       ) {
-        console.log("❌ ID inválido:", { id, pagamentoId });
         return res.status(400).json({ message: "ID inválido" });
       }
 
       const anexoIndexNum = parseInt(anexoIndex);
       if (isNaN(anexoIndexNum) || anexoIndexNum < 0) {
-        console.log("❌ Índice do anexo inválido:", anexoIndex);
         return res.status(400).json({ message: "Índice do anexo inválido" });
       }
 
       const obra = await Obra.findById(id);
       if (!obra) {
-        console.log("❌ Obra não encontrada:", id);
         return res.status(404).json({ message: "Obra não encontrada" });
       }
-
-      console.log("✅ Obra encontrada:", obra.nome);
-      console.log("📊 Total de pagamentos:", obra.pagamentos.length);
 
       const pagamentoIndex = obra.pagamentos.findIndex(
         (p) => p._id.toString() === pagamentoId
       );
 
-      console.log("🔍 Índice do pagamento encontrado:", pagamentoIndex);
-
       if (pagamentoIndex === -1) {
-        console.log("❌ Pagamento não encontrado:", pagamentoId);
-        console.log(
-          "📋 IDs dos pagamentos disponíveis:",
-          obra.pagamentos.map((p) => p._id.toString())
-        );
         return res.status(404).json({ message: "Pagamento não encontrado" });
       }
 
       const pagamento = obra.pagamentos[pagamentoIndex];
-      console.log("✅ Pagamento encontrado:", pagamento.descricao);
-      console.log(
-        "📎 Total de anexos:",
-        pagamento.anexos ? pagamento.anexos.length : 0
-      );
 
       if (!pagamento.anexos || anexoIndexNum >= pagamento.anexos.length) {
-        console.log("❌ Anexo não encontrado:", {
-          anexoIndexNum,
-          totalAnexos: pagamento.anexos ? pagamento.anexos.length : 0,
-        });
         return res.status(404).json({ message: "Anexo não encontrado" });
       }
 
       // Remover o anexo do array
       pagamento.anexos.splice(anexoIndexNum, 1);
       await obra.save();
-
-      console.log("✅ Anexo excluído com sucesso");
 
       res.json({
         message: "Anexo excluído com sucesso",
