@@ -47,6 +47,7 @@ import nfeRouter from "./routes/nfe.js";
 import inventarioRouter from "./routes/inventario.js";
 import fs from "fs";
 import path from "path";
+import { initScheduler, runDailyReminders } from "./services/scheduler.js";
 
 dotenv.config();
 
@@ -1139,6 +1140,21 @@ const emitirAtualizacaoRecibos = async () => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+
+  // Inicializar scheduler após o servidor estar rodando
+  initScheduler();
+});
+
+// Rota para testar o scheduler manualmente
+app.post("/api/scheduler/test", async (req, res) => {
+  try {
+    console.log("🔄 Teste manual do scheduler solicitado...");
+    await runDailyReminders();
+    res.json({ message: "Lembrete diário executado com sucesso!" });
+  } catch (error) {
+    console.error("❌ Erro no teste do scheduler:", error);
+    res.status(500).json({ message: "Erro ao executar lembrete diário" });
+  }
 });
 
 // Rota para listar recibos recusados
