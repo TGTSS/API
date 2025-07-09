@@ -4,6 +4,7 @@ import NFeRecentes from "../models/NFeRecentes.js";
 import {
   buscarNotasRecentes,
   consultarStatusNSU,
+  buscarNotasNovas,
 } from "../controllers/nfeController.js";
 import Certificado from "../models/Certificado.js";
 import multer from "multer";
@@ -180,6 +181,9 @@ certificadosRouter.post("/importar-pfx", async (req, res) => {
 
 // Consultar status do NSU de um certificado
 router.get("/status-nsu/:certificadoId", consultarStatusNSU);
+
+// Buscar apenas notas novas
+router.get("/buscar-novas/:certificadoId", buscarNotasNovas);
 
 // Consultar notas fiscais recentes
 router.get("/consultar-notas/:certificadoId", async (req, res) => {

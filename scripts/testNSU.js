@@ -38,36 +38,18 @@ async function forcarBuscaNSU(certificadoId, nsuInicial) {
   }
 }
 
-// Função para busca incremental
-async function buscaIncremental(certificadoId) {
+// Função para buscar apenas notas novas
+async function buscarNotasNovas(certificadoId) {
   try {
-    console.log(`\n=== Realizando busca incremental ===`);
+    console.log(`\n=== Buscando apenas notas novas ===`);
     const response = await axios.get(
-      `${BASE_URL}/consultar-notas/${certificadoId}`
+      `${BASE_URL}/buscar-novas/${certificadoId}`
     );
-    console.log("Resultado da busca incremental:", response.data);
+    console.log("Resultado da busca de notas novas:", response.data);
     return response.data;
   } catch (error) {
     console.error(
-      "Erro na busca incremental:",
-      error.response?.data || error.message
-    );
-    return null;
-  }
-}
-
-// Função para busca completa
-async function buscaCompleta(certificadoId) {
-  try {
-    console.log(`\n=== Realizando busca completa ===`);
-    const response = await axios.get(
-      `${BASE_URL}/consultar-notas/${certificadoId}?tipo=completa`
-    );
-    console.log("Resultado da busca completa:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Erro na busca completa:",
+      "Erro ao buscar notas novas:",
       error.response?.data || error.message
     );
     return null;
@@ -94,54 +76,62 @@ async function main() {
   console.log(`- Máximo NSU: ${status.data.maxNSU}`);
   console.log(`- Certificado ativo: ${status.data.ativo}`);
 
-  // 2. Mostrar opções de busca
-  console.log("\n=== OPÇÕES DE BUSCA ===");
-  console.log("1. Busca incremental (padrão - apenas documentos novos)");
-  console.log("2. Busca completa (todos os documentos desde o início)");
-  console.log("3. Forçar busca a partir de um NSU específico");
-  console.log("4. Apenas consultar status (não fazer busca)");
+  // 2. Se o último NSU for menor que o máximo, oferecer opções
+  if (status.data.ultimoNSU < status.data.maxNSU) {
+    console.log(
+      `\nNSU está atrasado! Último: ${status.data.ultimoNSU}, Máximo: ${status.data.maxNSU}`
+    );
 
-  const readline = await import("readline");
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+    // Perguntar qual opção escolher
+    const readline = await import("readline");
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
 
-  const opcao = await new Promise((resolve) => {
-    rl.question("\nEscolha uma opção (1-4): ", resolve);
-  });
+    const resposta = await new Promise((resolve) => {
+      rl.question(
+        "\nEscolha uma opção:\n1. Buscar apenas notas novas (recomendado)\n2. Forçar busca a partir do último NSU\n3. Não fazer nada\nOpção (1/2/3): ",
+        resolve
+      );
+    });
 
-  rl.close();
+    rl.close();
 
-  switch (opcao) {
-    case "1":
-      console.log("\nExecutando busca incremental...");
-      await buscaIncremental(certificadoId);
-      break;
-    case "2":
-      console.log("\nExecutando busca completa...");
-      await buscaCompleta(certificadoId);
-      break;
-    case "3":
-      const nsuEspecifico = await new Promise((resolve) => {
-        const rl2 = readline.createInterface({
-          input: process.stdin,
-          output: process.stdout,
-        });
-        rl2.question("Digite o NSU inicial: ", (resposta) => {
-          rl2.close();
-          resolve(resposta);
-        });
-      });
-      console.log(`\nForçando busca a partir do NSU: ${nsuEspecifico}`);
-      await forcarBuscaNSU(certificadoId, parseInt(nsuEspecifico));
-      break;
-    case "4":
-      console.log("\nApenas consultando status...");
-      break;
-    default:
-      console.log("\nOpção inválida. Executando busca incremental...");
-      await buscaIncremental(certificadoId);
+    if (resposta === "1") {
+      // Buscar apenas notas novas
+      console.log(`\nBuscando apenas notas novas...`);
+      await buscarNotasNovas(certificadoId);
+    } else if (resposta === "2") {
+      // Continuar a partir do último NSU + 1
+      const nsuInicial = status.data.ultimoNSU + 1;
+      console.log(`\nContinuando a partir do NSU: ${nsuInicial}`);
+      await forcarBuscaNSU(certificadoId, nsuInicial);
+    } else {
+      console.log("\nNenhuma ação realizada.");
+    }
+  } else {
+    console.log("\nNSU está atualizado!");
+    
+    // Perguntar se quer buscar notas novas mesmo assim
+    const readline = await import("readline");
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    const resposta = await new Promise((resolve) => {
+      rl.question(
+        "\nDeseja buscar notas novas mesmo assim? (s/n): ",
+        resolve
+      );
+    });
+
+    rl.close();
+
+    if (resposta.toLowerCase() === "s") {
+      await buscarNotasNovas(certificadoId);
+    }
   }
 
   // 3. Consultar status novamente para verificar se foi atualizado
@@ -151,4 +141,3 @@ async function main() {
 
 // Executar o script
 main().catch(console.error);
- 
