@@ -25,7 +25,6 @@ import usersRouter from "./routes/users.js";
 import typesRouter from "./routes/types.js";
 import unitsRouter from "./routes/units.js";
 import dotenv from "dotenv";
-import sendEmail from "./utils/sendEmail.js";
 import { Server } from "socket.io";
 import http from "http";
 import obrasRouter from "./routes/obras.js";

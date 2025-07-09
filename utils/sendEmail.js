@@ -7,30 +7,40 @@ dotenv.config();
 const requiredEnvVars = ["EMAIL_USER", "EMAIL_PASS", "EMAIL_FROM"];
 const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
 
+let emailConfigured = true;
+
 if (missingVars.length > 0) {
-  console.error(
-    "❌ Missing required environment variables for email configuration:"
+  console.warn(
+    "⚠️  Missing required environment variables for email configuration:"
   );
-  missingVars.forEach((varName) => console.error(`   - ${varName}`));
-  console.error(
-    "Please create a .env file with the required variables. See env.example for reference."
+  missingVars.forEach((varName) => console.warn(`   - ${varName}`));
+  console.warn(
+    "Email functionality will be disabled. Please create a .env file with the required variables. See env.example for reference."
   );
-  throw new Error(
-    "Email configuration incomplete. Please check environment variables."
-  );
+  emailConfigured = false;
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.hostinger.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+let transporter = null;
+
+if (emailConfigured) {
+  transporter = nodemailer.createTransport({
+    host: "smtp.hostinger.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+}
 
 const sendEmail = async (to, subject, text, html = null) => {
+  // Check if email is configured
+  if (!emailConfigured) {
+    console.warn("⚠️  Email not configured. Skipping email send.");
+    return { messageId: "email-disabled", status: "skipped" };
+  }
+
   // Validate input parameters
   if (!to || !subject || !text) {
     throw new Error(

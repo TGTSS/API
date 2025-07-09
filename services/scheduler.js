@@ -358,17 +358,21 @@ async function sendDailyReminders() {
     );
 
     // Enviar e-mail
-    await sendEmail(
+    const result = await sendEmail(
       EMAIL_TO,
       "📊 Lembrete Diário: Receitas e Despesas a Vencer",
       textEmail,
       htmlEmail
     );
 
-    console.log("✅ Lembrete diário enviado com sucesso!");
-    console.log(
-      `📊 Resumo: ${totalReceitas} receitas e ${totalPagamentos} despesas a vencer`
-    );
+    if (result.status === "skipped") {
+      console.log("⚠️  Email não configurado. Lembrete não enviado.");
+    } else {
+      console.log("✅ Lembrete diário enviado com sucesso!");
+      console.log(
+        `📊 Resumo: ${totalReceitas} receitas e ${totalPagamentos} despesas a vencer`
+      );
+    }
   } catch (error) {
     console.error("❌ Erro ao enviar lembrete diário:", error);
   }
