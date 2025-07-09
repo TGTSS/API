@@ -3,34 +3,43 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Validate required environment variables
-const requiredEnvVars = ["EMAIL_USER", "EMAIL_PASS", "EMAIL_FROM"];
-const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+// Check if email configuration is available
+const hasEmailConfig =
+  process.env.EMAIL_USER && process.env.EMAIL_PASS && process.env.EMAIL_FROM;
 
-if (missingVars.length > 0) {
-  console.error(
-    "❌ Missing required environment variables for email configuration:"
+let transporter = null;
+
+if (hasEmailConfig) {
+  transporter = nodemailer.createTransport({
+    host: "smtp.hostinger.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+} else {
+  console.warn(
+    "⚠️ Email configuration not found. Email functionality will be disabled."
   );
-  missingVars.forEach((varName) => console.error(`   - ${varName}`));
-  console.error(
-    "Please create a .env file with the required variables. See env.example for reference."
+  console.warn(
+    "To enable email functionality, set the following environment variables:"
   );
-  throw new Error(
-    "Email configuration incomplete. Please check environment variables."
-  );
+  console.warn("   - EMAIL_USER");
+  console.warn("   - EMAIL_PASS");
+  console.warn("   - EMAIL_FROM");
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.hostinger.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
 const sendEmail = async (to, subject, text, html = null) => {
+  // Check if email is configured
+  if (!hasEmailConfig) {
+    console.warn("📧 Email not sent - email configuration not available");
+    console.warn(`Would have sent to: ${to}`);
+    console.warn(`Subject: ${subject}`);
+    return { messageId: "no-email-config" };
+  }
+
   // Validate input parameters
   if (!to || !subject || !text) {
     throw new Error(
