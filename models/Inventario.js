@@ -4,18 +4,18 @@ const inventarioSchema = new mongoose.Schema(
   {
     codigo: {
       type: String,
-      required: true,
+
       unique: true,
       trim: true,
     },
     nome: {
       type: String,
-      required: true,
+
       trim: true,
     },
     categoria: {
       type: String,
-      required: true,
+
       enum: [
         "Equipamentos",
         "Ferramentas",
@@ -25,6 +25,10 @@ const inventarioSchema = new mongoose.Schema(
         "EPI",
         "Outros",
       ],
+    },
+    subcategoria: {
+      type: String,
+      trim: true,
     },
     descricao: {
       type: String,
@@ -44,13 +48,13 @@ const inventarioSchema = new mongoose.Schema(
     },
     quantidade: {
       type: Number,
-      required: true,
+
       min: 0,
       default: 1,
     },
     unidade: {
       type: String,
-      required: true,
+
       enum: [
         "Unidade",
         "Metro",
@@ -62,6 +66,7 @@ const inventarioSchema = new mongoose.Schema(
         "Pacote",
         "Rolo",
         "Par",
+        "Saco",
       ],
     },
     valorUnitario: {
@@ -85,7 +90,7 @@ const inventarioSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      required: true,
+
       enum: ["disponivel", "em_uso", "manutencao", "inativo", "danificado"],
       default: "disponivel",
     },
@@ -99,16 +104,15 @@ const inventarioSchema = new mongoose.Schema(
         obra: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Obra",
-          required: true,
         },
         quantidade: {
           type: Number,
-          required: true,
+
           min: 1,
         },
         dataAlocacao: {
           type: Date,
-          required: true,
+
           default: Date.now,
         },
         dataDevolucao: {
@@ -141,11 +145,9 @@ const inventarioSchema = new mongoose.Schema(
             "manutencao",
             "exclusao",
           ],
-          required: true,
         },
         descricao: {
           type: String,
-          required: true,
         },
         data: {
           type: Date,
@@ -172,6 +174,7 @@ const inventarioSchema = new mongoose.Schema(
 // Índices para melhorar performance
 inventarioSchema.index({ codigo: 1 });
 inventarioSchema.index({ categoria: 1 });
+inventarioSchema.index({ subcategoria: 1 });
 inventarioSchema.index({ status: 1 });
 inventarioSchema.index({ obraAtual: 1 });
 inventarioSchema.index({ nome: "text", descricao: "text" });

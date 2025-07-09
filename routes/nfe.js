@@ -1,7 +1,10 @@
 import express from "express";
 import NFe from "../models/NFe.js";
 import NFeRecentes from "../models/NFeRecentes.js";
-import { buscarNotasRecentes } from "../controllers/nfeController.js";
+import {
+  buscarNotasRecentes,
+  consultarStatusNSU,
+} from "../controllers/nfeController.js";
 import Certificado from "../models/Certificado.js";
 import multer from "multer";
 import fs from "fs";
@@ -174,6 +177,9 @@ certificadosRouter.post("/importar-pfx", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// Consultar status do NSU de um certificado
+router.get("/status-nsu/:certificadoId", consultarStatusNSU);
 
 // Consultar notas fiscais recentes
 router.get("/consultar-notas/:certificadoId", async (req, res) => {

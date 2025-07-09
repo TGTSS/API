@@ -109,20 +109,35 @@ function generateHTMLEmail(
                     : `
                     ${obras
                       .map((obra) => {
-                        const receitasVencer = (obra.receitas || []).filter(
-                          (r) =>
-                            r.status === "pendente" &&
-                            r.dataVencimento &&
-                            new Date(r.dataVencimento) >= hoje &&
-                            new Date(r.dataVencimento) <= daqui7
-                        );
-                        const pagamentosVencer = (obra.pagamentos || []).filter(
-                          (p) =>
-                            p.status === "pendente" &&
-                            p.dataVencimento &&
-                            new Date(p.dataVencimento) >= hoje &&
-                            new Date(p.dataVencimento) <= daqui7
-                        );
+                        // Filtrar e ordenar receitas por data de vencimento (mais próximas primeiro)
+                        const receitasVencer = (obra.receitas || [])
+                          .filter(
+                            (r) =>
+                              r.status === "pendente" &&
+                              r.dataVencimento &&
+                              new Date(r.dataVencimento) >= hoje &&
+                              new Date(r.dataVencimento) <= daqui7
+                          )
+                          .sort(
+                            (a, b) =>
+                              new Date(a.dataVencimento) -
+                              new Date(b.dataVencimento)
+                          );
+
+                        // Filtrar e ordenar pagamentos por data de vencimento (mais próximos primeiro)
+                        const pagamentosVencer = (obra.pagamentos || [])
+                          .filter(
+                            (p) =>
+                              p.status === "pendente" &&
+                              p.dataVencimento &&
+                              new Date(p.dataVencimento) >= hoje &&
+                              new Date(p.dataVencimento) <= daqui7
+                          )
+                          .sort(
+                            (a, b) =>
+                              new Date(a.dataVencimento) -
+                              new Date(b.dataVencimento)
+                          );
 
                         if (
                           receitasVencer.length === 0 &&
@@ -164,7 +179,6 @@ function generateHTMLEmail(
                                     `
                                         : ""
                                     }
-                                    
                                     ${
                                       pagamentosVencer.length > 0
                                         ? `
@@ -240,20 +254,27 @@ function generateTextEmail(
   )} até ${formatDate(daqui7)}):\n\n`;
 
   for (const obra of obras) {
-    const receitasVencer = (obra.receitas || []).filter(
-      (r) =>
-        r.status === "pendente" &&
-        r.dataVencimento &&
-        new Date(r.dataVencimento) >= hoje &&
-        new Date(r.dataVencimento) <= daqui7
-    );
-    const pagamentosVencer = (obra.pagamentos || []).filter(
-      (p) =>
-        p.status === "pendente" &&
-        p.dataVencimento &&
-        new Date(p.dataVencimento) >= hoje &&
-        new Date(p.dataVencimento) <= daqui7
-    );
+    // Filtrar e ordenar receitas por data de vencimento (mais próximas primeiro)
+    const receitasVencer = (obra.receitas || [])
+      .filter(
+        (r) =>
+          r.status === "pendente" &&
+          r.dataVencimento &&
+          new Date(r.dataVencimento) >= hoje &&
+          new Date(r.dataVencimento) <= daqui7
+      )
+      .sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento));
+
+    // Filtrar e ordenar pagamentos por data de vencimento (mais próximos primeiro)
+    const pagamentosVencer = (obra.pagamentos || [])
+      .filter(
+        (p) =>
+          p.status === "pendente" &&
+          p.dataVencimento &&
+          new Date(p.dataVencimento) >= hoje &&
+          new Date(p.dataVencimento) <= daqui7
+      )
+      .sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento));
 
     if (receitasVencer.length || pagamentosVencer.length) {
       corpoEmail += `Obra: ${obra.nome}\n`;

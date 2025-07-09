@@ -68,6 +68,20 @@ const processarNotaFiscal = async (docZip) => {
       return null;
     }
 
+    // Verificar se é um documento de evento (procEventoNFe) que não tem chave de acesso
+    if (result.procEventoNFe) {
+      console.log(
+        "Documento de evento detectado - ignorando (não tem chave de acesso)"
+      );
+      return null;
+    }
+
+    // Verificar se tem chave de acesso
+    if (!nfe.chNFe) {
+      console.log("Documento sem chave de acesso - ignorando");
+      return null;
+    }
+
     // Mapear status da SEFAZ para nosso modelo
     const statusMap = {
       1: "authorized",
@@ -106,15 +120,105 @@ const processarNotaFiscal = async (docZip) => {
   }
 };
 
-// Função para buscar todas as notas desde o início
-const buscarTodasNotas = async (certificado, agentOptions) => {
+// Função para consultar o status atual do NSU de um certificado
+export const consultarStatusNSU = async (req, res) => {
+  try {
+    const { certificadoId } = req.params;
+
+    console.log(`Consultando status do NSU para certificado: ${certificadoId}`);
+
+    if (!certificadoId) {
+      return res.status(400).json({
+        message: "ID do certificado é obrigatório",
+        details: "O parâmetro certificadoId não foi fornecido",
+      });
+    }
+
+    const certificado = await Certificado.findById(certificadoId);
+    if (!certificado) {
+      return res.status(404).json({
+        message: "Certificado não encontrado",
+        details: "Não foi encontrado um certificado com o ID fornecido",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Status do NSU consultado com sucesso",
+      data: {
+        certificadoId: certificado._id,
+        cnpj: certificado.cnpj,
+        ultimoNSU: certificado.ultimoNSU || 0,
+        maxNSU: certificado.maxNSU || 0,
+        ativo: certificado.ativo,
+        dataValidade: certificado.dataValidade,
+        ultimaAtualizacao: certificado.updatedAt,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao consultar status do NSU:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erro ao consultar status do NSU",
+      error: error.message,
+      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+};
+
+// Função para validar o último NSU salvo e determinar o ponto de partida
+const validarUltimoNSUSalvo = async (certificadoId) => {
+  try {
+    console.log("Validando último NSU salvo no banco...");
+
+    // Buscar o maior NSU salvo no banco para este certificado
+    const ultimaNFeSalva = await NFeRecentes.findOne(
+      { certificadoId: certificadoId },
+      {},
+      { sort: { nsu: -1 } }
+    );
+
+    if (ultimaNFeSalva && ultimaNFeSalva.nsu) {
+      const ultimoNSUSalvo = parseInt(ultimaNFeSalva.nsu);
+      console.log(`Último NSU salvo no banco: ${ultimoNSUSalvo}`);
+      return ultimoNSUSalvo;
+    }
+
+    console.log("Nenhum NSU encontrado no banco, começando do zero");
+    return 0;
+  } catch (error) {
+    console.error("Erro ao validar último NSU salvo:", error.message);
+    return 0;
+  }
+};
+
+// Função para buscar apenas notas novas (incremental)
+const buscarNotasIncremental = async (certificado, agentOptions) => {
   let todasNotas = [];
   let nsuAtual = 0;
   let maxNSU = 0;
   let tentativas = 0;
-  const maxTentativas = 50; // Aumentar limite para buscar mais notas
+  const maxTentativas = 100;
+  let status656Count = 0;
+  const maxStatus656Retries = 3;
 
-  console.log("Iniciando busca completa de todas as notas desde o início...");
+  // Validar o último NSU salvo
+  const ultimoNSUSalvo = await validarUltimoNSUSalvo(certificado._id);
+
+  // Determinar o ponto de partida
+  if (certificado.ultimoNSU && certificado.ultimoNSU > ultimoNSUSalvo) {
+    nsuAtual = certificado.ultimoNSU;
+    console.log(`Usando último NSU do certificado: ${nsuAtual}`);
+  } else if (ultimoNSUSalvo > 0) {
+    nsuAtual = ultimoNSUSalvo;
+    console.log(`Usando último NSU salvo no banco: ${nsuAtual}`);
+  } else {
+    nsuAtual = 0;
+    console.log("Iniciando busca desde o início (NSU 0)");
+  }
+
+  console.log("Iniciando busca incremental de notas...");
+  console.log(`NSU inicial: ${nsuAtual}`);
 
   while (tentativas < maxTentativas) {
     tentativas++;
@@ -154,6 +258,144 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
 
       if (statusCode === "138") {
         // Documentos encontrados
+        status656Count = 0;
+        const loteDistDFeInt = retDistDFeInt.loteDistDFeInt?.[0];
+        if (
+          loteDistDFeInt &&
+          loteDistDFeInt.docZip &&
+          Array.isArray(loteDistDFeInt.docZip)
+        ) {
+          console.log(
+            `Processando ${loteDistDFeInt.docZip.length} documentos...`
+          );
+
+          let documentosNovos = 0;
+          for (const docZip of loteDistDFeInt.docZip) {
+            const nsuDocumento = parseInt(docZip.$?.NSU || "0");
+
+            // Verificar se este documento já foi processado
+            if (nsuDocumento > ultimoNSUSalvo) {
+              const dadosNota = await processarNotaFiscal(docZip);
+              if (dadosNota && dadosNota.chaveAcesso) {
+                todasNotas.push(dadosNota);
+                documentosNovos++;
+              }
+            } else {
+              console.log(
+                `Documento NSU ${nsuDocumento} já processado, pulando...`
+              );
+            }
+          }
+          console.log(`Documentos novos encontrados: ${documentosNovos}`);
+        }
+        nsuAtual = ultimoNSU + 1;
+      } else if (statusCode === "137") {
+        // Nenhum documento encontrado
+        status656Count = 0;
+        console.log("Nenhum documento encontrado neste lote");
+        nsuAtual = ultimoNSU + 1;
+      } else if (statusCode === "656") {
+        // Consumo Indevido
+        status656Count++;
+        console.log(
+          `Status 656 - Rejeicao: Consumo Indevido (Tentativa ${status656Count}/${maxStatus656Retries})`
+        );
+
+        if (status656Count >= maxStatus656Retries) {
+          console.log(
+            "Máximo de tentativas para status 656 atingido. Aguardando 1 hora..."
+          );
+          await new Promise((resolve) => setTimeout(resolve, 3600000));
+          status656Count = 0;
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+        continue;
+      } else {
+        console.error(
+          `Status inesperado: ${statusCode} - ${retDistDFeInt.xMotivo[0]}`
+        );
+        nsuAtual = ultimoNSU + 1;
+      }
+
+      // Se chegamos ao máximo NSU, paramos
+      if (nsuAtual > maxNSU) {
+        console.log("Chegamos ao máximo NSU disponível");
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error(`Erro na tentativa ${tentativas}:`, error.message);
+      if (error.code === "ECONNRESET" || error.code === "ETIMEDOUT") {
+        console.log("Erro de conexão, tentando novamente...");
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        continue;
+      }
+      nsuAtual++;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
+
+  console.log(
+    `Busca incremental concluída. Total de notas novas encontradas: ${todasNotas.length}`
+  );
+  console.log(`NSU final: ${maxNSU}, Tentativas realizadas: ${tentativas}`);
+  return { notas: todasNotas, ultimoNSU: maxNSU, maxNSU };
+};
+
+// Função para buscar todas as notas desde o início (busca completa)
+const buscarTodasNotas = async (certificado, agentOptions) => {
+  let todasNotas = [];
+  let nsuAtual = 0; // Sempre começar do zero para busca completa
+  let maxNSU = 0;
+  let tentativas = 0;
+  const maxTentativas = 100;
+  let status656Count = 0;
+  const maxStatus656Retries = 3;
+
+  console.log("Iniciando busca completa de todas as notas desde o início...");
+  console.log(`NSU inicial: ${nsuAtual}`);
+
+  while (tentativas < maxTentativas) {
+    tentativas++;
+    console.log(
+      `Tentativa ${tentativas}: Consultando a partir do NSU ${nsuAtual}`
+    );
+
+    const envelope = buildSoapEnvelope(
+      certificado.cnpj,
+      certificado.ufAutor,
+      nsuAtual
+    );
+
+    try {
+      const response = await axios.post(SEFAZ_URL, envelope, {
+        headers: {
+          "Content-Type": "application/soap+xml; charset=utf-8",
+          SOAPAction:
+            "http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe/nfeDistDFeInteresse",
+        },
+        httpsAgent: new https.Agent(agentOptions),
+      });
+
+      const parsedResponse = await parseString(response.data);
+      const retDistDFeInt =
+        parsedResponse["soap:Envelope"]["soap:Body"][0][
+          "nfeDistDFeInteresseResponse"
+        ][0]["nfeDistDFeInteresseResult"][0]["retDistDFeInt"][0];
+
+      const statusCode = retDistDFeInt.cStat[0];
+      const ultimoNSU = parseInt(retDistDFeInt.ultNSU[0]);
+      maxNSU = parseInt(retDistDFeInt.maxNSU[0]);
+
+      console.log(
+        `Status: ${statusCode}, Último NSU: ${ultimoNSU}, Máximo NSU: ${maxNSU}`
+      );
+
+      if (statusCode === "138") {
+        // Documentos encontrados
+        status656Count = 0;
         const loteDistDFeInt = retDistDFeInt.loteDistDFeInt?.[0];
         if (
           loteDistDFeInt &&
@@ -165,7 +407,7 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
           );
           for (const docZip of loteDistDFeInt.docZip) {
             const dadosNota = await processarNotaFiscal(docZip);
-            if (dadosNota) {
+            if (dadosNota && dadosNota.chaveAcesso) {
               todasNotas.push(dadosNota);
             }
           }
@@ -173,13 +415,31 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
         nsuAtual = ultimoNSU + 1;
       } else if (statusCode === "137") {
         // Nenhum documento encontrado
+        status656Count = 0;
         console.log("Nenhum documento encontrado neste lote");
         nsuAtual = ultimoNSU + 1;
+      } else if (statusCode === "656") {
+        // Consumo Indevido
+        status656Count++;
+        console.log(
+          `Status 656 - Rejeicao: Consumo Indevido (Tentativa ${status656Count}/${maxStatus656Retries})`
+        );
+
+        if (status656Count >= maxStatus656Retries) {
+          console.log(
+            "Máximo de tentativas para status 656 atingido. Aguardando 1 hora..."
+          );
+          await new Promise((resolve) => setTimeout(resolve, 3600000));
+          status656Count = 0;
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+        continue;
       } else {
         console.error(
           `Status inesperado: ${statusCode} - ${retDistDFeInt.xMotivo[0]}`
         );
-        break;
+        nsuAtual = ultimoNSU + 1;
       }
 
       // Se chegamos ao máximo NSU, paramos
@@ -188,22 +448,21 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
         break;
       }
 
-      // Aguardar um pouco entre as requisições para não sobrecarregar a SEFAZ
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       console.error(`Erro na tentativa ${tentativas}:`, error.message);
-      // Se for erro de timeout ou conexão, tentar novamente
       if (error.code === "ECONNRESET" || error.code === "ETIMEDOUT") {
         console.log("Erro de conexão, tentando novamente...");
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         continue;
       }
-      break;
+      nsuAtual++;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 
   console.log(
-    `Busca concluída. Total de notas encontradas: ${todasNotas.length}`
+    `Busca completa concluída. Total de notas encontradas: ${todasNotas.length}`
   );
   console.log(`NSU final: ${maxNSU}, Tentativas realizadas: ${tentativas}`);
   return { notas: todasNotas, ultimoNSU: maxNSU, maxNSU };
@@ -212,10 +471,10 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
 export const buscarNotasRecentes = async (req, res) => {
   try {
     const { certificadoId } = req.params;
-    const { nsu } = req.query;
+    const { nsu, forcarNSU, tipo } = req.query;
 
     console.log(
-      `Iniciando consulta completa de notas para certificado: ${certificadoId}`
+      `Iniciando consulta de notas para certificado: ${certificadoId}`
     );
 
     if (!certificadoId) {
@@ -260,9 +519,33 @@ export const buscarNotasRecentes = async (req, res) => {
       });
     }
 
-    // Buscar todas as notas desde o início
-    console.log("Iniciando busca completa de todas as notas...");
-    const resultado = await buscarTodasNotas(certificado, agentOptions);
+    // Determinar o tipo de busca
+    let resultado;
+    if (tipo === "completa" || forcarNSU) {
+      // Busca completa ou forçada
+      console.log("Iniciando busca completa de todas as notas...");
+
+      if (forcarNSU) {
+        console.log(`Forçando busca a partir do NSU: ${forcarNSU}`);
+        certificado.ultimoNSU = parseInt(forcarNSU);
+      }
+
+      resultado = await buscarTodasNotas(certificado, agentOptions);
+    } else {
+      // Busca incremental (padrão)
+      console.log("Iniciando busca incremental de notas...");
+      resultado = await buscarNotasIncremental(certificado, agentOptions);
+    }
+
+    // Atualizar o NSU no certificado
+    try {
+      await updateNSU(certificadoId, resultado.ultimoNSU, resultado.maxNSU);
+      console.log(
+        `NSU atualizado no certificado: ${resultado.ultimoNSU} (Max: ${resultado.maxNSU})`
+      );
+    } catch (error) {
+      console.error("Erro ao atualizar NSU no certificado:", error.message);
+    }
 
     // Salvar todas as notas no modelo NFeRecentes
     const notasSalvas = [];
@@ -311,15 +594,21 @@ export const buscarNotasRecentes = async (req, res) => {
       `Busca concluída. Total de NFe recentes salvas: ${notasSalvas.length}`
     );
 
+    const tipoBusca =
+      tipo === "completa" || forcarNSU ? "completa" : "incremental";
+
     return res.json({
       success: true,
-      message: "Busca completa de notas fiscais concluída",
+      message: `Busca ${tipoBusca} de notas fiscais concluída`,
       data: {
+        tipoBusca: tipoBusca,
         notas: notasSalvas,
         ultimoNSU: resultado.ultimoNSU.toString(),
         maxNSU: resultado.maxNSU.toString(),
         totalEncontradas: resultado.notas.length,
         totalSalvas: notasSalvas.length,
+        certificadoId: certificadoId,
+        cnpj: certificado.cnpj,
       },
     });
   } catch (error) {

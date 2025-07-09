@@ -10,6 +10,7 @@ router.get("/", async (req, res) => {
     const {
       search,
       categoria,
+      subcategoria,
       status,
       obra,
       page = 1,
@@ -28,11 +29,16 @@ router.get("/", async (req, res) => {
         { descricao: { $regex: search, $options: "i" } },
         { marca: { $regex: search, $options: "i" } },
         { modelo: { $regex: search, $options: "i" } },
+        { subcategoria: { $regex: search, $options: "i" } },
       ];
     }
 
     if (categoria && categoria !== "all") {
       filtros.categoria = categoria;
+    }
+
+    if (subcategoria && subcategoria !== "all") {
+      filtros.subcategoria = subcategoria;
     }
 
     if (status && status !== "all") {
@@ -85,12 +91,10 @@ router.get("/", async (req, res) => {
     });
   } catch (error) {
     console.error("Erro ao buscar itens do inventário:", error);
-    res
-      .status(500)
-      .json({
-        message: "Erro ao buscar itens do inventário",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Erro ao buscar itens do inventário",
+      error: error.message,
+    });
   }
 });
 
