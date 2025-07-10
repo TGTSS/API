@@ -170,6 +170,7 @@ export const consultarStatusNSU = async (req, res) => {
 export const buscarNotasNovas = async (req, res) => {
   try {
     const { certificadoId } = req.params;
+    const { ultimosN } = req.query;
 
     console.log(
       `Iniciando busca de notas novas para certificado: ${certificadoId}`
@@ -219,7 +220,12 @@ export const buscarNotasNovas = async (req, res) => {
 
     // Buscar apenas notas novas
     console.log("Iniciando busca de notas novas...");
-    const resultado = await buscarNotasNovasInterno(certificado, agentOptions);
+    const ultimosNParam = ultimosN ? parseInt(ultimosN) : 0;
+    const resultado = await buscarNotasNovasInterno(
+      certificado,
+      agentOptions,
+      ultimosNParam
+    );
 
     // Atualizar o NSU no certificado
     try {
@@ -289,6 +295,11 @@ export const buscarNotasNovas = async (req, res) => {
         totalSalvas: notasSalvas.length,
         nsuInicial: certificado.ultimoNSU || 0,
         nsuFinal: resultado.ultimoNSU,
+        ultimosN: ultimosNParam,
+        nsuInicialCalculado:
+          ultimosNParam > 0
+            ? Math.max(0, (certificado.ultimoNSU || 0) - ultimosNParam)
+            : certificado.ultimoNSU || 0,
       },
     });
   } catch (error) {
@@ -434,7 +445,11 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
 };
 
 // Função para buscar apenas notas novas a partir do último NSU salvo
-const buscarNotasNovasInterno = async (certificado, agentOptions) => {
+const buscarNotasNovasInterno = async (
+  certificado,
+  agentOptions,
+  ultimosN = 0
+) => {
   let todasNotas = [];
   let nsuAtual = certificado.ultimoNSU || 0; // Usar o último NSU salvo no certificado
   let maxNSU = 0;
@@ -443,8 +458,18 @@ const buscarNotasNovasInterno = async (certificado, agentOptions) => {
   let status656Count = 0;
   const maxStatus656Retries = 3;
 
+  // Se ultimosN foi especificado, calcular o NSU inicial
+  if (ultimosN > 0) {
+    const nsuInicialCalculado = Math.max(0, nsuAtual - ultimosN);
+    console.log(`Buscando últimos ${ultimosN} NSUs + novos`);
+    console.log(
+      `NSU atual: ${nsuAtual}, NSU inicial calculado: ${nsuInicialCalculado}`
+    );
+    nsuAtual = nsuInicialCalculado;
+  }
+
   console.log("Iniciando busca de notas novas...");
-  console.log(`NSU inicial (último salvo): ${nsuAtual}`);
+  console.log(`NSU inicial: ${nsuAtual}`);
 
   while (tentativas < maxTentativas) {
     tentativas++;
@@ -560,7 +585,7 @@ const buscarNotasNovasInterno = async (certificado, agentOptions) => {
 export const buscarNotasRecentes = async (req, res) => {
   try {
     const { certificadoId } = req.params;
-    const { nsu, forcarNSU, apenasNovas } = req.query;
+    const { nsu, forcarNSU, apenasNovas, ultimosN } = req.query;
 
     console.log(
       `Iniciando consulta de notas para certificado: ${certificadoId}`
@@ -614,7 +639,12 @@ export const buscarNotasRecentes = async (req, res) => {
     if (apenasNovas === "true") {
       // Buscar apenas notas novas a partir do último NSU salvo
       console.log("Iniciando busca de notas novas...");
-      resultado = await buscarNotasNovasInterno(certificado, agentOptions);
+      const ultimosNParam = ultimosN ? parseInt(ultimosN) : 0;
+      resultado = await buscarNotasNovasInterno(
+        certificado,
+        agentOptions,
+        ultimosNParam
+      );
     } else {
       // Buscar todas as notas desde o início
       console.log("Iniciando busca completa de todas as notas...");

@@ -39,12 +39,19 @@ async function forcarBuscaNSU(certificadoId, nsuInicial) {
 }
 
 // Função para buscar apenas notas novas
-async function buscarNotasNovas(certificadoId) {
+async function buscarNotasNovas(certificadoId, ultimosN = 0) {
   try {
-    console.log(`\n=== Buscando apenas notas novas ===`);
-    const response = await axios.get(
-      `${BASE_URL}/buscar-novas/${certificadoId}`
+    const url =
+      ultimosN > 0
+        ? `${BASE_URL}/buscar-novas/${certificadoId}?ultimosN=${ultimosN}`
+        : `${BASE_URL}/buscar-novas/${certificadoId}`;
+
+    console.log(
+      `\n=== Buscando notas novas${
+        ultimosN > 0 ? ` (últimos ${ultimosN} NSUs + novos)` : ""
+      } ===`
     );
+    const response = await axios.get(url);
     console.log("Resultado da busca de notas novas:", response.data);
     return response.data;
   } catch (error) {
@@ -99,9 +106,21 @@ async function main() {
     rl.close();
 
     if (resposta === "1") {
-      // Buscar apenas notas novas
-      console.log(`\nBuscando apenas notas novas...`);
-      await buscarNotasNovas(certificadoId);
+      // Perguntar quantos últimos NSUs buscar
+      const ultimosN = await new Promise((resolve) => {
+        rl.question(
+          "\nQuantos últimos NSUs buscar? (0 para apenas novos): ",
+          resolve
+        );
+      });
+
+      const ultimosNNum = parseInt(ultimosN) || 0;
+      console.log(
+        `\nBuscando notas novas${
+          ultimosNNum > 0 ? ` (últimos ${ultimosNNum} NSUs + novos)` : ""
+        }...`
+      );
+      await buscarNotasNovas(certificadoId, ultimosNNum);
     } else if (resposta === "2") {
       // Continuar a partir do último NSU + 1
       const nsuInicial = status.data.ultimoNSU + 1;
@@ -112,7 +131,7 @@ async function main() {
     }
   } else {
     console.log("\nNSU está atualizado!");
-    
+
     // Perguntar se quer buscar notas novas mesmo assim
     const readline = await import("readline");
     const rl = readline.createInterface({
@@ -121,10 +140,7 @@ async function main() {
     });
 
     const resposta = await new Promise((resolve) => {
-      rl.question(
-        "\nDeseja buscar notas novas mesmo assim? (s/n): ",
-        resolve
-      );
+      rl.question("\nDeseja buscar notas novas mesmo assim? (s/n): ", resolve);
     });
 
     rl.close();

@@ -218,7 +218,7 @@ function generateHTMLEmail(
                         <div class="resumo-stats">
                             <div class="stat">
                                 <div class="stat-number">${totalReceitas}</div>
-                                <div class="stat-label">Receitas</div>
+                                <div class="stat-label">Receitas | </div>
                             </div>
                             <div class="stat">
                                 <div class="stat-number">${totalPagamentos}</div>
@@ -311,12 +311,25 @@ function generateTextEmail(
 async function sendDailyReminders() {
   try {
     console.log("🕐 Iniciando verificação de lembretes diários...");
+    console.log("📅 Data atual:", new Date().toLocaleString("pt-BR"));
+
+    // Verificar conexão com MongoDB
+    if (mongoose.connection.readyState !== 1) {
+      console.error(
+        "❌ MongoDB não está conectado. Estado:",
+        mongoose.connection.readyState
+      );
+      throw new Error("MongoDB não está conectado");
+    }
 
     const hoje = new Date();
     const daqui7 = new Date();
     daqui7.setDate(hoje.getDate() + 7);
 
+    console.log("📊 Buscando obras no banco de dados...");
     const obras = await Obra.find().lean();
+    console.log(`✅ Encontradas ${obras.length} obras`);
+
     let totalReceitas = 0;
     let totalPagamentos = 0;
 
@@ -341,6 +354,10 @@ async function sendDailyReminders() {
       totalPagamentos += pagamentosVencer.length;
     }
 
+    console.log(
+      `📈 Total: ${totalReceitas} receitas e ${totalPagamentos} despesas a vencer`
+    );
+
     // Gerar e-mails
     const htmlEmail = generateHTMLEmail(
       obras,
@@ -357,6 +374,7 @@ async function sendDailyReminders() {
       totalPagamentos
     );
 
+    console.log("📧 Enviando e-mail...");
     // Enviar e-mail
     await sendEmail(
       EMAIL_TO,
@@ -371,19 +389,41 @@ async function sendDailyReminders() {
     );
   } catch (error) {
     console.error("❌ Erro ao enviar lembrete diário:", error);
+    console.error("🔍 Stack trace:", error.stack);
+
+    // Log adicional para debug
+    console.log("🔧 Informações de debug:");
+    console.log("   - MongoDB readyState:", mongoose.connection.readyState);
+    console.log("   - EMAIL_USER configurado:", !!process.env.EMAIL_USER);
+    console.log("   - EMAIL_PASS configurado:", !!process.env.EMAIL_PASS);
+    console.log("   - EMAIL_FROM configurado:", !!process.env.EMAIL_FROM);
   }
 }
 
 // Função para inicializar o scheduler
 export function initScheduler() {
   console.log("🚀 Inicializando scheduler...");
+  console.log("🔧 Configurações:");
+  console.log("   - Timezone: America/Sao_Paulo");
+  console.log("   - Email para: " + EMAIL_TO);
+  console.log("   - MongoDB URI configurado:", !!MONGO_URI);
 
   // Verificar conexão com MongoDB
   if (mongoose.connection.readyState !== 1) {
     console.log("⏳ Aguardando conexão com MongoDB...");
+    console.log("   - Estado atual:", mongoose.connection.readyState);
+
     mongoose.connection.once("connected", () => {
       console.log("✅ MongoDB conectado, iniciando agendamentos...");
       startScheduledTasks();
+    });
+
+    mongoose.connection.on("error", (error) => {
+      console.error("❌ Erro na conexão MongoDB:", error);
+    });
+
+    mongoose.connection.on("disconnected", () => {
+      console.log("⚠️ MongoDB desconectado");
     });
   } else {
     console.log("✅ MongoDB já conectado, iniciando agendamentos...");
@@ -393,11 +433,17 @@ export function initScheduler() {
 
 // Função para iniciar as tarefas agendadas
 function startScheduledTasks() {
+  console.log("📅 Configurando tarefas agendadas...");
+
   // Lembrete diário - executar às 8h da manhã todos os dias
+  const cronExpression = "0 8 * * *";
+  console.log("   - Cron expression:", cronExpression);
+
   cron.schedule(
-    "0 8 * * *",
+    cronExpression,
     async () => {
       console.log("📅 Executando lembrete diário agendado...");
+      console.log("🕐 Hora atual:", new Date().toLocaleString("pt-BR"));
       await sendDailyReminders();
     },
     {
@@ -409,11 +455,11 @@ function startScheduledTasks() {
   console.log("✅ Scheduler configurado:");
   console.log("   📧 Lembrete diário: 08:00 (horário de Brasília)");
 
-  // Executar imediatamente na primeira vez (opcional)
-  // setTimeout(() => {
-  //   console.log('🔄 Executando primeiro lembrete...');
-  //   sendDailyReminders();
-  // }, 5000);
+  // Executar imediatamente na primeira vez para teste
+  setTimeout(() => {
+    console.log("🔄 Executando primeiro lembrete em 10 segundos...");
+    sendDailyReminders();
+  }, 10000);
 }
 
 // Função para executar manualmente (para testes)

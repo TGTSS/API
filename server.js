@@ -1157,6 +1157,30 @@ app.post("/api/scheduler/test", async (req, res) => {
   }
 });
 
+// Rota para verificar status do scheduler
+app.get("/api/scheduler/status", async (req, res) => {
+  try {
+    const status = {
+      mongoConnected: mongoose.connection.readyState === 1,
+      mongoState: mongoose.connection.readyState,
+      emailConfigured: !!(
+        process.env.EMAIL_USER &&
+        process.env.EMAIL_PASS &&
+        process.env.EMAIL_FROM
+      ),
+      emailUser: process.env.EMAIL_USER ? "Configurado" : "Não configurado",
+      emailFrom: process.env.EMAIL_FROM || "Não configurado",
+      serverTime: new Date().toLocaleString("pt-BR"),
+      timezone: "America/Sao_Paulo",
+    };
+
+    res.json(status);
+  } catch (error) {
+    console.error("❌ Erro ao verificar status do scheduler:", error);
+    res.status(500).json({ message: "Erro ao verificar status" });
+  }
+});
+
 // Rota para listar recibos recusados
 app.get("/api/records", async (req, res) => {
   try {

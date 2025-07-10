@@ -4,54 +4,64 @@ import sendEmail from "../utils/sendEmail.js";
 dotenv.config();
 
 async function testEmail() {
+  console.log("🧪 Testando configuração de e-mail...");
+
+  console.log("🔧 Verificando variáveis de ambiente:");
+  console.log(
+    "   - EMAIL_USER:",
+    process.env.EMAIL_USER ? "✅ Configurado" : "❌ Não configurado"
+  );
+  console.log(
+    "   - EMAIL_PASS:",
+    process.env.EMAIL_PASS ? "✅ Configurado" : "❌ Não configurado"
+  );
+  console.log(
+    "   - EMAIL_FROM:",
+    process.env.EMAIL_FROM ? "✅ Configurado" : "❌ Não configurado"
+  );
+
+  if (
+    !process.env.EMAIL_USER ||
+    !process.env.EMAIL_PASS ||
+    !process.env.EMAIL_FROM
+  ) {
+    console.error("❌ Configuração de e-mail incompleta!");
+    console.error("📝 Crie um arquivo .env com as seguintes variáveis:");
+    console.error("   EMAIL_USER=seu_email@gmail.com");
+    console.error("   EMAIL_PASS=sua_senha_de_app");
+    console.error("   EMAIL_FROM=seu_email@gmail.com");
+    return;
+  }
+
   try {
-    console.log("🧪 Testando configuração de email...");
+    console.log("📧 Enviando e-mail de teste...");
 
-    // Verificar variáveis de ambiente
-    const requiredVars = ["EMAIL_USER", "EMAIL_PASS", "EMAIL_FROM"];
-    const missingVars = requiredVars.filter((varName) => !process.env[varName]);
-
-    if (missingVars.length > 0) {
-      console.error("❌ Variáveis de ambiente ausentes:");
-      missingVars.forEach((varName) => console.error(`   - ${varName}`));
-      console.error(
-        "Crie um arquivo .env com as variáveis necessárias. Veja env.example para referência."
-      );
-      process.exit(1);
-    }
-
-    console.log("✅ Variáveis de ambiente configuradas");
-    console.log(`📧 De: ${process.env.EMAIL_FROM}`);
-    console.log(`👤 Usuário: ${process.env.EMAIL_USER}`);
-
-    // Enviar email de teste
-    const testEmail = {
-      to: "modernaedificacoes@gmail.com",
-      subject:
-        "🧪 Teste de Configuração - " + new Date().toLocaleString("pt-BR"),
-      text: "Este é um email de teste para verificar se a configuração SMTP está funcionando corretamente.",
-      html: `
-        <h2>🧪 Teste de Configuração</h2>
-        <p>Este é um email de teste para verificar se a configuração SMTP está funcionando corretamente.</p>
-        <p><strong>Data/Hora:</strong> ${new Date().toLocaleString("pt-BR")}</p>
-        <p><strong>Status:</strong> ✅ Configuração funcionando!</p>
-      `,
-    };
-
-    console.log("📤 Enviando email de teste...");
     const result = await sendEmail(
-      testEmail.to,
-      testEmail.subject,
-      testEmail.text,
-      testEmail.html
+      "tiagosilvaff1@gmail.com",
+      "🧪 Teste de E-mail - Sistema de Gestão",
+      "Este é um e-mail de teste para verificar se a configuração está funcionando corretamente.",
+      `
+        <html>
+          <body>
+            <h2>🧪 Teste de E-mail</h2>
+            <p>Este é um e-mail de teste para verificar se a configuração está funcionando corretamente.</p>
+            <p><strong>Data:</strong> ${new Date().toLocaleString("pt-BR")}</p>
+            <p>✅ Se você recebeu este e-mail, a configuração está funcionando!</p>
+          </body>
+        </html>
+      `
     );
 
-    console.log("✅ Email de teste enviado com sucesso!");
-    console.log(`📧 Message ID: ${result.messageId}`);
-    console.log("🎉 Configuração de email está funcionando corretamente!");
+    console.log("✅ E-mail de teste enviado com sucesso!");
+    console.log("📧 Message ID:", result.messageId);
   } catch (error) {
-    console.error("❌ Erro no teste de email:", error.message);
-    process.exit(1);
+    console.error("❌ Erro ao enviar e-mail de teste:", error.message);
+
+    if (error.message.includes("autenticação")) {
+      console.error("💡 Dica: Verifique se a senha de app está correta");
+    } else if (error.message.includes("conexão")) {
+      console.error("💡 Dica: Verifique sua conexão com a internet");
+    }
   }
 }
 
