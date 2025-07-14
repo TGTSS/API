@@ -9,7 +9,7 @@ dotenv.config();
 const MONGO_URI =
   process.env.MONGO_URI ||
   "mongodb://Nexus_wayfallpan:84e7091321e8c8bbdd74986f5dadd8abf919018e@5f7qa.h.filess.io:27018/Nexus_wayfallpan";
-const EMAIL_TO = "modernaedificacoes@gmail.com";
+const EMAIL_TO = ["modernaedificacoes@gmail.com", "tiagosilvaff18@gmail.com"];
 
 // Funções auxiliares
 function formatDate(date) {
@@ -374,14 +374,23 @@ async function sendDailyReminders() {
       totalPagamentos
     );
 
-    console.log("📧 Enviando e-mail...");
-    // Enviar e-mail
-    await sendEmail(
-      EMAIL_TO,
-      "📊 Lembrete Diário: Receitas e Despesas a Vencer",
-      textEmail,
-      htmlEmail
-    );
+    console.log("📧 Enviando e-mails...");
+    console.log(`📮 Destinatários: ${EMAIL_TO.join(", ")}`);
+
+    // Enviar e-mail para todos os destinatários
+    for (const email of EMAIL_TO) {
+      try {
+        await sendEmail(
+          email,
+          "📊 Lembrete Diário: Receitas e Despesas a Vencer",
+          textEmail,
+          htmlEmail
+        );
+        console.log(`✅ E-mail enviado para: ${email}`);
+      } catch (emailError) {
+        console.error(`❌ Erro ao enviar para ${email}:`, emailError);
+      }
+    }
 
     console.log("✅ Lembrete diário enviado com sucesso!");
     console.log(
@@ -405,7 +414,7 @@ export function initScheduler() {
   console.log("🚀 Inicializando scheduler...");
   console.log("🔧 Configurações:");
   console.log("   - Timezone: America/Sao_Paulo");
-  console.log("   - Email para: " + EMAIL_TO);
+  console.log("   - Emails para: " + EMAIL_TO.join(", "));
   console.log("   - MongoDB URI configurado:", !!MONGO_URI);
 
   // Verificar conexão com MongoDB
@@ -454,12 +463,7 @@ function startScheduledTasks() {
 
   console.log("✅ Scheduler configurado:");
   console.log("   📧 Lembrete diário: 08:00 (horário de Brasília)");
-
-  // Executar imediatamente na primeira vez para teste
-  setTimeout(() => {
-    console.log("🔄 Executando primeiro lembrete em 10 segundos...");
-    sendDailyReminders();
-  }, 10000);
+  console.log("   ⏰ Próxima execução: 08:00 de amanhã (horário de Brasília)");
 }
 
 // Função para executar manualmente (para testes)
