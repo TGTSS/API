@@ -37,7 +37,7 @@ async function testEmail() {
     console.log("📧 Enviando e-mail de teste...");
 
     const result = await sendEmail(
-      "tiagosilvaff1@gmail.com",
+      "tiagosilvaff18@gmail.com",
       "🧪 Teste de E-mail - Sistema de Gestão",
       "Este é um e-mail de teste para verificar se a configuração está funcionando corretamente.",
       `

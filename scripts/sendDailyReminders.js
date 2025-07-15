@@ -358,7 +358,7 @@ async function main() {
       textEmail,
       htmlEmail
     );
-    console.log("E-mail enviado com sucesso!");
+    console.log("✅ E-mail enviado com sucesso!");
     process.exit(0);
   } catch (err) {
     console.error("Erro no lembrete diário:", err);

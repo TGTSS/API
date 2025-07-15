@@ -45,6 +45,7 @@ import Conta from "./models/Conta.js";
 import solicitacoesRouter from "./routes/solicitacoes.js";
 import nfeRouter from "./routes/nfe.js";
 import inventarioRouter from "./routes/inventario.js";
+import medicoesRouter from "./routes/medicoes.js";
 import fs from "fs";
 import path from "path";
 import { initScheduler, runDailyReminders } from "./services/scheduler.js";
@@ -83,6 +84,111 @@ app.use(express.json({ limit: "50mb" })); // Aumentado para 50MB
 
 // Servir arquivos estáticos da pasta public
 app.use("/uploads", express.static("public/uploads"));
+
+// Rota para servir imagens das medições
+app.get("/api/uploads/medicoes/images/:filename", (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(
+      process.cwd(),
+      "public",
+      "uploads",
+      "medicoes",
+      "images",
+      filename
+    );
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Imagem não encontrada" });
+    }
+
+    // Determinar o tipo MIME baseado na extensão
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = "image/jpeg";
+
+    switch (ext) {
+      case ".png":
+        contentType = "image/png";
+        break;
+      case ".gif":
+        contentType = "image/gif";
+        break;
+      case ".webp":
+        contentType = "image/webp";
+        break;
+      case ".jpg":
+      case ".jpeg":
+      default:
+        contentType = "image/jpeg";
+        break;
+    }
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    res.setHeader("Cache-Control", "public, max-age=31536000"); // Cache por 1 ano
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error("Erro ao servir imagem:", error);
+    res.status(500).json({ message: "Erro ao carregar imagem" });
+  }
+});
+
+// Rota para servir anexos das medições
+app.get("/api/uploads/medicoes/attachments/:filename", (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(
+      process.cwd(),
+      "public",
+      "uploads",
+      "medicoes",
+      "attachments",
+      filename
+    );
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Arquivo não encontrado" });
+    }
+
+    // Determinar o tipo MIME baseado na extensão
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = "application/octet-stream";
+
+    switch (ext) {
+      case ".pdf":
+        contentType = "application/pdf";
+        break;
+      case ".doc":
+        contentType = "application/msword";
+        break;
+      case ".docx":
+        contentType =
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        break;
+      case ".xls":
+        contentType = "application/vnd.ms-excel";
+        break;
+      case ".xlsx":
+        contentType =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        break;
+      case ".txt":
+        contentType = "text/plain";
+        break;
+    }
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error("Erro ao servir anexo:", error);
+    res.status(500).json({ message: "Erro ao carregar arquivo" });
+  }
+});
 
 app.use((req, res, next) => {
   res.setHeader("Content-Type", "application/json");
@@ -1027,6 +1133,7 @@ app.use("/api/solicitacoes", solicitacoesRouter);
 app.use("/api/obras/:obraId/solicitacoes", solicitacoesRouter);
 app.use("/api/nfe", nfeRouter);
 app.use("/api/inventario", inventarioRouter);
+app.use("/api/medicoes", medicoesRouter);
 
 // Rota para servir arquivos de upload
 app.get("/api/files/:filename", (req, res) => {

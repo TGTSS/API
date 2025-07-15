@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import Obra from "../models/Obra.js";
+import Medicao from "../models/Medicao.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -1279,16 +1280,43 @@ router.get("/:id/registros-diarios", async (req, res) => {
 router.get("/:id/medicoes", async (req, res) => {
   try {
     const { id } = req.params;
+    const { page = 1, limit = 10, status } = req.query;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const obra = await Obra.findById(id).select("medicoes");
+    // Verificar se a obra existe
+    const obra = await Obra.findById(id);
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    res.json(obra.medicoes);
+    // Buscar medições usando o modelo Medicao
+    const filter = { obraId: id };
+    if (status) {
+      filter.status = status;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const medicoes = await Medicao.find(filter)
+      .populate("createdBy", "nome email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Medicao.countDocuments(filter);
+
+    res.json({
+      medicoes,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Erro ao buscar medições:", error);
     res.status(500).json({ message: error.message });
