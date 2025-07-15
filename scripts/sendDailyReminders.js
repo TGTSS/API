@@ -9,7 +9,7 @@ dotenv.config();
 const MONGO_URI =
   process.env.MONGO_URI ||
   "mongodb://Nexus_wayfallpan:84e7091321e8c8bbdd74986f5dadd8abf919018e@5f7qa.h.filess.io:27018/Nexus_wayfallpan";
-const EMAIL_TO = "tiagosilvaff18@gmail.com"; // E-mail para receber as notificações diárias
+const EMAIL_TO = "modernaedificacoes@gmail.com"; // E-mail para receber as notificações diárias
 
 function formatDate(date) {
   if (!date) return "-";
