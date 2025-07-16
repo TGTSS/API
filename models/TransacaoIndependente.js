@@ -39,6 +39,16 @@ const TransacaoIndependenteSchema = new mongoose.Schema({
       dataUpload: { type: Date, default: Date.now },
     },
   ],
+  // Campos para transações múltiplas
+  isTransacaoMultipla: { type: Boolean, default: false },
+  transacoesDivididas: [
+    {
+      obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
+      transacaoDivididaId: { type: mongoose.Schema.Types.ObjectId },
+      _id: { type: mongoose.Schema.Types.ObjectId },
+    },
+  ],
+  transacaoPrincipalId: { type: mongoose.Schema.Types.ObjectId },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

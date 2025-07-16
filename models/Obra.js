@@ -50,6 +50,9 @@ const ReceitaSchema = new mongoose.Schema({
     },
   ],
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
+  // Campos para transações múltiplas
+  isTransacaoMultipla: { type: Boolean, default: false },
+  transacaoPrincipalId: { type: mongoose.Schema.Types.ObjectId },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -109,6 +112,9 @@ const PagamentoSchema = new mongoose.Schema({
     },
   ],
   obraId: { type: mongoose.Schema.Types.ObjectId, ref: "Obra" },
+  // Campos para transações múltiplas
+  isTransacaoMultipla: { type: Boolean, default: false },
+  transacaoPrincipalId: { type: mongoose.Schema.Types.ObjectId },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

@@ -763,6 +763,11 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
       valorRecebido: req.body.valorRecebido
         ? parseFloat(req.body.valorRecebido)
         : 0,
+      // Campos para transações múltiplas
+      isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
+      transacaoPrincipalId: req.body.transacaoPrincipalId
+        ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
+        : null,
     };
 
     obra.receitas.push(novaReceita);
@@ -860,6 +865,11 @@ router.put(
         valorRecebido: req.body.valorRecebido
           ? parseFloat(req.body.valorRecebido)
           : 0,
+        // Campos para transações múltiplas
+        isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
+        transacaoPrincipalId: req.body.transacaoPrincipalId
+          ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
+          : null,
       };
 
       obra.receitas[receitaIndex] = receitaAtualizada;
@@ -1066,6 +1076,11 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
       anexos: anexos,
       associacaoOrcamento: associacaoOrcamento,
       valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
+      // Campos para transações múltiplas
+      isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
+      transacaoPrincipalId: req.body.transacaoPrincipalId
+        ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
+        : null,
     };
 
     obra.pagamentos.push(novoPagamento);
@@ -1163,6 +1178,11 @@ router.put(
           : null,
         associacaoOrcamento: associacaoOrcamento,
         valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
+        // Campos para transações múltiplas
+        isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
+        transacaoPrincipalId: req.body.transacaoPrincipalId
+          ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
+          : null,
       };
 
       obra.pagamentos[pagamentoIndex] = pagamentoAtualizado;
@@ -2116,6 +2136,45 @@ router.put("/:obraId/registros-diarios/:registroId", async (req, res) => {
     res.json(registroAtualizado);
   } catch (error) {
     console.error("Erro ao atualizar registro diário:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Rota para buscar transações múltiplas
+router.get("/lancamentos/multiplas", async (req, res) => {
+  try {
+    // Buscar todas as obras com transações múltiplas
+    const obras = await Obra.find().select("nome pagamentos receitas").lean();
+
+    // Filtrar apenas transações múltiplas
+    const transacoesMultiplas = obras.flatMap((obra) => {
+      const pagamentos = obra.pagamentos
+        .filter((p) => p.isTransacaoMultipla)
+        .map((pagamento) => ({
+          ...pagamento,
+          obraId: obra._id,
+          obraNome: obra.nome,
+          tipo: "despesa",
+        }));
+
+      const receitas = obra.receitas
+        .filter((r) => r.isTransacaoMultipla)
+        .map((receita) => ({
+          ...receita,
+          obraId: obra._id,
+          obraNome: obra.nome,
+          tipo: "receita",
+        }));
+
+      return [...pagamentos, ...receitas];
+    });
+
+    // Ordenar por data (mais recente primeiro)
+    transacoesMultiplas.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+    res.json(transacoesMultiplas);
+  } catch (error) {
+    console.error("Erro ao buscar transações múltiplas:", error);
     res.status(500).json({ message: error.message });
   }
 });

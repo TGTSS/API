@@ -50,8 +50,17 @@ const upload = multer({
 // Get all independent transactions
 router.get("/", async (req, res) => {
   try {
-    const transacoes = await TransacaoIndependente.find()
+    const { isTransacaoMultipla } = req.query;
+    let filter = {};
+
+    // Filtrar por transações múltiplas se especificado
+    if (isTransacaoMultipla !== undefined) {
+      filter.isTransacaoMultipla = isTransacaoMultipla === "true";
+    }
+
+    const transacoes = await TransacaoIndependente.find(filter)
       .populate("beneficiario")
+      .populate("transacoesDivididas.obraId", "nome")
       .sort({ data: -1 });
     res.status(200).json(transacoes);
   } catch (error) {
@@ -205,6 +214,30 @@ router.put("/:id", upload.array("anexos", 5), async (req, res) => {
     res.json(transacaoAtualizada);
   } catch (error) {
     console.error("Erro ao atualizar transação independente:", error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Patch route to update transacoesDivididas
+router.patch("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { transacoesDivididas } = req.body;
+
+    const transacao = await TransacaoIndependente.findById(id);
+    if (!transacao) {
+      return res.status(404).json({ message: "Transação não encontrada" });
+    }
+
+    // Atualizar apenas o campo transacoesDivididas
+    if (transacoesDivididas) {
+      transacao.transacoesDivididas = transacoesDivididas;
+    }
+
+    const transacaoAtualizada = await transacao.save();
+    res.json(transacaoAtualizada);
+  } catch (error) {
+    console.error("Erro ao atualizar transações divididas:", error);
     res.status(400).json({ message: error.message });
   }
 });
