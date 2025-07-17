@@ -8,10 +8,10 @@ import Obra from "../models/Obra.js";
 
 const router = express.Router();
 
-// Configuração do multer para upload de imagens
-const imageStorage = multer.diskStorage({
+// Configuração do multer para upload de mídias (imagens e vídeos)
+const mediaStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = "public/uploads/medicoes/images";
+    const uploadDir = "public/uploads/medicoes/media";
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -38,14 +38,14 @@ const attachmentStorage = multer.diskStorage({
   },
 });
 
-// Upload de imagens (apenas imagens)
-const uploadImages = multer({
-  storage: imageStorage,
+// Upload de mídias (imagens e vídeos)
+const uploadMedia = multer({
+  storage: mediaStorage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB para imagens
+    fileSize: 16 * 1024 * 1024, // 16MB para vídeos
   },
   fileFilter: function (req, file, cb) {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|avi|mov|wmv/;
     const extname = allowedTypes.test(
       path.extname(file.originalname).toLowerCase()
     );
@@ -54,7 +54,7 @@ const uploadImages = multer({
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error("Apenas arquivos de imagem são permitidos"));
+      cb(new Error("Apenas arquivos de imagem e vídeo são permitidos"));
     }
   },
 });
@@ -80,13 +80,15 @@ const uploadAttachments = multer({
   },
 });
 
-// Upload misto (imagens + anexos)
+// Upload misto (mídias + anexos)
 const uploadMixed = multer({
   storage: multer.diskStorage({
     destination: function (req, file, cb) {
-      const isImage = /jpeg|jpg|png|gif|webp/.test(file.mimetype);
-      const uploadDir = isImage
-        ? "public/uploads/medicoes/images"
+      const isMedia = /jpeg|jpg|png|gif|webp|mp4|avi|mov|wmv/.test(
+        file.mimetype
+      );
+      const uploadDir = isMedia
+        ? "public/uploads/medicoes/media"
         : "public/uploads/medicoes/attachments";
 
       if (!fs.existsSync(uploadDir)) {
@@ -100,10 +102,11 @@ const uploadMixed = multer({
     },
   }),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 50 * 1024 * 1024, // 50MB para vídeos
   },
   fileFilter: function (req, file, cb) {
-    const allowedTypes = /jpeg|jpg|png|gif|webp|pdf|doc|docx|xls|xlsx|txt/;
+    const allowedTypes =
+      /jpeg|jpg|png|gif|webp|mp4|avi|mov|wmv|pdf|doc|docx|xls|xlsx|txt/;
     const extname = allowedTypes.test(
       path.extname(file.originalname).toLowerCase()
     );
@@ -113,7 +116,9 @@ const uploadMixed = multer({
       return cb(null, true);
     } else {
       cb(
-        new Error("Apenas arquivos de imagem, PDF e documentos são permitidos")
+        new Error(
+          "Apenas arquivos de mídia (imagens/vídeos), PDF e documentos são permitidos"
+        )
       );
     }
   },
@@ -220,35 +225,38 @@ router.post("/", uploadMixed.array("files", 20), async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    // Separar imagens de anexos
-    const images = [];
+    // Separar mídias de anexos
+    const media = [];
     const attachments = [];
 
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
-        const isImage = /jpeg|jpg|png|gif|webp/.test(file.mimetype);
+        const isMedia = /jpeg|jpg|png|gif|webp|mp4|avi|mov|wmv/.test(
+          file.mimetype
+        );
         const fileData = {
           name: file.originalname,
-          url: isImage
-            ? `/api/uploads/medicoes/images/${file.filename}`
+          url: isMedia
+            ? `/api/uploads/medicoes/media/${file.filename}`
             : `/api/uploads/medicoes/attachments/${file.filename}`,
           type: file.mimetype,
           size: file.size,
           uploadedAt: new Date(),
         };
 
-        if (isImage) {
-          images.push(fileData);
+        if (isMedia) {
+          media.push(fileData);
         } else {
           attachments.push(fileData);
         }
       });
     }
 
-    // Verificar se há pelo menos uma imagem
-    if (images.length === 0) {
+    // Verificar se há pelo menos uma mídia
+    if (media.length === 0) {
       return res.status(400).json({
-        message: "É obrigatório enviar pelo menos uma imagem da medição",
+        message:
+          "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição",
       });
     }
 
@@ -259,7 +267,7 @@ router.post("/", uploadMixed.array("files", 20), async (req, res) => {
       responsavel,
       groups: JSON.parse(groups || "[]"),
       comments,
-      images,
+      media,
       attachments,
       createdBy,
     });
@@ -652,8 +660,8 @@ router.get("/statistics/overview", async (req, res) => {
   }
 });
 
-// GET /api/medicoes/images/all - Buscar todas as imagens de todas as medições
-router.get("/images/all", async (req, res) => {
+// GET /api/medicoes/media/all - Buscar todas as mídias de todas as medições
+router.get("/media/all", async (req, res) => {
   try {
     const { obraId, page = 1, limit = 20, startDate, endDate } = req.query;
 
@@ -673,13 +681,13 @@ router.get("/images/all", async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
-    const allImages = [];
+    const allMedia = [];
     medicoes.forEach((medicao) => {
-      // Imagens da medição
-      if (medicao.images && medicao.images.length > 0) {
-        medicao.images.forEach((img) => {
-          allImages.push({
-            ...img.toObject(),
+      // Mídias da medição
+      if (medicao.media && medicao.media.length > 0) {
+        medicao.media.forEach((media) => {
+          allMedia.push({
+            ...media.toObject(),
             medicaoId: medicao._id,
             medicaoDate: medicao.date,
             responsavel: medicao.responsavel,
@@ -691,15 +699,15 @@ router.get("/images/all", async (req, res) => {
         });
       }
 
-      // Imagens dos itens
+      // Mídias dos itens
       if (medicao.groups && medicao.groups.length > 0) {
         medicao.groups.forEach((group) => {
           if (group.items && group.items.length > 0) {
             group.items.forEach((item) => {
-              if (item.images && item.images.length > 0) {
-                item.images.forEach((img) => {
-                  allImages.push({
-                    ...img.toObject(),
+              if (item.media && item.media.length > 0) {
+                item.media.forEach((media) => {
+                  allMedia.push({
+                    ...media.toObject(),
                     medicaoId: medicao._id,
                     medicaoDate: medicao.date,
                     responsavel: medicao.responsavel,
@@ -721,7 +729,7 @@ router.get("/images/all", async (req, res) => {
     const total = await Medicao.countDocuments(filter);
 
     res.json({
-      images: allImages,
+      media: allMedia,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -730,13 +738,13 @@ router.get("/images/all", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Erro ao buscar imagens:", error);
+    console.error("Erro ao buscar mídias:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-// GET /api/medicoes/:id/images - Buscar todas as imagens de uma medição específica
-router.get("/:id/images", async (req, res) => {
+// GET /api/medicoes/:id/media - Buscar todas as mídias de uma medição específica
+router.get("/:id/media", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -753,7 +761,7 @@ router.get("/:id/images", async (req, res) => {
       return res.status(404).json({ message: "Medição não encontrada" });
     }
 
-    const allImages = medicao.getAllImages();
+    const allMedia = medicao.getAllMedia();
 
     res.json({
       medicaoId: medicao._id,
@@ -761,17 +769,17 @@ router.get("/:id/images", async (req, res) => {
       responsavel: medicao.responsavel,
       obraNome: medicao.obraId.nome,
       obraCodigo: medicao.obraId.codigo,
-      images: allImages,
-      totalImages: allImages.length,
+      media: allMedia,
+      totalMedia: allMedia.length,
     });
   } catch (error) {
-    console.error("Erro ao buscar imagens da medição:", error);
+    console.error("Erro ao buscar mídias da medição:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-// GET /api/medicoes/images/obra/:obraId - Buscar todas as imagens de uma obra
-router.get("/images/obra/:obraId", async (req, res) => {
+// GET /api/medicoes/media/obra/:obraId - Buscar todas as mídias de uma obra
+router.get("/media/obra/:obraId", async (req, res) => {
   try {
     const { obraId } = req.params;
     const { page = 1, limit = 20, startDate, endDate } = req.query;
@@ -795,13 +803,13 @@ router.get("/images/obra/:obraId", async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
-    const allImages = [];
+    const allMedia = [];
     medicoes.forEach((medicao) => {
-      // Imagens da medição
-      if (medicao.images && medicao.images.length > 0) {
-        medicao.images.forEach((img) => {
-          allImages.push({
-            ...img.toObject(),
+      // Mídias da medição
+      if (medicao.media && medicao.media.length > 0) {
+        medicao.media.forEach((media) => {
+          allMedia.push({
+            ...media.toObject(),
             medicaoId: medicao._id,
             medicaoDate: medicao.date,
             responsavel: medicao.responsavel,
@@ -811,15 +819,15 @@ router.get("/images/obra/:obraId", async (req, res) => {
         });
       }
 
-      // Imagens dos itens
+      // Mídias dos itens
       if (medicao.groups && medicao.groups.length > 0) {
         medicao.groups.forEach((group) => {
           if (group.items && group.items.length > 0) {
             group.items.forEach((item) => {
-              if (item.images && item.images.length > 0) {
-                item.images.forEach((img) => {
-                  allImages.push({
-                    ...img.toObject(),
+              if (item.media && item.media.length > 0) {
+                item.media.forEach((media) => {
+                  allMedia.push({
+                    ...media.toObject(),
                     medicaoId: medicao._id,
                     medicaoDate: medicao.date,
                     responsavel: medicao.responsavel,
@@ -842,7 +850,7 @@ router.get("/images/obra/:obraId", async (req, res) => {
       obraId,
       obraNome: medicoes[0]?.obraId?.nome || "Obra não encontrada",
       obraCodigo: medicoes[0]?.obraId?.codigo || "",
-      images: allImages,
+      media: allMedia,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -851,65 +859,61 @@ router.get("/images/obra/:obraId", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Erro ao buscar imagens da obra:", error);
+    console.error("Erro ao buscar mídias da obra:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-// POST /api/medicoes/:id/images - Adicionar imagens a uma medição
-router.post(
-  "/:id/images",
-  uploadImages.array("images", 10),
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { description, isMain } = req.body;
+// POST /api/medicoes/:id/media - Adicionar mídias a uma medição
+router.post("/:id/media", uploadMedia.array("media", 10), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description, isMain } = req.body;
 
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "ID inválido" });
-      }
-
-      const medicao = await Medicao.findById(id);
-      if (!medicao) {
-        return res.status(404).json({ message: "Medição não encontrada" });
-      }
-
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ message: "Nenhuma imagem foi enviada" });
-      }
-
-      // Processar imagens
-      req.files.forEach((file, index) => {
-        const imageData = {
-          name: file.originalname,
-          url: `/api/uploads/medicoes/images/${file.filename}`,
-          type: file.mimetype,
-          size: file.size,
-          description: description || `Imagem ${index + 1} da medição`,
-          isMain: isMain === "true" && index === 0, // Apenas a primeira imagem pode ser principal
-        };
-
-        medicao.addImage(imageData);
-      });
-
-      await medicao.save();
-
-      const updatedMedicao = await Medicao.findById(id)
-        .populate("obraId", "nome codigo")
-        .populate("createdBy", "nome email");
-
-      res.json(updatedMedicao);
-    } catch (error) {
-      console.error("Erro ao adicionar imagens:", error);
-      res.status(500).json({ message: error.message });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
     }
-  }
-);
 
-// POST /api/medicoes/:id/items/:groupId/:itemId/images - Adicionar imagens a um item
+    const medicao = await Medicao.findById(id);
+    if (!medicao) {
+      return res.status(404).json({ message: "Medição não encontrada" });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "Nenhuma mídia foi enviada" });
+    }
+
+    // Processar mídias
+    req.files.forEach((file, index) => {
+      const mediaData = {
+        name: file.originalname,
+        url: `/api/uploads/medicoes/media/${file.filename}`,
+        type: file.mimetype,
+        size: file.size,
+        description: description || `Mídia ${index + 1} da medição`,
+        isMain: isMain === "true" && index === 0, // Apenas a primeira mídia pode ser principal
+      };
+
+      medicao.addMedia(mediaData);
+    });
+
+    await medicao.save();
+
+    const updatedMedicao = await Medicao.findById(id)
+      .populate("obraId", "nome codigo")
+      .populate("createdBy", "nome email");
+
+    res.json(updatedMedicao);
+  } catch (error) {
+    console.error("Erro ao adicionar mídias:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST /api/medicoes/:id/items/:groupId/:itemId/media - Adicionar mídias a um item
 router.post(
-  "/:id/items/:groupId/:itemId/images",
-  uploadImages.array("images", 5),
+  "/:id/items/:groupId/:itemId/media",
+  uploadMedia.array("media", 5),
   async (req, res) => {
     try {
       const { id, groupId, itemId } = req.params;
@@ -925,21 +929,21 @@ router.post(
       }
 
       if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ message: "Nenhuma imagem foi enviada" });
+        return res.status(400).json({ message: "Nenhuma mídia foi enviada" });
       }
 
-      // Processar imagens
+      // Processar mídias
       req.files.forEach((file, index) => {
-        const imageData = {
+        const mediaData = {
           name: file.originalname,
-          url: `/api/uploads/medicoes/images/${file.filename}`,
+          url: `/api/uploads/medicoes/media/${file.filename}`,
           type: file.mimetype,
           size: file.size,
-          description: description || `Imagem ${index + 1} do item`,
-          isMain: isMain === "true" && index === 0, // Apenas a primeira imagem pode ser principal
+          description: description || `Mídia ${index + 1} do item`,
+          isMain: isMain === "true" && index === 0, // Apenas a primeira mídia pode ser principal
         };
 
-        medicao.addItemImage(groupId, itemId, imageData);
+        medicao.addItemMedia(groupId, itemId, mediaData);
       });
 
       await medicao.save();
@@ -950,16 +954,16 @@ router.post(
 
       res.json(updatedMedicao);
     } catch (error) {
-      console.error("Erro ao adicionar imagens ao item:", error);
+      console.error("Erro ao adicionar mídias ao item:", error);
       res.status(500).json({ message: error.message });
     }
   }
 );
 
-// PUT /api/medicoes/:id/images/:imageId/main - Definir imagem principal
-router.put("/:id/images/:imageId/main", async (req, res) => {
+// PUT /api/medicoes/:id/media/:mediaId/main - Definir mídia principal
+router.put("/:id/media/:mediaId/main", async (req, res) => {
   try {
-    const { id, imageId } = req.params;
+    const { id, mediaId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
@@ -970,7 +974,7 @@ router.put("/:id/images/:imageId/main", async (req, res) => {
       return res.status(404).json({ message: "Medição não encontrada" });
     }
 
-    medicao.setMainImage(imageId);
+    medicao.setMainMedia(mediaId);
     await medicao.save();
 
     const updatedMedicao = await Medicao.findById(id)
@@ -979,15 +983,15 @@ router.put("/:id/images/:imageId/main", async (req, res) => {
 
     res.json(updatedMedicao);
   } catch (error) {
-    console.error("Erro ao definir imagem principal:", error);
+    console.error("Erro ao definir mídia principal:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-// DELETE /api/medicoes/:id/images/:imageId - Excluir imagem
-router.delete("/:id/images/:imageId", async (req, res) => {
+// DELETE /api/medicoes/:id/media/:mediaId - Excluir mídia
+router.delete("/:id/media/:mediaId", async (req, res) => {
   try {
-    const { id, imageId } = req.params;
+    const { id, mediaId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
@@ -998,38 +1002,38 @@ router.delete("/:id/images/:imageId", async (req, res) => {
       return res.status(404).json({ message: "Medição não encontrada" });
     }
 
-    // Verificar se é a última imagem
-    if (medicao.images.length <= 1) {
+    // Verificar se é a última mídia
+    if (medicao.media.length <= 1) {
       return res.status(400).json({
-        message: "Não é possível excluir a última imagem da medição",
+        message: "Não é possível excluir a última mídia da medição",
       });
     }
 
-    // Encontrar e remover a imagem
-    const imageIndex = medicao.images.findIndex(
-      (img) => img._id.toString() === imageId
+    // Encontrar e remover a mídia
+    const mediaIndex = medicao.media.findIndex(
+      (media) => media._id.toString() === mediaId
     );
-    if (imageIndex === -1) {
-      return res.status(404).json({ message: "Imagem não encontrada" });
+    if (mediaIndex === -1) {
+      return res.status(404).json({ message: "Mídia não encontrada" });
     }
 
-    const image = medicao.images[imageIndex];
+    const media = medicao.media[mediaIndex];
 
     // Excluir arquivo físico
     const filePath = path.join(
       "public",
-      image.url.replace("/api/uploads/", "uploads/")
+      media.url.replace("/api/uploads/", "uploads/")
     );
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
 
     // Remover da array
-    medicao.images.splice(imageIndex, 1);
+    medicao.media.splice(mediaIndex, 1);
 
-    // Se a imagem removida era principal, definir a primeira como principal
-    if (image.isMain && medicao.images.length > 0) {
-      medicao.images[0].isMain = true;
+    // Se a mídia removida era principal, definir a primeira como principal
+    if (media.isMain && medicao.media.length > 0) {
+      medicao.media[0].isMain = true;
     }
 
     await medicao.save();
@@ -1040,7 +1044,7 @@ router.delete("/:id/images/:imageId", async (req, res) => {
 
     res.json(updatedMedicao);
   } catch (error) {
-    console.error("Erro ao excluir imagem:", error);
+    console.error("Erro ao excluir mídia:", error);
     res.status(500).json({ message: error.message });
   }
 });

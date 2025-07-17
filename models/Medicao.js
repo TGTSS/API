@@ -171,8 +171,8 @@ const medicaoSchema = new mongoose.Schema({
               ],
             },
           ],
-          // Imagens obrigatórias do item
-          images: [
+          // Mídias obrigatórias do item (imagens e vídeos)
+          media: [
             {
               name: {
                 type: String,
@@ -184,20 +184,45 @@ const medicaoSchema = new mongoose.Schema({
               },
               type: {
                 type: String,
-                default: "image/jpeg",
+                required: true,
+                enum: [
+                  "image/jpeg",
+                  "image/png",
+                  "image/gif",
+                  "video/mp4",
+                  "video/avi",
+                  "video/mov",
+                  "video/wmv",
+                ],
               },
               size: {
                 type: Number,
               },
+              etapaItem: [
+                {
+                  etapa: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Etapa",
+                  },
+                  item: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Item",
+                  },
+                },
+              ],
               description: {
                 type: String,
-                default: "Imagem do item",
+                default: "Mídia do item",
               },
               uploadedAt: {
                 type: Date,
                 default: Date.now,
               },
               isMain: {
+                type: Boolean,
+                default: false,
+              },
+              isVideo: {
                 type: Boolean,
                 default: false,
               },
@@ -233,8 +258,8 @@ const medicaoSchema = new mongoose.Schema({
   comments: {
     type: String,
   },
-  // Imagens obrigatórias da medição
-  images: [
+  // Mídias obrigatórias da medição (imagens e vídeos)
+  media: [
     {
       name: {
         type: String,
@@ -246,20 +271,33 @@ const medicaoSchema = new mongoose.Schema({
       },
       type: {
         type: String,
-        default: "image/jpeg",
+        required: true,
+        enum: [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "video/mp4",
+          "video/avi",
+          "video/mov",
+          "video/wmv",
+        ],
       },
       size: {
         type: Number,
       },
       description: {
         type: String,
-        default: "Imagem da medição",
+        default: "Mídia da medição",
       },
       uploadedAt: {
         type: Date,
         default: Date.now,
       },
       isMain: {
+        type: Boolean,
+        default: false,
+      },
+      isVideo: {
         type: Boolean,
         default: false,
       },
@@ -312,22 +350,24 @@ medicaoSchema.pre("save", function (next) {
   next();
 });
 
-// Validação para garantir que cada medição tenha pelo menos uma imagem
+// Validação para garantir que cada medição tenha pelo menos uma mídia
 medicaoSchema.pre("save", function (next) {
-  // Verificar se a medição tem pelo menos uma imagem
-  if (!this.images || this.images.length === 0) {
-    return next(new Error("Cada medição deve ter pelo menos uma imagem"));
+  // Verificar se a medição tem pelo menos uma mídia
+  if (!this.media || this.media.length === 0) {
+    return next(
+      new Error("Cada medição deve ter pelo menos uma mídia (imagem ou vídeo)")
+    );
   }
 
-  // Verificar se cada grupo tem pelo menos um item com imagem
+  // Verificar se cada grupo tem pelo menos um item com mídia
   if (this.groups && this.groups.length > 0) {
     for (const group of this.groups) {
       if (group.items && group.items.length > 0) {
         for (const item of group.items) {
-          if (!item.images || item.images.length === 0) {
+          if (!item.media || item.media.length === 0) {
             return next(
               new Error(
-                `Item "${item.description}" deve ter pelo menos uma imagem`
+                `Item "${item.description}" deve ter pelo menos uma mídia (imagem ou vídeo)`
               )
             );
           }
@@ -488,30 +528,36 @@ medicaoSchema.methods.fillStageByPercentage = function (groupId, percentage) {
   this.calculateProgress();
 };
 
-// Método para adicionar imagem à medição
-medicaoSchema.methods.addImage = function (imageData) {
-  if (!this.images) {
-    this.images = [];
+// Método para adicionar mídia à medição
+medicaoSchema.methods.addMedia = function (mediaData) {
+  if (!this.media) {
+    this.media = [];
   }
 
-  // Se for a primeira imagem, marcar como principal
-  if (this.images.length === 0) {
-    imageData.isMain = true;
+  // Determinar se é vídeo baseado no tipo
+  const isVideo = mediaData.type && mediaData.type.startsWith("video/");
+
+  // Se for a primeira mídia, marcar como principal
+  if (this.media.length === 0) {
+    mediaData.isMain = true;
   }
 
-  this.images.push({
-    name: imageData.name,
-    url: imageData.url,
-    type: imageData.type || "image/jpeg",
-    size: imageData.size,
-    description: imageData.description || "Imagem da medição",
+  this.media.push({
+    name: mediaData.name,
+    url: mediaData.url,
+    type: mediaData.type,
+    size: mediaData.size,
+    description:
+      mediaData.description ||
+      (isVideo ? "Vídeo da medição" : "Imagem da medição"),
     uploadedAt: new Date(),
-    isMain: imageData.isMain || false,
+    isMain: mediaData.isMain || false,
+    isVideo: isVideo,
   });
 };
 
-// Método para adicionar imagem a um item específico
-medicaoSchema.methods.addItemImage = function (groupId, itemId, imageData) {
+// Método para adicionar mídia a um item específico
+medicaoSchema.methods.addItemMedia = function (groupId, itemId, mediaData) {
   const group = this.groups.find((g) => g.id === groupId);
   if (!group) {
     throw new Error("Grupo não encontrado");
@@ -522,35 +568,40 @@ medicaoSchema.methods.addItemImage = function (groupId, itemId, imageData) {
     throw new Error("Item não encontrado");
   }
 
-  if (!item.images) {
-    item.images = [];
+  if (!item.media) {
+    item.media = [];
   }
 
-  // Se for a primeira imagem do item, marcar como principal
-  if (item.images.length === 0) {
-    imageData.isMain = true;
+  // Determinar se é vídeo baseado no tipo
+  const isVideo = mediaData.type && mediaData.type.startsWith("video/");
+
+  // Se for a primeira mídia do item, marcar como principal
+  if (item.media.length === 0) {
+    mediaData.isMain = true;
   }
 
-  item.images.push({
-    name: imageData.name,
-    url: imageData.url,
-    type: imageData.type || "image/jpeg",
-    size: imageData.size,
-    description: imageData.description || "Imagem do item",
+  item.media.push({
+    name: mediaData.name,
+    url: mediaData.url,
+    type: mediaData.type,
+    size: mediaData.size,
+    description:
+      mediaData.description || (isVideo ? "Vídeo do item" : "Imagem do item"),
     uploadedAt: new Date(),
-    isMain: imageData.isMain || false,
+    isMain: mediaData.isMain || false,
+    isVideo: isVideo,
   });
 };
 
-// Método para obter todas as imagens da medição
-medicaoSchema.methods.getAllImages = function () {
-  const allImages = [];
+// Método para obter todas as mídias da medição
+medicaoSchema.methods.getAllMedia = function () {
+  const allMedia = [];
 
-  // Imagens da medição
-  if (this.images && this.images.length > 0) {
-    allImages.push(
-      ...this.images.map((img) => ({
-        ...img.toObject(),
+  // Mídias da medição
+  if (this.media && this.media.length > 0) {
+    allMedia.push(
+      ...this.media.map((media) => ({
+        ...media.toObject(),
         source: "medicao",
         sourceId: this._id,
         sourceType: "medicao",
@@ -558,15 +609,15 @@ medicaoSchema.methods.getAllImages = function () {
     );
   }
 
-  // Imagens dos itens
+  // Mídias dos itens
   if (this.groups && this.groups.length > 0) {
     this.groups.forEach((group) => {
       if (group.items && group.items.length > 0) {
         group.items.forEach((item) => {
-          if (item.images && item.images.length > 0) {
-            allImages.push(
-              ...item.images.map((img) => ({
-                ...img.toObject(),
+          if (item.media && item.media.length > 0) {
+            allMedia.push(
+              ...item.media.map((media) => ({
+                ...media.toObject(),
                 source: "item",
                 sourceId: item.id,
                 sourceType: "item",
@@ -580,27 +631,27 @@ medicaoSchema.methods.getAllImages = function () {
     });
   }
 
-  return allImages;
+  return allMedia;
 };
 
-// Método para definir imagem principal
-medicaoSchema.methods.setMainImage = function (imageId) {
-  if (!this.images || this.images.length === 0) {
-    throw new Error("Não há imagens para definir como principal");
+// Método para definir mídia principal
+medicaoSchema.methods.setMainMedia = function (mediaId) {
+  if (!this.media || this.media.length === 0) {
+    throw new Error("Não há mídias para definir como principal");
   }
 
-  // Remover marcação de principal de todas as imagens
-  this.images.forEach((img) => {
-    img.isMain = false;
+  // Remover marcação de principal de todas as mídias
+  this.media.forEach((media) => {
+    media.isMain = false;
   });
 
-  // Encontrar e marcar a imagem especificada como principal
-  const image = this.images.find((img) => img._id.toString() === imageId);
-  if (!image) {
-    throw new Error("Imagem não encontrada");
+  // Encontrar e marcar a mídia especificada como principal
+  const media = this.media.find((media) => media._id.toString() === mediaId);
+  if (!media) {
+    throw new Error("Mídia não encontrada");
   }
 
-  image.isMain = true;
+  media.isMain = true;
 };
 
 const Medicao = mongoose.model("Medicao", medicaoSchema);
