@@ -382,6 +382,88 @@ router.post(
   }
 );
 
+// PUT - Editar alocação de item (com upload opcional de arquivos)
+router.put(
+  "/:id/alocar/:alocacaoId",
+  upload.fields([
+    { name: "foto", maxCount: 5 },
+    { name: "assinaturaResponsavel", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { id, alocacaoId } = req.params;
+      const dadosAtualizados = req.body;
+
+      // Processar arquivos enviados
+      const fotos =
+        req.files && req.files["foto"]
+          ? req.files["foto"].map((file) => ({
+              nome: file.originalname,
+              tipo: file.mimetype,
+              tamanho: file.size,
+              caminho: `/api/inventario/uploads/${file.filename}`,
+              dataUpload: new Date(),
+            }))
+          : [];
+
+      const assinatura =
+        req.files && req.files["assinaturaResponsavel"]
+          ? {
+              nome: req.files["assinaturaResponsavel"][0].originalname,
+              tipo: req.files["assinaturaResponsavel"][0].mimetype,
+              tamanho: req.files["assinaturaResponsavel"][0].size,
+              caminho: `/api/inventario/uploads/${req.files["assinaturaResponsavel"][0].filename}`,
+              dataUpload: new Date(),
+            }
+          : null;
+
+      const item = await Inventario.findById(id);
+      if (!item)
+        return res.status(404).json({ message: "Item não encontrado" });
+
+      const alocacao = item.alocacoes.id(alocacaoId);
+      if (!alocacao)
+        return res.status(404).json({ message: "Alocação não encontrada" });
+
+      // Atualizar campos
+      Object.assign(alocacao, dadosAtualizados);
+
+      // Se enviou novas fotos, substitui ou adiciona
+      if (fotos.length > 0) alocacao.fotos = fotos;
+      if (assinatura) alocacao.assinaturaResponsavel = assinatura;
+
+      await item.save();
+      res.json(alocacao);
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Erro ao editar alocação", error: error.message });
+    }
+  }
+);
+
+// DELETE - Remover alocação de item
+router.delete("/:id/alocar/:alocacaoId", async (req, res) => {
+  try {
+    const { id, alocacaoId } = req.params;
+    const item = await Inventario.findById(id);
+    if (!item) return res.status(404).json({ message: "Item não encontrado" });
+
+    const alocacao = item.alocacoes.id(alocacaoId);
+    if (!alocacao)
+      return res.status(404).json({ message: "Alocação não encontrada" });
+
+    alocacao.remove();
+    await item.save();
+
+    res.json({ message: "Alocação removida com sucesso" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Erro ao remover alocação", error: error.message });
+  }
+});
+
 // PUT - Devolver item
 router.put("/:id/devolver/:alocacaoId", async (req, res) => {
   try {
