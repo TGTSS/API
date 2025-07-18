@@ -26,8 +26,8 @@ const medicaoSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Aprovado", "Em revisão", "Pendente"],
-    default: "Pendente",
+    enum: ["Aprovação", "Em andamento", "Concluído"],
+    default: "Aprovação",
   },
   groups: [
     {
@@ -87,8 +87,8 @@ const medicaoSchema = new mongoose.Schema({
           },
           status: {
             type: String,
-            enum: ["Aprovado", "Em revisão", "Pendente"],
-            default: "Pendente",
+            enum: ["Aprovação", "Em andamento", "Concluído"],
+            default: "Aprovação",
           },
           lastMeasurement: {
             date: {
@@ -109,7 +109,7 @@ const medicaoSchema = new mongoose.Schema({
             },
             status: {
               type: String,
-              enum: ["Aprovado", "Em revisão", "Pendente"],
+              enum: ["A iniciar", "Em andamento", "Concluído"],
             },
             comments: {
               type: String,
@@ -140,7 +140,7 @@ const medicaoSchema = new mongoose.Schema({
               },
               status: {
                 type: String,
-                enum: ["Aprovado", "Em revisão", "Pendente"],
+                enum: ["A iniciar", "Em andamento", "Concluído"],
                 required: true,
               },
               comments: {

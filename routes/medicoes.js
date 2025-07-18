@@ -383,6 +383,46 @@ router.post(
   }
 );
 
+// GET /api/obras/:obraId/medicoes - Listar medições de uma obra específica
+router.get("/obras/:obraId/medicoes", async (req, res) => {
+  try {
+    const { obraId } = req.params;
+    const { page = 1, limit = 10, status } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(obraId)) {
+      return res.status(400).json({ message: "ID da obra inválido" });
+    }
+
+    const filter = { obraId };
+    if (status) {
+      filter.status = status;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const medicoes = await Medicao.find(filter)
+      .populate("createdBy", "nome email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Medicao.countDocuments(filter);
+
+    res.json({
+      medicoes,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao listar medições da obra:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // PUT /api/medicoes/:id - Atualizar uma medição
 router.put("/:id", uploadMixed.array("attachments", 10), async (req, res) => {
   try {
@@ -439,6 +479,73 @@ router.put("/:id", uploadMixed.array("attachments", 10), async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// PUT /api/obras/:obraId/medicoes/:medicaoId - Atualizar uma medição específica de uma obra
+router.put(
+  "/obras/:obraId/medicoes/:medicaoId",
+  uploadMixed.array("attachments", 10),
+  async (req, res) => {
+    try {
+      const { obraId, medicaoId } = req.params;
+      const { date, responsavel, groups, comments, status, updatedBy } =
+        req.body;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(obraId) ||
+        !mongoose.Types.ObjectId.isValid(medicaoId)
+      ) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      const medicao = await Medicao.findOne({ _id: medicaoId, obraId });
+      if (!medicao) {
+        return res
+          .status(404)
+          .json({ message: "Medição não encontrada para esta obra" });
+      }
+
+      // Processar novos anexos
+      const newAttachments = req.files
+        ? req.files.map((file) => ({
+            name: file.originalname,
+            url: `/api/uploads/medicoes/${file.filename}`,
+            type: file.mimetype,
+            size: file.size,
+            uploadedAt: new Date(),
+          }))
+        : [];
+
+      // Atualizar campos
+      if (date) medicao.date = new Date(date);
+      if (responsavel) medicao.responsavel = responsavel;
+      if (groups) medicao.groups = JSON.parse(groups);
+      if (comments !== undefined) medicao.comments = comments;
+      if (status) medicao.status = status;
+      if (updatedBy) medicao.updatedBy = updatedBy;
+
+      // Adicionar novos anexos
+      if (newAttachments.length > 0) {
+        medicao.attachments.push(...newAttachments);
+      }
+
+      // Recalcular totais
+      medicao.calculateTotalMedido();
+      medicao.calculateProgress();
+
+      await medicao.save();
+
+      const updatedMedicao = await Medicao.findById(medicaoId)
+        .populate("obraId", "nome codigo")
+        .populate("createdBy", "nome email")
+        .populate("updatedBy", "nome email");
+
+      res.json(updatedMedicao);
+    } catch (error) {
+      console.error("Erro ao atualizar medição:", error);
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
 
 // DELETE /api/medicoes/:id - Excluir uma medição
 router.delete("/:id", async (req, res) => {
