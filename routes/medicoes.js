@@ -293,6 +293,96 @@ router.post("/", uploadMixed.array("files", 20), async (req, res) => {
   }
 });
 
+// POST /api/obras/:obraId/medicoes - Criar medição para uma obra específica
+router.post(
+  "/obras/:obraId/medicoes",
+  uploadMixed.array("files", 20),
+  async (req, res) => {
+    try {
+      const { obraId } = req.params;
+      const { date, responsavel, groups, comments, createdBy } = req.body;
+
+      if (!obraId || !responsavel) {
+        return res.status(400).json({
+          message: "obraId e responsavel são obrigatórios",
+        });
+      }
+
+      // Verificar se a obra existe
+      const obra = await Obra.findById(obraId);
+      if (!obra) {
+        return res.status(404).json({ message: "Obra não encontrada" });
+      }
+
+      // Separar mídias de anexos
+      const media = [];
+      const attachments = [];
+
+      if (req.files && req.files.length > 0) {
+        req.files.forEach((file) => {
+          const isMedia = /jpeg|jpg|png|gif|webp|mp4|avi|mov|wmv/.test(
+            file.mimetype
+          );
+          const fileData = {
+            name: file.originalname,
+            url: isMedia
+              ? `/api/uploads/medicoes/media/${file.filename}`
+              : `/api/uploads/medicoes/attachments/${file.filename}`,
+            type: file.mimetype,
+            size: file.size,
+            uploadedAt: new Date(),
+          };
+
+          if (isMedia) {
+            media.push(fileData);
+          } else {
+            attachments.push(fileData);
+          }
+        });
+      }
+
+      // Verificar se há pelo menos uma mídia
+      if (media.length === 0) {
+        return res.status(400).json({
+          message:
+            "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição",
+        });
+      }
+
+      // Criar nova medição
+      const medicao = new Medicao({
+        obraId,
+        date: date ? new Date(date) : new Date(),
+        responsavel,
+        groups: JSON.parse(groups || "[]"),
+        comments,
+        media,
+        attachments,
+        createdBy,
+      });
+
+      // Calcular totais
+      medicao.calculateTotalMedido();
+      medicao.calculateProgress();
+
+      await medicao.save();
+
+      // Adicionar a medição à obra
+      obra.medicoes.push(medicao._id);
+      await obra.save();
+
+      const populatedMedicao = await Medicao.findById(medicao._id)
+        .populate("obraId", "nome codigo")
+        .populate("createdBy", "nome email");
+
+      res.status(201).json(populatedMedicao);
+    } catch (error) {
+      console.error("Erro ao criar medição:", error);
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
 // PUT /api/medicoes/:id - Atualizar uma medição
 router.put("/:id", uploadMixed.array("attachments", 10), async (req, res) => {
   try {
