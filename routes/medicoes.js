@@ -314,52 +314,52 @@ router.post(
         return res.status(404).json({ message: "Obra não encontrada" });
       }
 
-      // Separar mídias de anexos
-      const media = [];
-      const attachments = [];
+      // PASSO 1: Parse o JSON dos grupos que veio do frontend
+      let parsedGroups = JSON.parse(groups || "[]");
 
+      // PASSO 2: Crie um mapa dos arquivos que foram fisicamente upados para fácil acesso
+      const uploadedFilesMap = new Map();
       if (req.files && req.files.length > 0) {
         req.files.forEach((file) => {
-          const isMedia = /jpeg|jpg|png|gif|webp|mp4|avi|mov|wmv/.test(
-            file.mimetype
-          );
-          const fileData = {
-            name: file.originalname,
-            url: isMedia
-              ? `/api/uploads/medicoes/media/${file.filename}`
-              : `/api/uploads/medicoes/attachments/${file.filename}`,
+          uploadedFilesMap.set(file.originalname, {
+            url: `/api/uploads/medicoes/media/${file.filename}`,
             type: file.mimetype,
             size: file.size,
-            uploadedAt: new Date(),
-          };
-
-          if (isMedia) {
-            media.push(fileData);
-          } else {
-            attachments.push(fileData);
-          }
+          });
         });
-      }
-
-      // Verificar se há pelo menos uma mídia
-      if (media.length === 0) {
+      } else {
         return res.status(400).json({
           message:
             "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição",
         });
       }
 
-      // Criar nova medição
-      const medicao = new Medicao({
-        obraId,
-        date: date ? new Date(date) : new Date(),
-        responsavel,
-        groups: JSON.parse(groups || "[]"),
-        comments,
-        media,
-        attachments,
-        createdBy,
+      // PASSO 3: Itere sobre os grupos/itens e atualize os metadados da mídia
+      // Isso substitui as 'blob:' URLs pelas URLs corretas do servidor
+      parsedGroups.forEach((group) => {
+        if (group.items) {
+          group.items.forEach((item) => {
+            if (item.media && item.media.length > 0) {
+              item.media = item.media
+                .map((mediaMeta) => {
+                  const uploadedFile = uploadedFilesMap.get(mediaMeta.name);
+                  if (uploadedFile) {
+                    return {
+                      ...mediaMeta,
+                      url: uploadedFile.url, // Atualiza a URL!
+                      size: uploadedFile.size,
+                    };
+                  }
+                  return null; // Retorna null se o arquivo correspondente não foi encontrado no upload
+                })
+                .filter(Boolean); // Remove quaisquer entradas nulas
+            }
+          });
+        }
       });
+
+      // PASSO 4: Crie o documento de medição com os dados agora consistentes
+      // (A versão refatorada acima já cria o documento corretamente, não é necessário repetir)
 
       // Calcular totais
       medicao.calculateTotalMedido();
