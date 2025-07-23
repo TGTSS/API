@@ -391,7 +391,27 @@ router.post(
 
       res.status(201).json(populatedMedicao);
     } catch (error) {
-      console.error("Erro ao criar medição:", error);
+      // Log detalhado do erro
+      console.error("[ERRO] Falha ao criar medição:");
+      console.error("Mensagem:", error.message);
+      if (error.stack) {
+        console.error("Stack:", error.stack);
+      }
+      if (error.errors) {
+        // Erros de validação do Mongoose
+        Object.keys(error.errors).forEach((key) => {
+          console.error(`[Mongoose] Campo: ${key} - ${error.errors[key].message}`);
+        });
+      }
+      if (error.body) {
+        console.error("Body recebido:", error.body);
+      }
+      if (req && req.body) {
+        console.error("Body da requisição:", req.body);
+      }
+      if (req && req.files) {
+        console.error("Arquivos recebidos:", req.files);
+      }
       res.status(500).json({ message: error.message });
     }
   }
