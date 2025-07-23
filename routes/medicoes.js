@@ -302,40 +302,40 @@ router.post(
       const { obraId } = req.params;
       const { date, responsavel, groups, comments, createdBy } = req.body;
 
-      if (!obraId || !responsavel) {
+      // Validação inicial
+      if (!obraId || !responsavel || !groups) {
         return res.status(400).json({
-          message: "obraId e responsavel são obrigatórios",
+          message: "Os campos obraId, responsavel e groups são obrigatórios.",
         });
       }
 
-      // Verificar se a obra existe
       const obra = await Obra.findById(obraId);
       if (!obra) {
         return res.status(404).json({ message: "Obra não encontrada" });
       }
 
-      // PASSO 1: Parse o JSON dos grupos que veio do frontend
-      let parsedGroups = JSON.parse(groups || "[]");
+      // 1. Parse dos dados JSON
+      let parsedGroups = JSON.parse(groups);
 
-      // PASSO 2: Crie um mapa dos arquivos que foram fisicamente upados para fácil acesso
+      // 2. Mapeamento dos arquivos físicos enviados
       const uploadedFilesMap = new Map();
-      if (req.files && req.files.length > 0) {
-        req.files.forEach((file) => {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          message:
+            "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição.",
+        });
+      }
+      req.files.forEach((file) => {
+        if (/jpeg|jpg|png|gif|webp|mp4|avi|mov|wmv/.test(file.mimetype)) {
           uploadedFilesMap.set(file.originalname, {
-            url: `/api/uploads/medicoes/media/${file.filename}`,
+            url: `/uploads/medicoes/media/${file.filename}`, // URL relativa para o servidor
             type: file.mimetype,
             size: file.size,
           });
-        });
-      } else {
-        return res.status(400).json({
-          message:
-            "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição",
-        });
-      }
+        }
+      });
 
-      // PASSO 3: Itere sobre os grupos/itens e atualize os metadados da mídia
-      // Isso substitui as 'blob:' URLs pelas URLs corretas do servidor
+      // 3. Reconciliação: Atualiza os metadados nos 'items' com as URLs dos arquivos upados
       parsedGroups.forEach((group) => {
         if (group.items) {
           group.items.forEach((item) => {
@@ -346,28 +346,42 @@ router.post(
                   if (uploadedFile) {
                     return {
                       ...mediaMeta,
-                      url: uploadedFile.url, // Atualiza a URL!
+                      url: uploadedFile.url,
                       size: uploadedFile.size,
                     };
                   }
-                  return null; // Retorna null se o arquivo correspondente não foi encontrado no upload
+                  return null;
                 })
-                .filter(Boolean); // Remove quaisquer entradas nulas
+                .filter(Boolean); // Remove itens nulos se um arquivo não for encontrado
             }
           });
         }
       });
 
-      // PASSO 4: Crie o documento de medição com os dados agora consistentes
-      // (A versão refatorada acima já cria o documento corretamente, não é necessário repetir)
+      // 4. Criação do documento Medicao com os dados consistentes
+      const medicao = new Medicao({
+        obraId,
+        date: date ? new Date(date) : new Date(),
+        responsavel,
+        groups: parsedGroups,
+        comments,
+        // Define a mídia principal da medição com base nos arquivos upados
+        media: Array.from(uploadedFilesMap.values()).map((file, index) => ({
+          name: Array.from(uploadedFilesMap.keys())[index],
+          url: file.url,
+          type: file.type,
+          size: file.size,
+          isMain: index === 0, // Define a primeira como principal
+        })),
+        createdBy,
+      });
 
-      // Calcular totais
+      // 5. Execução dos métodos e salvamento
       medicao.calculateTotalMedido();
       medicao.calculateProgress();
 
-      await medicao.save();
+      await medicao.save(); // A validação do Schema agora passará
 
-      // Adicionar a medição à obra
       obra.medicoes.push(medicao._id);
       await obra.save();
 
