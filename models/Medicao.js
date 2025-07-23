@@ -4,7 +4,6 @@ const medicaoSchema = new mongoose.Schema({
   obraId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Obra",
-    required: true,
   },
   date: {
     type: Date,
@@ -12,7 +11,6 @@ const medicaoSchema = new mongoose.Schema({
   },
   responsavel: {
     type: String,
-    required: true,
   },
   totalMedido: {
     type: Number,
@@ -33,11 +31,9 @@ const medicaoSchema = new mongoose.Schema({
     {
       id: {
         type: String,
-        required: true,
       },
       title: {
         type: String,
-        required: true,
       },
       progresso: {
         type: Number,
@@ -49,11 +45,9 @@ const medicaoSchema = new mongoose.Schema({
         {
           id: {
             type: String,
-            required: true,
           },
           description: {
             type: String,
-            required: true,
           },
           unit: {
             type: String,
@@ -61,12 +55,12 @@ const medicaoSchema = new mongoose.Schema({
           },
           plannedQuantity: {
             type: Number,
-            required: true,
+
             min: 0,
           },
           value: {
             type: Number,
-            required: true,
+
             min: 0,
           },
           executedQuantity: {
@@ -126,22 +120,19 @@ const medicaoSchema = new mongoose.Schema({
               },
               quantity: {
                 type: Number,
-                required: true,
               },
               value: {
                 type: Number,
-                required: true,
               },
               percentage: {
                 type: Number,
-                required: true,
+
                 min: 0,
                 max: 100,
               },
               status: {
                 type: String,
                 enum: ["A iniciar", "Em andamento", "Concluído"],
-                required: true,
               },
               comments: {
                 type: String,
@@ -176,15 +167,13 @@ const medicaoSchema = new mongoose.Schema({
             {
               name: {
                 type: String,
-                required: true,
               },
               url: {
                 type: String,
-                required: true,
               },
               type: {
                 type: String,
-                required: true,
+
                 enum: [
                   "image/jpeg",
                   "image/png",
@@ -233,11 +222,9 @@ const medicaoSchema = new mongoose.Schema({
             {
               name: {
                 type: String,
-                required: true,
               },
               url: {
                 type: String,
-                required: true,
               },
               type: {
                 type: String,
@@ -263,15 +250,13 @@ const medicaoSchema = new mongoose.Schema({
     {
       name: {
         type: String,
-        required: true,
       },
       url: {
         type: String,
-        required: true,
       },
       type: {
         type: String,
-        required: true,
+
         enum: [
           "image/jpeg",
           "image/png",
@@ -308,11 +293,9 @@ const medicaoSchema = new mongoose.Schema({
     {
       name: {
         type: String,
-        required: true,
       },
       url: {
         type: String,
-        required: true,
       },
       type: {
         type: String,
