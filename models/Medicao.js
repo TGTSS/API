@@ -342,22 +342,7 @@ medicaoSchema.pre("save", function (next) {
     );
   }
 
-  // Verificar se cada grupo tem pelo menos um item com mídia
-  if (this.groups && this.groups.length > 0) {
-    for (const group of this.groups) {
-      if (group.items && group.items.length > 0) {
-        for (const item of group.items) {
-          if (!item.media || item.media.length === 0) {
-            return next(
-              new Error(
-                `Item "${item.description}" deve ter pelo menos uma mídia (imagem ou vídeo)`
-              )
-            );
-          }
-        }
-      }
-    }
-  }
+  // (Regra removida) Não exige mais mídia obrigatória em cada item
 
   next();
 });
