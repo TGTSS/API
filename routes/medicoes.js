@@ -294,141 +294,137 @@ router.post("/", uploadMixed.array("files", 20), async (req, res) => {
 });
 
 // POST /api/obras/:obraId/medicoes - Criar medição para uma obra específica
-router.post(
-  "/obras/:obraId/medicoes",
-  uploadMixed.array("files", 20),
-  async (req, res) => {
-    try {
-      const { obraId } = req.params;
-      const { date, responsavel, groups, comments, createdBy } = req.body;
+router.post("/obras/:obraId/medicoes", uploadMixed.any(), async (req, res) => {
+  try {
+    const { obraId } = req.params;
+    const { date, responsavel, groups, comments, createdBy } = req.body;
 
-      // Validação inicial
-      if (!obraId || !responsavel || !groups) {
-        return res.status(400).json({
-          message: "Os campos obraId, responsavel e groups são obrigatórios.",
-        });
-      }
-
-      const obra = await Obra.findById(obraId);
-      if (!obra) {
-        return res.status(404).json({ message: "Obra não encontrada" });
-      }
-
-      // 1. Parse dos dados JSON
-      let parsedGroups = JSON.parse(groups);
-
-      // 2. Mapeamento dos arquivos físicos enviados por mediaId
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({
-          message:
-            "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição.",
-        });
-      }
-
-      // Crie um mapa de arquivos por mediaId
-      const fileByMediaId = {};
-      req.files.forEach((file) => {
-        // Espera que o campo seja 'media-item-<mediaId>'
-        const match = file.fieldname.match(/^media-item-(.+)$/);
-        if (match) {
-          const mediaId = match[1];
-          fileByMediaId[mediaId] = {
-            name: file.originalname,
-            url: `/uploads/medicoes/media/${file.filename}`,
-            type: file.mimetype,
-            size: file.size,
-          };
-        }
+    // Validação inicial
+    if (!obraId || !responsavel || !groups) {
+      return res.status(400).json({
+        message: "Os campos obraId, responsavel e groups são obrigatórios.",
       });
-
-      // Atualiza os objetos de mídia dos itens usando o mediaId
-      parsedGroups.forEach((group) => {
-        if (group.items) {
-          group.items.forEach((item) => {
-            // Suporte tanto para item.images quanto item.media
-            const medias = item.media || item.images;
-            if (medias && medias.length > 0) {
-              medias.forEach((mediaObj) => {
-                if (mediaObj.mediaId && fileByMediaId[mediaObj.mediaId]) {
-                  mediaObj.url = fileByMediaId[mediaObj.mediaId].url;
-                  mediaObj.type = fileByMediaId[mediaObj.mediaId].type;
-                  mediaObj.size = fileByMediaId[mediaObj.mediaId].size;
-                  mediaObj.name = fileByMediaId[mediaObj.mediaId].name;
-                }
-              });
-              // Se veio em item.images, copia para item.media
-              if (!item.media && item.images) {
-                item.media = item.images;
-              }
-            }
-          });
-        }
-      });
-
-      // 3. Criação do documento Medicao com os dados consistentes
-      const medicao = new Medicao({
-        obraId,
-        date: date ? new Date(date) : new Date(),
-        responsavel,
-        groups: parsedGroups,
-        comments,
-        // Define a mídia principal da medição como a primeira encontrada
-        media:
-          Object.values(fileByMediaId).length > 0
-            ? [Object.values(fileByMediaId)[0]]
-            : [],
-        createdBy,
-      });
-
-      // 4. Execução dos métodos e salvamento
-      medicao.calculateTotalMedido();
-      medicao.calculateProgress();
-
-      await medicao.save();
-
-      obra.medicoes.push(medicao._id);
-      await obra.save();
-
-      const populatedMedicao = await Medicao.findById(medicao._id)
-        .populate("obraId", "nome codigo")
-        .populate("createdBy", "nome email");
-
-      res.status(201).json(populatedMedicao);
-    } catch (error) {
-      // Log detalhado do erro
-      console.error("[ERRO] Falha ao criar medição:");
-      console.error("Mensagem:", error.message);
-      if (error.stack) {
-        console.error("Stack:", error.stack);
-      }
-      if (error.errors) {
-        // Erros de validação do Mongoose
-        Object.keys(error.errors).forEach((key) => {
-          console.error(
-            `[Mongoose] Campo: ${key} - ${error.errors[key].message}`
-          );
-        });
-      }
-      if (error.body) {
-        console.error("Body recebido:", error.body);
-      }
-      if (req && req.body) {
-        console.error("Body da requisição:", req.body);
-      }
-      if (req && req.files) {
-        console.error("Arquivos recebidos:", req.files);
-      }
-      // Log extra para debug do payload
-      try {
-        console.error("parsedGroups:", JSON.stringify(parsedGroups, null, 2));
-        console.error("fileByMediaId:", JSON.stringify(fileByMediaId, null, 2));
-      } catch (e) {
-        console.error("Erro ao logar parsedGroups/fileByMediaId:", e);
-      }
-      res.status(500).json({ message: error.message });
     }
+
+    const obra = await Obra.findById(obraId);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // 1. Parse dos dados JSON
+    let parsedGroups = JSON.parse(groups);
+
+    // 2. Mapeamento dos arquivos físicos enviados por mediaId
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        message:
+          "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição.",
+      });
+    }
+
+    // Crie um mapa de arquivos por mediaId
+    const fileByMediaId = {};
+    req.files.forEach((file) => {
+      // Espera que o campo seja 'media-item-<mediaId>'
+      const match = file.fieldname.match(/^media-item-(.+)$/);
+      if (match) {
+        const mediaId = match[1];
+        fileByMediaId[mediaId] = {
+          name: file.originalname,
+          url: `/uploads/medicoes/media/${file.filename}`,
+          type: file.mimetype,
+          size: file.size,
+        };
+      }
+    });
+
+    // Atualiza os objetos de mídia dos itens usando o mediaId
+    parsedGroups.forEach((group) => {
+      if (group.items) {
+        group.items.forEach((item) => {
+          // Suporte tanto para item.images quanto item.media
+          const medias = item.media || item.images;
+          if (medias && medias.length > 0) {
+            medias.forEach((mediaObj) => {
+              if (mediaObj.mediaId && fileByMediaId[mediaObj.mediaId]) {
+                mediaObj.url = fileByMediaId[mediaObj.mediaId].url;
+                mediaObj.type = fileByMediaId[mediaObj.mediaId].type;
+                mediaObj.size = fileByMediaId[mediaObj.mediaId].size;
+                mediaObj.name = fileByMediaId[mediaObj.mediaId].name;
+              }
+            });
+            // Se veio em item.images, copia para item.media
+            if (!item.media && item.images) {
+              item.media = item.images;
+            }
+          }
+        });
+      }
+    });
+
+    // 3. Criação do documento Medicao com os dados consistentes
+    const medicao = new Medicao({
+      obraId,
+      date: date ? new Date(date) : new Date(),
+      responsavel,
+      groups: parsedGroups,
+      comments,
+      // Define a mídia principal da medição como a primeira encontrada
+      media:
+        Object.values(fileByMediaId).length > 0
+          ? [Object.values(fileByMediaId)[0]]
+          : [],
+      createdBy,
+    });
+
+    // 4. Execução dos métodos e salvamento
+    medicao.calculateTotalMedido();
+    medicao.calculateProgress();
+
+    await medicao.save();
+
+    obra.medicoes.push(medicao._id);
+    await obra.save();
+
+    const populatedMedicao = await Medicao.findById(medicao._id)
+      .populate("obraId", "nome codigo")
+      .populate("createdBy", "nome email");
+
+    res.status(201).json(populatedMedicao);
+  } catch (error) {
+    // Log detalhado do erro
+    console.error("[ERRO] Falha ao criar medição:");
+    console.error("Mensagem:", error.message);
+    if (error.stack) {
+      console.error("Stack:", error.stack);
+    }
+    if (error.errors) {
+      // Erros de validação do Mongoose
+      Object.keys(error.errors).forEach((key) => {
+        console.error(
+          `[Mongoose] Campo: ${key} - ${error.errors[key].message}`
+        );
+      });
+    }
+    if (error.body) {
+      console.error("Body recebido:", error.body);
+    }
+    if (req && req.body) {
+      console.error("Body da requisição:", req.body);
+    }
+    if (req && req.files) {
+      console.error("Arquivos recebidos:", req.files);
+    }
+    // Log extra para debug do payload
+    try {
+      console.error("parsedGroups:", JSON.stringify(parsedGroups, null, 2));
+      console.error("fileByMediaId:", JSON.stringify(fileByMediaId, null, 2));
+    } catch (e) {
+      console.error("Erro ao logar parsedGroups/fileByMediaId:", e);
+    }
+    res.status(500).json({ message: error.message });
   }
-);
+});
 
 // GET /api/obras/:obraId/medicoes - Listar medições de uma obra específica
 router.get("/obras/:obraId/medicoes", async (req, res) => {
