@@ -418,6 +418,13 @@ router.post(
       if (req && req.files) {
         console.error("Arquivos recebidos:", req.files);
       }
+      // Log extra para debug do payload
+      try {
+        console.error("parsedGroups:", JSON.stringify(parsedGroups, null, 2));
+        console.error("fileByMediaId:", JSON.stringify(fileByMediaId, null, 2));
+      } catch (e) {
+        console.error("Erro ao logar parsedGroups/fileByMediaId:", e);
+      }
       res.status(500).json({ message: error.message });
     }
   }
