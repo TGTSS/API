@@ -314,6 +314,33 @@ router.post("/obras/:obraId/medicoes", uploadMixed.any(), async (req, res) => {
     // 1. Parse dos dados JSON
     let parsedGroups = JSON.parse(groups);
 
+    // Padroniza status dos itens, lastMeasurement e history
+    parsedGroups.forEach((group) => {
+      if (group.items) {
+        group.items.forEach((item) => {
+          // status do item
+          if (item.status === "pending") item.status = "Aprovação";
+          if (item.status === "Em Andamento") item.status = "Em andamento";
+
+          // status do lastMeasurement
+          if (item.lastMeasurement && item.lastMeasurement.status) {
+            if (item.lastMeasurement.status === "Em Andamento")
+              item.lastMeasurement.status = "Em andamento";
+            if (item.lastMeasurement.status === "pending")
+              item.lastMeasurement.status = "A iniciar";
+          }
+
+          // status do history
+          if (item.history && item.history.length > 0) {
+            item.history.forEach((h) => {
+              if (h.status === "Em Andamento") h.status = "Em andamento";
+              if (h.status === "pending") h.status = "A iniciar";
+            });
+          }
+        });
+      }
+    });
+
     // 2. Mapeamento dos arquivos físicos enviados por mediaId
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -417,8 +444,12 @@ router.post("/obras/:obraId/medicoes", uploadMixed.any(), async (req, res) => {
     }
     // Log extra para debug do payload
     try {
-      console.error("parsedGroups:", JSON.stringify(parsedGroups, null, 2));
-      console.error("fileByMediaId:", JSON.stringify(fileByMediaId, null, 2));
+      if (typeof parsedGroups !== "undefined") {
+        console.error("parsedGroups:", JSON.stringify(parsedGroups, null, 2));
+      }
+      if (typeof fileByMediaId !== "undefined") {
+        console.error("fileByMediaId:", JSON.stringify(fileByMediaId, null, 2));
+      }
     } catch (e) {
       console.error("Erro ao logar parsedGroups/fileByMediaId:", e);
     }
