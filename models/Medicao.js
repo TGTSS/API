@@ -24,7 +24,7 @@ const medicaoSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Aprovação", "Em andamento", "Concluído"],
+    enum: ["Aprovação", "Em andamento", "Concluído, Pendente"],
     default: "Aprovação",
   },
   groups: [
