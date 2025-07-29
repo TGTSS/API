@@ -49,7 +49,6 @@ const TransacaoBrutaSchema = new mongoose.Schema(
     },
     beneficiarioTipo: {
       type: String,
-      enum: ["Fornecedor", "Cliente", "Funcionario"],
     },
     documento: {
       type: String,

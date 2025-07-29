@@ -84,7 +84,6 @@ const PagamentoSchema = new mongoose.Schema({
   },
   beneficiarioTipo: {
     type: String,
-    enum: ["Fornecedor", "Funcionario"],
   },
   documento: { type: String },
   associacaoOrcamento: {
