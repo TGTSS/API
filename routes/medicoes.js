@@ -252,13 +252,7 @@ router.post("/", uploadMixed.array("files", 20), async (req, res) => {
       });
     }
 
-    // Verificar se há pelo menos uma mídia
-    if (media.length === 0) {
-      return res.status(400).json({
-        message:
-          "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição",
-      });
-    }
+    // Removida a obrigatoriedade de pelo menos uma mídia
 
     // Criar nova medição
     const medicao = new Medicao({
@@ -342,7 +336,6 @@ router.post("/obras/:obraId/medicoes", uploadMixed.any(), async (req, res) => {
     });
 
     // 2. Mapeamento dos arquivos físicos enviados por mediaId
-    // Removido o bloqueio de obrigatoriedade de mídia
     const fileByMediaId = {};
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
@@ -359,6 +352,7 @@ router.post("/obras/:obraId/medicoes", uploadMixed.any(), async (req, res) => {
         }
       });
     }
+    // Não há obrigatoriedade de pelo menos uma mídia
 
     // Atualiza os objetos de mídia dos itens usando o mediaId
     parsedGroups.forEach((group) => {
@@ -391,7 +385,7 @@ router.post("/obras/:obraId/medicoes", uploadMixed.any(), async (req, res) => {
       responsavel,
       groups: parsedGroups,
       comments,
-      // Define a mídia principal da medição como a primeira encontrada
+      // Define a mídia principal da medição como a primeira encontrada, se houver
       media:
         Object.values(fileByMediaId).length > 0
           ? [Object.values(fileByMediaId)[0]]
