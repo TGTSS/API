@@ -342,28 +342,23 @@ router.post("/obras/:obraId/medicoes", uploadMixed.any(), async (req, res) => {
     });
 
     // 2. Mapeamento dos arquivos físicos enviados por mediaId
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        message:
-          "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição.",
+    // Removido o bloqueio de obrigatoriedade de mídia
+    const fileByMediaId = {};
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        // Espera que o campo seja 'media-item-<mediaId>'
+        const match = file.fieldname.match(/^media-item-(.+)$/);
+        if (match) {
+          const mediaId = match[1];
+          fileByMediaId[mediaId] = {
+            name: file.originalname,
+            url: `/uploads/medicoes/media/${file.filename}`,
+            type: file.mimetype,
+            size: file.size,
+          };
+        }
       });
     }
-
-    // Crie um mapa de arquivos por mediaId
-    const fileByMediaId = {};
-    req.files.forEach((file) => {
-      // Espera que o campo seja 'media-item-<mediaId>'
-      const match = file.fieldname.match(/^media-item-(.+)$/);
-      if (match) {
-        const mediaId = match[1];
-        fileByMediaId[mediaId] = {
-          name: file.originalname,
-          url: `/uploads/medicoes/media/${file.filename}`,
-          type: file.mimetype,
-          size: file.size,
-        };
-      }
-    });
 
     // Atualiza os objetos de mídia dos itens usando o mediaId
     parsedGroups.forEach((group) => {
