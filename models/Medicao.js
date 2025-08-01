@@ -330,18 +330,6 @@ medicaoSchema.pre("save", function (next) {
 });
 
 // Validação para garantir que cada medição tenha pelo menos uma mídia
-medicaoSchema.pre("save", function (next) {
-  // Verificar se a medição tem pelo menos uma mídia
-  if (!this.media || this.media.length === 0) {
-    return next(
-      new Error("Cada medição deve ter pelo menos uma mídia (imagem ou vídeo)")
-    );
-  }
-
-  // (Regra removida) Não exige mais mídia obrigatória em cada item
-
-  next();
-});
 
 // Método para calcular o progresso geral
 medicaoSchema.methods.calculateProgress = function () {
