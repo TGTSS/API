@@ -24,4 +24,22 @@ const uploadToCloudinary = (buffer, folder) => {
   });
 };
 
+/**
+ * Função para deletar um arquivo da Cloudinary pelo public_id
+ * @param {string} publicId O public_id do arquivo na Cloudinary
+ * @returns {Promise<object>} O resultado da deleção
+ */
+export const deleteFromCloudinary = (publicId) => {
+  return new Promise((resolve, reject) => {
+    cloudinary.v2.uploader.destroy(
+      publicId,
+      { resource_type: "auto" },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+  });
+};
+
 export default uploadToCloudinary;
