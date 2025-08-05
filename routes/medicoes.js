@@ -85,7 +85,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.get("/obra/:obraId", async (req, res) => {
+router.get("/obras/:obraId/medicoes", async (req, res) => {
   try {
     const { obraId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(obraId)) {
