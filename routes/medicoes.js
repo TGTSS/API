@@ -20,8 +20,6 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // Limite de 50MB por arquivo
 });
 
-// --- ROTAS DE LEITURA (GET) ---
-// Estas rotas não mudam, pois apenas leem dados do banco.
 router.get("/", async (req, res) => {
   /* ... seu código original aqui, sem alterações ... */
   try {
@@ -68,7 +66,6 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  /* ... seu código original aqui, sem alterações ... */
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -84,6 +81,29 @@ router.get("/:id", async (req, res) => {
     res.json(medicao);
   } catch (error) {
     console.error("Erro ao buscar medição:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/obra/:obraId", async (req, res) => {
+  try {
+    const { obraId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(obraId)) {
+      return res.status(400).json({ message: "ID de obra inválido" });
+    }
+    const medicoes = await Medicao.find({ obraId })
+      .populate("obraId", "nome codigo cliente responsavelObra")
+      .populate("createdBy", "nome email")
+      .populate("updatedBy", "nome email")
+      .sort({ createdAt: -1 });
+    if (medicoes.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Nenhuma medição encontrada para esta obra" });
+    }
+    res.json(medicoes);
+  } catch (error) {
+    console.error("Erro ao buscar medições por obra:", error);
     res.status(500).json({ message: error.message });
   }
 });
