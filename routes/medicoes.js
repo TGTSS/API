@@ -3,8 +3,6 @@ import mongoose from "mongoose";
 import multer from "multer";
 import Medicao from "../models/Medicao.js";
 import Obra from "../models/Obra.js";
-
-// 1. Importa os serviços de upload e delete do Cloudinary
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
