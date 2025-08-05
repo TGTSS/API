@@ -416,12 +416,8 @@ router.post("/obras/:obraId/medicoes", uploadMixed.any(), async (req, res) => {
       }
     }); // 2. Mapeamento dos arquivos físicos enviados por mediaId
 
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        message:
-          "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição.",
-      });
-    } // Crie um mapa de arquivos por mediaId
+    // Não exige mais obrigatoriedade de mídia
+    // Crie um mapa de arquivos por mediaId
 
     const fileByMediaId = {};
 
