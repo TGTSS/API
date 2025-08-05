@@ -3,7 +3,7 @@ import Cotacao from "../models/Cotacao.js";
 import Solicitacao from "../models/Solicitacao.js";
 import mongoose from "mongoose";
 import multer from "multer";
-import uploadToCloudinary from "../services/uploadServise.js";
+import uploadToCloudinary from "../services/uploadService.js";
 
 const router = express.Router();
 
@@ -113,7 +113,9 @@ router.post("/", upload.array("arquivos", 10), async (req, res) => {
     });
 
     const savedCotacao = await novaCotacao.save();
-    await Solicitacao.findByIdAndUpdate(solicitacaoId, { status: "Em cotação" });
+    await Solicitacao.findByIdAndUpdate(solicitacaoId, {
+      status: "Em cotação",
+    });
     res.status(201).json(savedCotacao);
   } catch (error) {
     console.error("Erro ao criar cotação:", error);

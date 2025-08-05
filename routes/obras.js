@@ -5,7 +5,7 @@ import Medicao from "../models/Medicao.js";
 import multer from "multer";
 // import path from "path";
 // import fs from "fs";
-import uploadToCloudinary from "../services/uploadServise.js";
+import uploadToCloudinary from "../services/uploadService.js";
 import TipoObra from "../models/TipoObra.js";
 import QuemPaga from "../models/QuemPaga.js";
 import Conta from "../models/Conta.js";
