@@ -54,60 +54,19 @@ const upload = multer({
 });
 
 // Rota para servir arquivos
+// ATENÇÃO: path e fs removidos conforme solicitado. Se necessário servir arquivos, utilize o caminho absoluto manualmente ou ajuste conforme sua infraestrutura.
 router.get("/uploads/documentos/:filename", (req, res) => {
   const filename = req.params.filename;
-  const filePath = path.join(
-    process.cwd(),
-    "public",
-    "uploads",
-    "documentos",
-    filename
-  );
+  // Exemplo de caminho absoluto (ajuste conforme necessário):
+  const filePath = `${process.cwd()}/public/uploads/documentos/${filename}`;
 
-  if (fs.existsSync(filePath)) {
-    // Determinar o tipo MIME com base na extensão do arquivo
-    const ext = path.extname(filename).toLowerCase();
-    let contentType = "application/octet-stream";
-
-    switch (ext) {
-      case ".jpg":
-      case ".jpeg":
-        contentType = "image/jpeg";
-        break;
-      case ".png":
-        contentType = "image/png";
-        break;
-      case ".pdf":
-        contentType = "application/pdf";
-        break;
-      case ".doc":
-      case ".docx":
-        contentType = "application/msword";
-        break;
-      case ".xls":
-      case ".xlsx":
-        contentType = "application/vnd.ms-excel";
-        break;
+  // Não há verificação de existência do arquivo nem detecção de tipo MIME.
+  // Apenas envia o arquivo se existir, senão retorna 404.
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      res.status(404).json({ message: "Arquivo não encontrado" });
     }
-
-    // Definir os headers corretos
-    res.setHeader("Content-Type", contentType);
-
-    // Para imagens e PDFs, permitir visualização inline
-    if (contentType.startsWith("image/") || contentType === "application/pdf") {
-      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
-    } else {
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${filename}"`
-      );
-    }
-
-    // Enviar o arquivo
-    res.sendFile(filePath);
-  } else {
-    res.status(404).json({ message: "Arquivo não encontrado" });
-  }
+  });
 });
 
 // Rota para listar todos os tipos de obra
