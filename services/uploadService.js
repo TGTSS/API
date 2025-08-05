@@ -24,7 +24,7 @@ const uploadToCloudinary = (buffer, folder) => {
   });
 };
 
-export default uploadToCloudinary;
+export { uploadToCloudinary, deleteFromCloudinary };
 
 /**
  * Função para deletar um arquivo da Cloudinary pelo public_id
