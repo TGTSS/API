@@ -3,10 +3,8 @@ import mongoose from "mongoose";
 import Obra from "../models/Obra.js";
 import Medicao from "../models/Medicao.js";
 import multer from "multer";
-import {
-  uploadToCloudinary,
-  deleteFromCloudinary,
-} from "../services/uploadService.js";
+import path from "path";
+import fs from "fs";
 import TipoObra from "../models/TipoObra.js";
 import QuemPaga from "../models/QuemPaga.js";
 import Conta from "../models/Conta.js";
@@ -46,27 +44,104 @@ router.get("/:id/debug-pagamentos", async (req, res) => {
   }
 });
 
-// Multer em memória para Cloudinary
-const storage = multer.memoryStorage();
+// Configuração do multer para upload de arquivos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(
+      process.cwd(),
+      "public",
+      "uploads",
+      "documentos"
+    );
+
+    // Criar o diretório se não existir
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|pdf|doc|docx|xls|xlsx/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(
+      new Error(
+        "Apenas arquivos PDF, DOC, DOCX, XLS, XLSX, JPEG e PNG são permitidos"
+      )
+    );
+  },
 });
 
 // Rota para servir arquivos
-// ATENÇÃO: path e fs removidos conforme solicitado. Se necessário servir arquivos, utilize o caminho absoluto manualmente ou ajuste conforme sua infraestrutura.
 router.get("/uploads/documentos/:filename", (req, res) => {
   const filename = req.params.filename;
-  // Exemplo de caminho absoluto (ajuste conforme necessário):
-  const filePath = `${process.cwd()}/public/uploads/documentos/${filename}`;
+  const filePath = path.join(
+    process.cwd(),
+    "public",
+    "uploads",
+    "documentos",
+    filename
+  );
 
-  // Não há verificação de existência do arquivo nem detecção de tipo MIME.
-  // Apenas envia o arquivo se existir, senão retorna 404.
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      res.status(404).json({ message: "Arquivo não encontrado" });
+  if (fs.existsSync(filePath)) {
+    // Determinar o tipo MIME com base na extensão do arquivo
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = "application/octet-stream";
+
+    switch (ext) {
+      case ".jpg":
+      case ".jpeg":
+        contentType = "image/jpeg";
+        break;
+      case ".png":
+        contentType = "image/png";
+        break;
+      case ".pdf":
+        contentType = "application/pdf";
+        break;
+      case ".doc":
+      case ".docx":
+        contentType = "application/msword";
+        break;
+      case ".xls":
+      case ".xlsx":
+        contentType = "application/vnd.ms-excel";
+        break;
     }
-  });
+
+    // Definir os headers corretos
+    res.setHeader("Content-Type", contentType);
+
+    // Para imagens e PDFs, permitir visualização inline
+    if (contentType.startsWith("image/") || contentType === "application/pdf") {
+      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    } else {
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+    }
+
+    // Enviar o arquivo
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ message: "Arquivo não encontrado" });
+  }
 });
 
 // Rota para listar todos os tipos de obra
@@ -210,27 +285,24 @@ router.get("/:id", async (req, res) => {
 });
 
 // Rota para criar uma nova obra
-// Criação de obra com upload de imagem para Cloudinary
 router.post("/", upload.single("imagem"), async (req, res) => {
   try {
+    // Parse JSON strings from FormData
     const parseFormData = (value) => {
       try {
         return JSON.parse(value);
-      } catch {
+      } catch (e) {
         return value;
       }
     };
+
+    // Processar a imagem se existir
     let imagem = null;
     if (req.file) {
-      const result = await uploadToCloudinary(req.file.buffer, "obras/imagens");
-      imagem = {
-        url: result.secure_url,
-        public_id: result.public_id,
-        type: result.format,
-        size: result.bytes,
-        nome: req.file.originalname,
-      };
+      imagem = `/api/obras/uploads/documentos/${req.file.filename}`;
     }
+
+    // Converter os dados do FormData
     const obraData = {
       nome: req.body.nome,
       status: req.body.status,
@@ -281,20 +353,46 @@ router.post("/", upload.single("imagem"), async (req, res) => {
         : null,
       imagem,
     };
-    if (!obraData.nome)
+
+    // Validar campos obrigatórios
+    if (!obraData.nome) {
+      console.error("Erro: Nome é obrigatório");
       return res.status(400).json({ message: "Nome é obrigatório" });
-    if (!obraData.tipo)
+    }
+
+    if (!obraData.tipo) {
+      console.error("Erro: Tipo é obrigatório");
       return res.status(400).json({ message: "Tipo é obrigatório" });
-    if (!obraData.cliente)
+    }
+
+    if (!obraData.cliente) {
+      console.error("Erro: Cliente é obrigatório");
       return res.status(400).json({ message: "Cliente é obrigatório" });
-    if (!obraData.dataInicio)
+    }
+
+    if (!obraData.dataInicio) {
+      console.error("Erro: Data de início é obrigatória");
       return res.status(400).json({ message: "Data de início é obrigatória" });
+    }
+
     const obra = new Obra(obraData);
+
     const savedObra = await obra.save();
+
     res.status(201).json(savedObra);
   } catch (error) {
-    console.error("Erro detalhado ao criar obra:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Erro detalhado ao criar obra:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+    });
+
+    res.status(500).json({
+      message: error.message,
+      error: error.name,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
   }
 });
 

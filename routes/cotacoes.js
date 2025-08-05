@@ -3,23 +3,23 @@ import Cotacao from "../models/Cotacao.js";
 import Solicitacao from "../models/Solicitacao.js";
 import mongoose from "mongoose";
 import multer from "multer";
-import {
-  uploadToCloudinary,
-  deleteFromCloudinary,
-} from "../services/uploadService.js";
+import path from "path";
 
 const router = express.Router();
 
-// Multer em memória para Cloudinary
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+// Configuração do multer para upload de arquivos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Diretório onde os arquivos serão salvos
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
 });
+const upload = multer({ storage });
 
 // Rota para criar uma nova cotação
-// Criação de cotação com upload de arquivos para Cloudinary
-router.post("/", upload.array("arquivos", 10), async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const {
       solicitacaoId,
@@ -37,41 +37,31 @@ router.post("/", upload.array("arquivos", 10), async (req, res) => {
       progresso,
       historico,
       pagamento,
+      arquivos,
       fornecedores,
       itensFornecedor,
       ordensCompra,
     } = req.body;
 
+    // Validações
     if (!solicitacaoId || !mongoose.Types.ObjectId.isValid(solicitacaoId)) {
       return res.status(400).json({ message: "ID da solicitação inválido" });
     }
+
     if (!nome) {
       return res.status(400).json({ message: "Nome é obrigatório" });
     }
+
+    // Verificar se a solicitação existe
     const solicitacao = await Solicitacao.findById(solicitacaoId);
     if (!solicitacao) {
       return res.status(404).json({ message: "Solicitação não encontrada" });
     }
+
     // Buscar todas as cotações para obter o último número
     const cotacoes = await Cotacao.find().lean();
     const ultimoNumero = Math.max(...cotacoes.map((c) => c.numero || 0), 0);
     const proximoNumero = ultimoNumero + 1;
-
-    // Upload dos arquivos para Cloudinary
-    let arquivosCloud = [];
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map((file) =>
-        uploadToCloudinary(file.buffer, "cotacoes/arquivos").then((result) => ({
-          nome: file.originalname,
-          descricao: file.originalname,
-          caminho: result.secure_url,
-          tamanho: result.bytes,
-          public_id: result.public_id,
-          type: result.format,
-        }))
-      );
-      arquivosCloud = await Promise.all(uploadPromises);
-    }
 
     const novaCotacao = new Cotacao({
       solicitacaoId,
@@ -109,16 +99,19 @@ router.post("/", upload.array("arquivos", 10), async (req, res) => {
         condicaoPagamento: "",
         descontos: 0,
       },
-      arquivos: arquivosCloud,
+      arquivos: arquivos || [],
       fornecedores: fornecedores || [],
       itensFornecedor: itensFornecedor || [],
       ordensCompra: ordensCompra || [],
     });
 
     const savedCotacao = await novaCotacao.save();
+
+    // Atualizar status da solicitação para "Em cotação"
     await Solicitacao.findByIdAndUpdate(solicitacaoId, {
       status: "Em cotação",
     });
+
     res.status(201).json(savedCotacao);
   } catch (error) {
     console.error("Erro ao criar cotação:", error);
