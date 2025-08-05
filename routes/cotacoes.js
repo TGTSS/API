@@ -3,7 +3,10 @@ import Cotacao from "../models/Cotacao.js";
 import Solicitacao from "../models/Solicitacao.js";
 import mongoose from "mongoose";
 import multer from "multer";
-import uploadToCloudinary from "../services/uploadService.js";
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} from "../services/uploadService.js";
 
 const router = express.Router();
 
