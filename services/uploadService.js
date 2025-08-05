@@ -1,17 +1,17 @@
+// services/uploadService.js
+
 import cloudinary from "cloudinary";
 
 /**
  * Função para fazer upload de um arquivo em buffer para a Cloudinary
- * @param {Buffer} buffer O buffer do arquivo (vindo do req.file.buffer)
- * @param {string} folder A pasta na Cloudinary onde o arquivo será salvo
- * @returns {Promise<object>} O resultado do upload da Cloudinary
+ * Use "export const" para que a função possa ser importada pelo nome.
  */
-const uploadToCloudinary = (buffer, folder) => {
+export const uploadToCloudinary = (buffer, folder) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.v2.uploader.upload_stream(
       {
         folder: folder,
-        resource_type: "auto", // Detecta o tipo de arquivo automaticamente
+        resource_type: "auto",
       },
       (error, result) => {
         if (error) {
@@ -25,21 +25,16 @@ const uploadToCloudinary = (buffer, folder) => {
 };
 
 /**
- * Função para deletar um arquivo da Cloudinary pelo public_id
- * @param {string} publicId O public_id do arquivo na Cloudinary
- * @returns {Promise<object>} O resultado da deleção
+ * Função para deletar um arquivo da Cloudinary usando seu public_id
+ * Use "export const" aqui também.
  */
-export const deleteFromCloudinary = (publicId) => {
+export const deleteFromCloudinary = (public_id) => {
   return new Promise((resolve, reject) => {
-    cloudinary.v2.uploader.destroy(
-      publicId,
-      { resource_type: "auto" },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result);
+    cloudinary.v2.uploader.destroy(public_id, (error, result) => {
+      if (error) {
+        return reject(error);
       }
-    );
+      resolve(result);
+    });
   });
 };
-
-export default uploadToCloudinary;
