@@ -3,8 +3,9 @@ import mongoose from "mongoose";
 import Obra from "../models/Obra.js";
 import Medicao from "../models/Medicao.js";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
+// import path from "path";
+// import fs from "fs";
+import uploadToCloudinary from "../services/uploadServise.js";
 import TipoObra from "../models/TipoObra.js";
 import QuemPaga from "../models/QuemPaga.js";
 import Conta from "../models/Conta.js";
@@ -44,47 +45,11 @@ router.get("/:id/debug-pagamentos", async (req, res) => {
   }
 });
 
-// Configuração do multer para upload de arquivos
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(
-      process.cwd(),
-      "public",
-      "uploads",
-      "documentos"
-    );
-
-    // Criar o diretório se não existir
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
+// Multer em memória para Cloudinary
+const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|pdf|doc|docx|xls|xlsx/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(
-      new Error(
-        "Apenas arquivos PDF, DOC, DOCX, XLS, XLSX, JPEG e PNG são permitidos"
-      )
-    );
-  },
+  limits: { fileSize: 50 * 1024 * 1024 },
 });
 
 // Rota para servir arquivos
@@ -285,24 +250,27 @@ router.get("/:id", async (req, res) => {
 });
 
 // Rota para criar uma nova obra
+// Criação de obra com upload de imagem para Cloudinary
 router.post("/", upload.single("imagem"), async (req, res) => {
   try {
-    // Parse JSON strings from FormData
     const parseFormData = (value) => {
       try {
         return JSON.parse(value);
-      } catch (e) {
+      } catch {
         return value;
       }
     };
-
-    // Processar a imagem se existir
     let imagem = null;
     if (req.file) {
-      imagem = `/api/obras/uploads/documentos/${req.file.filename}`;
+      const result = await uploadToCloudinary(req.file.buffer, "obras/imagens");
+      imagem = {
+        url: result.secure_url,
+        public_id: result.public_id,
+        type: result.format,
+        size: result.bytes,
+        nome: req.file.originalname,
+      };
     }
-
-    // Converter os dados do FormData
     const obraData = {
       nome: req.body.nome,
       status: req.body.status,
@@ -353,46 +321,20 @@ router.post("/", upload.single("imagem"), async (req, res) => {
         : null,
       imagem,
     };
-
-    // Validar campos obrigatórios
-    if (!obraData.nome) {
-      console.error("Erro: Nome é obrigatório");
+    if (!obraData.nome)
       return res.status(400).json({ message: "Nome é obrigatório" });
-    }
-
-    if (!obraData.tipo) {
-      console.error("Erro: Tipo é obrigatório");
+    if (!obraData.tipo)
       return res.status(400).json({ message: "Tipo é obrigatório" });
-    }
-
-    if (!obraData.cliente) {
-      console.error("Erro: Cliente é obrigatório");
+    if (!obraData.cliente)
       return res.status(400).json({ message: "Cliente é obrigatório" });
-    }
-
-    if (!obraData.dataInicio) {
-      console.error("Erro: Data de início é obrigatória");
+    if (!obraData.dataInicio)
       return res.status(400).json({ message: "Data de início é obrigatória" });
-    }
-
     const obra = new Obra(obraData);
-
     const savedObra = await obra.save();
-
     res.status(201).json(savedObra);
   } catch (error) {
-    console.error("Erro detalhado ao criar obra:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      code: error.code,
-    });
-
-    res.status(500).json({
-      message: error.message,
-      error: error.name,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
+    console.error("Erro detalhado ao criar obra:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 
