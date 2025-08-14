@@ -220,7 +220,7 @@ router.post("/", async (req, res) => {
 
 // POST /api/obras/:obraId/medicoes - Criar medição para uma obra específica
 
-router.post("/obras/:obraId/medicoes", uploadMixed.any(), async (req, res) => {
+router.post("/obras/:obraId/medicoes", async (req, res) => {
   try {
     const { obraId } = req.params;
 
@@ -457,7 +457,7 @@ router.get("/obras/:obraId/medicoes", async (req, res) => {
 
 // PUT /api/medicoes/:id - Atualizar uma medição
 
-router.put("/:id", uploadMixed.array("attachments", 10), async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -530,7 +530,7 @@ router.put("/:id", uploadMixed.array("attachments", 10), async (req, res) => {
 router.put(
   "/obras/:obraId/medicoes/:medicaoId",
 
-  uploadMixed.array("attachments", 10),
+  // arquivos agora devem ser enviados em base64 via req.body
 
   async (req, res) => {
     try {
@@ -658,7 +658,7 @@ router.delete("/:id", async (req, res) => {
 router.post(
   "/:id/items/:groupId/:itemId/measurement",
 
-  uploadMixed.array("attachments", 5),
+  // arquivos agora devem ser enviados em base64 via req.body
 
   async (req, res) => {
     try {
