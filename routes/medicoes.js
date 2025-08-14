@@ -2,7 +2,7 @@ import express from "express";
 
 import mongoose from "mongoose";
 
-import multer from "multer";
+// import multer from "multer"; // Removido
 
 import path from "path";
 
@@ -269,7 +269,7 @@ router.get("/:id", async (req, res) => {
 
 // POST /api/medicoes - Criar uma nova medição
 
-router.post("/", uploadMixed.array("files", 20), async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { obraId, date, responsavel, groups, comments, createdBy } = req.body;
 
@@ -286,36 +286,31 @@ router.post("/", uploadMixed.array("files", 20), async (req, res) => {
     } // Separar mídias de anexos
 
     const media = [];
-
     const attachments = [];
-
-    if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
-        const isMedia = /jpeg|jpg|png|gif|webp|mp4|avi|mov|wmv/.test(
-          file.mimetype
-        );
-
-        const fileData = {
-          name: file.originalname,
-
-          url: isMedia
-            ? `/api/uploads/medicoes/media/${file.filename}`
-            : `/api/uploads/medicoes/attachments/${file.filename}`,
-
-          type: file.mimetype,
-
-          size: file.size,
-
+    // Espera-se que media e attachments venham como arrays de objetos com base64, nome, tipo, tamanho
+    if (req.body.media && Array.isArray(req.body.media)) {
+      req.body.media.forEach((file) => {
+        media.push({
+          name: file.nome,
+          type: file.tipo,
+          size: file.tamanho,
+          base64: file.base64,
           uploadedAt: new Date(),
-        };
-
-        if (isMedia) {
-          media.push(fileData);
-        } else {
-          attachments.push(fileData);
-        }
+        });
       });
-    } // Verificar se há pelo menos uma mídia
+    }
+    if (req.body.attachments && Array.isArray(req.body.attachments)) {
+      req.body.attachments.forEach((file) => {
+        attachments.push({
+          name: file.nome,
+          type: file.tipo,
+          size: file.tamanho,
+          base64: file.base64,
+          uploadedAt: new Date(),
+        });
+      });
+    }
+    // Verificar se há pelo menos uma mídia
 
     if (media.length === 0) {
       return res.status(400).json({

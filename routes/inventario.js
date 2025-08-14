@@ -1,32 +1,13 @@
 import express from "express";
 import Inventario from "../models/Inventario.js";
 import Obra from "../models/Obra.js";
-import multer from "multer";
+// import multer from "multer"; // Removido
 import path from "path";
 import fs from "fs";
 
 const router = express.Router();
 
-// Configuração do multer para uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(
-      process.cwd(),
-      "public",
-      "uploads",
-      "inventario"
-    );
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage });
+// Removido multer. Agora espera-se que os arquivos sejam enviados em base64 no corpo da requisição.
 
 // GET - Listar todos os itens do inventário
 router.get("/", async (req, res) => {
@@ -291,96 +272,57 @@ router.delete("/:id", async (req, res) => {
 });
 
 // POST - Alocar item para obra (com upload de arquivos)
-router.post(
-  "/:id/alocar",
-  upload.fields([
-    { name: "foto", maxCount: 5 },
-    { name: "assinaturaResponsavel", maxCount: 1 },
-  ]),
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      // Os outros campos virão em req.body
-      const dadosAlocacao = req.body;
+router.post("/:id/alocar", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const dadosAlocacao = req.body;
 
-      // Processar arquivos enviados
-      const fotos =
-        req.files && req.files["foto"]
-          ? req.files["foto"].map((file) => ({
-              nome: file.originalname,
-              tipo: file.mimetype,
-              tamanho: file.size,
-              caminho: `/api/inventario/uploads/${file.filename}`,
-              dataUpload: new Date(),
-            }))
-          : [];
+    // Espera-se que fotos e assinatura venham como array/objeto com base64, nome, tipo, tamanho
+    // Exemplo: dadosAlocacao.fotos = [{ nome, tipo, tamanho, base64 }]
+    // Exemplo: dadosAlocacao.assinaturaResponsavel = { nome, tipo, tamanho, base64 }
 
-      const assinatura =
-        req.files && req.files["assinaturaResponsavel"]
-          ? {
-              nome: req.files["assinaturaResponsavel"][0].originalname,
-              tipo: req.files["assinaturaResponsavel"][0].mimetype,
-              tamanho: req.files["assinaturaResponsavel"][0].size,
-              caminho: `/api/inventario/uploads/${req.files["assinaturaResponsavel"][0].filename}`,
-              dataUpload: new Date(),
-            }
-          : null;
-
-      // Adicione as fotos e assinatura ao objeto de alocação
-      dadosAlocacao.fotos = fotos;
-      dadosAlocacao.assinaturaResponsavel = assinatura;
-
-      // Converter quantidade para número
-      if (dadosAlocacao.quantidade) {
-        dadosAlocacao.quantidade = parseFloat(dadosAlocacao.quantidade);
-      }
-
-      const item = await Inventario.findById(id);
-      if (!item) {
-        return res.status(404).json({ message: "Item não encontrado" });
-      }
-
-      // Verificar se obra existe
-      const obra = await Obra.findById(dadosAlocacao.obra);
-      if (!obra) {
-        return res.status(404).json({ message: "Obra não encontrada" });
-      }
-
-      // Verificar se pode ser alocado
-      if (!item.podeSerAlocado(dadosAlocacao.quantidade)) {
-        return res.status(400).json({
-          message: "Quantidade insuficiente para alocação",
-          quantidadeDisponivel: item.getQuantidadeDisponivel(),
-          quantidadeSolicitada: dadosAlocacao.quantidade,
-        });
-      }
-
-      // Alocar item (agora com fotos e assinatura)
-      await item.alocarItem(dadosAlocacao);
-
-      // Adicionar entrada no histórico
-      item.historico.push({
-        tipo: "alocacao",
-        descricao: `Item alocado para obra: ${obra.nome}`,
-        usuario: dadosAlocacao.usuario || "Sistema",
-        dadosNovos: dadosAlocacao,
-      });
-
-      await item.save();
-
-      // Popular dados da obra
-      await item.populate("obraAtual", "nome codigo");
-      await item.populate("alocacoes.obra", "nome codigo");
-
-      res.json(item);
-    } catch (error) {
-      console.error("Erro ao alocar item:", error);
-      res
-        .status(500)
-        .json({ message: "Erro ao alocar item", error: error.message });
+    if (dadosAlocacao.quantidade) {
+      dadosAlocacao.quantidade = parseFloat(dadosAlocacao.quantidade);
     }
+
+    const item = await Inventario.findById(id);
+    if (!item) {
+      return res.status(404).json({ message: "Item não encontrado" });
+    }
+
+    const obra = await Obra.findById(dadosAlocacao.obra);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    if (!item.podeSerAlocado(dadosAlocacao.quantidade)) {
+      return res.status(400).json({
+        message: "Quantidade insuficiente para alocação",
+        quantidadeDisponivel: item.getQuantidadeDisponivel(),
+        quantidadeSolicitada: dadosAlocacao.quantidade,
+      });
+    }
+
+    await item.alocarItem(dadosAlocacao);
+
+    item.historico.push({
+      tipo: "alocacao",
+      descricao: `Item alocado para obra: ${obra.nome}`,
+      usuario: dadosAlocacao.usuario || "Sistema",
+      dadosNovos: dadosAlocacao,
+    });
+
+    await item.save();
+    await item.populate("obraAtual", "nome codigo");
+    await item.populate("alocacoes.obra", "nome codigo");
+    res.json(item);
+  } catch (error) {
+    console.error("Erro ao alocar item:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao alocar item", error: error.message });
   }
-);
+});
 
 // PUT - Editar alocação de item (com upload opcional de arquivos)
 router.put(

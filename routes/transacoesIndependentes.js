@@ -1,51 +1,13 @@
 import express from "express";
 import TransacaoIndependente from "../models/TransacaoIndependente.js";
-import multer from "multer";
+// import multer from "multer"; // Removido
 import path from "path";
 import fs from "fs";
 import mongoose from "mongoose";
 
 const router = express.Router();
 
-// Configuração do multer para upload de arquivos
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(
-      process.cwd(),
-      "public",
-      "uploads",
-      "transacoes"
-    );
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({
-  storage: storage,
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|pdf|doc|docx|xls|xlsx/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(
-      new Error(
-        "Apenas arquivos PDF, DOC, DOCX, XLS, XLSX, JPEG e PNG são permitidos"
-      )
-    );
-  },
-});
+// Removido multer. Agora espera-se que os anexos sejam enviados em base64 no corpo da requisição.
 
 // Get all independent transactions
 router.get("/", async (req, res) => {
@@ -87,18 +49,19 @@ router.get("/:id", async (req, res) => {
 });
 
 // Create a new independent transaction
-router.post("/", upload.array("anexos", 5), async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     // Processar anexos se existirem
-    const anexos = req.files
-      ? req.files.map((file) => ({
-          nome: file.originalname,
-          tipo: file.mimetype,
-          tamanho: file.size,
-          caminho: `/api/transacoes/uploads/${file.filename}`,
-          dataUpload: new Date(),
-        }))
-      : [];
+    const anexos =
+      req.body.anexos && Array.isArray(req.body.anexos)
+        ? req.body.anexos.map((anexo) => ({
+            nome: anexo.nome,
+            tipo: anexo.tipo,
+            tamanho: anexo.tamanho,
+            base64: anexo.base64,
+            dataUpload: new Date(),
+          }))
+        : [];
 
     // Validate required fields
     const requiredFields = ["descricao", "valor", "tipo", "data"];
@@ -169,7 +132,7 @@ router.post("/", upload.array("anexos", 5), async (req, res) => {
 });
 
 // Update an independent transaction
-router.put("/:id", upload.array("anexos", 5), async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const transacao = await TransacaoIndependente.findById(req.params.id);
     if (!transacao) {
@@ -177,15 +140,16 @@ router.put("/:id", upload.array("anexos", 5), async (req, res) => {
     }
 
     // Processar anexos se existirem
-    const anexos = req.files
-      ? req.files.map((file) => ({
-          nome: file.originalname,
-          tipo: file.mimetype,
-          tamanho: file.size,
-          caminho: `/api/transacoes/uploads/${file.filename}`,
-          dataUpload: new Date(),
-        }))
-      : [];
+    const anexos =
+      req.body.anexos && Array.isArray(req.body.anexos)
+        ? req.body.anexos.map((anexo) => ({
+            nome: anexo.nome,
+            tipo: anexo.tipo,
+            tamanho: anexo.tamanho,
+            base64: anexo.base64,
+            dataUpload: new Date(),
+          }))
+        : [];
 
     // Se houver anexos existentes, mantê-los
     const anexosExistentes = transacao.anexos || [];

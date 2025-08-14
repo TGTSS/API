@@ -1,29 +1,15 @@
 import express from "express";
 import mongoose from "mongoose";
-import multer from "multer";
+// import multer from "multer"; // Removido
 import path from "path";
 import TransacaoBruta from "../models/TransacaoBruta.js";
 
 const router = express.Router();
 
-// Configuração do Multer para upload de arquivos
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
-    );
-  },
-});
-
-const upload = multer({ storage: storage });
+// Removido multer. Agora espera-se que os anexos sejam enviados em base64 no corpo da requisição.
 
 // Criar uma nova transação bruta
-router.post("/duplicatas", upload.array("anexos"), async (req, res) => {
+router.post("/duplicatas", async (req, res) => {
   try {
     console.log("Dados recebidos:", req.body);
 
@@ -110,15 +96,16 @@ router.post("/duplicatas", upload.array("anexos"), async (req, res) => {
         beneficiario: new mongoose.Types.ObjectId(beneficiario),
         beneficiarioTipo,
         documento,
-        anexos: req.files
-          ? req.files.map((file) => ({
-              nome: file.originalname,
-              tipo: file.mimetype,
-              tamanho: file.size,
-              caminho: file.path,
-              dataUpload: new Date(),
-            }))
-          : [],
+        anexos:
+          req.body.anexos && Array.isArray(req.body.anexos)
+            ? req.body.anexos.map((anexo) => ({
+                nome: anexo.nome,
+                tipo: anexo.tipo,
+                tamanho: anexo.tamanho,
+                base64: anexo.base64,
+                dataUpload: new Date(),
+              }))
+            : [],
         numeroParcela: Number(numeroParcela),
         totalParcelas: Number(totalParcelas),
         nfeInfo: nfeInfo || null,

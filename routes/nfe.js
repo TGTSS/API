@@ -7,7 +7,7 @@ import {
   buscarNotasNovas,
 } from "../controllers/nfeController.js";
 import Certificado from "../models/Certificado.js";
-import multer from "multer";
+// import multer from "multer"; // Removido
 import fs from "fs";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -26,36 +26,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configuração do multer para processar o arquivo em memória
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // limite de 5MB
-  },
-  fileFilter: function (req, file, cb) {
-    console.log("Arquivo recebido:", {
-      fieldname: file.fieldname,
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-    });
-
-    // Aceitar tanto .pfx quanto .p12
-    if (
-      file.mimetype === "application/x-pkcs12" ||
-      file.mimetype === "application/octet-stream" ||
-      file.originalname.toLowerCase().endsWith(".pfx") ||
-      file.originalname.toLowerCase().endsWith(".p12")
-    ) {
-      cb(null, true);
-    } else {
-      cb(new Error("Apenas arquivos PFX/P12 são permitidos!"), false);
-    }
-  },
-}).fields([
-  { name: "certificado", maxCount: 1 },
-  { name: "certificate", maxCount: 1 },
-]);
+// Removido multer. Agora espera-se que o certificado seja enviado em base64 no corpo da requisição.
 
 // Registrar as rotas de certificados primeiro
 router.use("/certificados", certificadosRouter);
@@ -167,11 +138,22 @@ certificadosRouter.delete("/:id", async (req, res) => {
   }
 });
 
-// Importar certificado PFX
+// Importar certificado PFX em base64
 certificadosRouter.post("/importar-pfx", async (req, res) => {
   try {
-    const { filePath, senha } = req.body;
-    const certificado = await importarCertificadoPFX(filePath, senha);
+    const { certificadoBase64, senha } = req.body;
+    if (!certificadoBase64 || !senha) {
+      return res
+        .status(400)
+        .json({ message: "Certificado base64 e senha são obrigatórios" });
+    }
+    // Salvar certificado no banco
+    const certificado = new Certificado({
+      certificadoBase64,
+      senha,
+      ...req.body, // outros campos opcionais
+    });
+    await certificado.save();
     res.status(201).json(certificado);
   } catch (error) {
     console.error("Erro ao importar certificado PFX:", error);
