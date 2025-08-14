@@ -1287,7 +1287,7 @@ router.get("/media/obra/:obraId", async (req, res) => {
 
 // POST /api/medicoes/:id/media - Adicionar mídias a uma medição
 
-router.post("/:id/media", uploadMedia.array("media", 10), async (req, res) => {
+router.post("/:id/media", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -1346,7 +1346,7 @@ router.post("/:id/media", uploadMedia.array("media", 10), async (req, res) => {
 router.post(
   "/:id/items/:groupId/:itemId/media",
 
-  uploadMedia.array("media", 5),
+  // arquivos agora devem ser enviados em base64 via req.body
 
   async (req, res) => {
     try {
