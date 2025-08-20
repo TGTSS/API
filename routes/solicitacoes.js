@@ -343,9 +343,13 @@ router.post("/multiple-obras", async (req, res) => {
       return total + item.quantidade * (item.custoUnitario || 0);
     }, 0);
 
+    // Ensure descricao is not empty
+    const descricao = solicitacaoData.descricao || "Solicitação sem descrição";
+
     // Criar a solicitação com os arrays de obras e nomes
     const solicitacao = new Solicitacao({
       ...solicitacaoData,
+      descricao, // Use the processed descricao
       obras: obras,
       obrasNomes: obrasNomes,
       valor,
