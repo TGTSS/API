@@ -336,6 +336,7 @@ router.post("/multiple-obras", async (req, res) => {
         item.descricao || item.insumoId?.descricao || "Item sem descrição",
       quantidade: item.quantidade || 1,
       isManual: item.isManual || false,
+      obraId: item.obraId || undefined, // Tratar campo vazio como undefined
     }));
 
     // Calculate total value from items
@@ -349,6 +350,7 @@ router.post("/multiple-obras", async (req, res) => {
     // Criar a solicitação com os arrays de obras e nomes
     const solicitacao = new Solicitacao({
       ...solicitacaoData,
+      nome: solicitacaoData.nome,
       descricao, // Use the processed descricao
       obras: obras,
       obrasNomes: obrasNomes,
