@@ -44,8 +44,28 @@ router.get("/:id/debug-pagamentos", async (req, res) => {
   }
 });
 
-// Configuração do multer para upload de arquivos usando memoryStorage
-const storage = multer.memoryStorage();
+// Configuração do multer para upload de arquivos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(
+      process.cwd(),
+      "public",
+      "uploads",
+      "documentos"
+    );
+
+    // Criar o diretório se não existir
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
 
 const upload = multer({
   storage: storage,
@@ -67,7 +87,62 @@ const upload = multer({
   },
 });
 
-// Rota para servir arquivos removida - arquivos agora são armazenados como Base64 no banco de dados
+// Rota para servir arquivos
+router.get("/uploads/documentos/:filename", (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(
+    process.cwd(),
+    "public",
+    "uploads",
+    "documentos",
+    filename
+  );
+
+  if (fs.existsSync(filePath)) {
+    // Determinar o tipo MIME com base na extensão do arquivo
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = "application/octet-stream";
+
+    switch (ext) {
+      case ".jpg":
+      case ".jpeg":
+        contentType = "image/jpeg";
+        break;
+      case ".png":
+        contentType = "image/png";
+        break;
+      case ".pdf":
+        contentType = "application/pdf";
+        break;
+      case ".doc":
+      case ".docx":
+        contentType = "application/msword";
+        break;
+      case ".xls":
+      case ".xlsx":
+        contentType = "application/vnd.ms-excel";
+        break;
+    }
+
+    // Definir os headers corretos
+    res.setHeader("Content-Type", contentType);
+
+    // Para imagens e PDFs, permitir visualização inline
+    if (contentType.startsWith("image/") || contentType === "application/pdf") {
+      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    } else {
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+    }
+
+    // Enviar o arquivo
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ message: "Arquivo não encontrado" });
+  }
+});
 
 // Rota para listar todos os tipos de obra
 router.get("/tipos", async (req, res) => {
@@ -221,39 +296,10 @@ router.post("/", upload.single("imagem"), async (req, res) => {
       }
     };
 
-    // Processar a imagem se existir - converter para Base64
+    // Processar a imagem se existir
     let imagem = null;
     if (req.file) {
-      const fileExtension = path.extname(req.file.originalname).toLowerCase();
-      let mimeType;
-      
-      // Determinar o tipo MIME com base na extensão do arquivo
-      switch (fileExtension) {
-        case '.jpg':
-        case '.jpeg':
-          mimeType = 'image/jpeg';
-          break;
-        case '.png':
-          mimeType = 'image/png';
-          break;
-        case '.pdf':
-          mimeType = 'application/pdf';
-          break;
-        case '.doc':
-        case '.docx':
-          mimeType = 'application/msword';
-          break;
-        case '.xls':
-        case '.xlsx':
-          mimeType = 'application/vnd.ms-excel';
-          break;
-        default:
-          mimeType = 'application/octet-stream';
-      }
-      
-      // Converter o buffer para Base64 e criar uma Data URL
-      const base64Data = req.file.buffer.toString('base64');
-      imagem = `data:${mimeType};base64,${base64Data}`;
+      imagem = `/api/obras/uploads/documentos/${req.file.filename}`;
     }
 
     // Converter os dados do FormData
@@ -506,39 +552,10 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
       }
     };
 
-    // Processar a imagem se existir - converter para Base64
+    // Processar a imagem se existir
     let imagem = null;
     if (req.file) {
-      const fileExtension = path.extname(req.file.originalname).toLowerCase();
-      let mimeType;
-      
-      // Determinar o tipo MIME com base na extensão do arquivo
-      switch (fileExtension) {
-        case '.jpg':
-        case '.jpeg':
-          mimeType = 'image/jpeg';
-          break;
-        case '.png':
-          mimeType = 'image/png';
-          break;
-        case '.pdf':
-          mimeType = 'application/pdf';
-          break;
-        case '.doc':
-        case '.docx':
-          mimeType = 'application/msword';
-          break;
-        case '.xls':
-        case '.xlsx':
-          mimeType = 'application/vnd.ms-excel';
-          break;
-        default:
-          mimeType = 'application/octet-stream';
-      }
-      
-      // Converter o buffer para Base64 e criar uma Data URL
-      const base64Data = req.file.buffer.toString('base64');
-      imagem = `data:${mimeType};base64,${base64Data}`;
+      imagem = `/api/obras/uploads/documentos/${req.file.filename}`;
     }
 
     // Converter os dados do FormData
@@ -706,47 +723,15 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
       }
     }
 
-    // Processar anexos se existirem - converter para Base64
+    // Processar anexos se existirem
     const anexos = req.files
-      ? req.files.map((file) => {
-          const fileExtension = path.extname(file.originalname).toLowerCase();
-          let mimeType;
-          
-          // Determinar o tipo MIME com base na extensão do arquivo
-          switch (fileExtension) {
-            case '.jpg':
-            case '.jpeg':
-              mimeType = 'image/jpeg';
-              break;
-            case '.png':
-              mimeType = 'image/png';
-              break;
-            case '.pdf':
-              mimeType = 'application/pdf';
-              break;
-            case '.doc':
-            case '.docx':
-              mimeType = 'application/msword';
-              break;
-            case '.xls':
-            case '.xlsx':
-              mimeType = 'application/vnd.ms-excel';
-              break;
-            default:
-              mimeType = 'application/octet-stream';
-          }
-          
-          // Converter o buffer para Base64 e criar uma Data URL
-          const base64Data = file.buffer.toString('base64');
-          
-          return {
-            nome: file.originalname,
-            tipo: file.mimetype,
-            tamanho: file.size,
-            conteudo: `data:${mimeType};base64,${base64Data}`,
-            dataUpload: new Date(),
-          };
-        })
+      ? req.files.map((file) => ({
+          nome: file.originalname,
+          tipo: file.mimetype,
+          tamanho: file.size,
+          caminho: `/api/obras/uploads/documentos/${file.filename}`,
+          dataUpload: new Date(),
+        }))
       : [];
 
     // Processar associacaoOrcamento
@@ -836,47 +821,15 @@ router.put(
         return res.status(404).json({ message: "Receita não encontrada" });
       }
 
-      // Processar anexos se existirem - converter para Base64
+      // Processar anexos se existirem
       const anexos = req.files
-        ? req.files.map((file) => {
-            const fileExtension = path.extname(file.originalname).toLowerCase();
-            let mimeType;
-            
-            // Determinar o tipo MIME com base na extensão do arquivo
-            switch (fileExtension) {
-              case '.jpg':
-              case '.jpeg':
-                mimeType = 'image/jpeg';
-                break;
-              case '.png':
-                mimeType = 'image/png';
-                break;
-              case '.pdf':
-                mimeType = 'application/pdf';
-                break;
-              case '.doc':
-              case '.docx':
-                mimeType = 'application/msword';
-                break;
-              case '.xls':
-              case '.xlsx':
-                mimeType = 'application/vnd.ms-excel';
-                break;
-              default:
-                mimeType = 'application/octet-stream';
-            }
-            
-            // Converter o buffer para Base64 e criar uma Data URL
-            const base64Data = file.buffer.toString('base64');
-            
-            return {
-              nome: file.originalname,
-              tipo: file.mimetype,
-              tamanho: file.size,
-              conteudo: `data:${mimeType};base64,${base64Data}`,
-              dataUpload: new Date(),
-            };
-          })
+        ? req.files.map((file) => ({
+            nome: file.originalname,
+            tipo: file.mimetype,
+            tamanho: file.size,
+            caminho: `/api/obras/uploads/documentos/${file.filename}`,
+            dataUpload: new Date(),
+          }))
         : [];
 
       // Se houver anexos existentes, mantê-los
@@ -1948,46 +1901,14 @@ router.post("/:id/documentos", upload.any(), async (req, res) => {
       return res.status(400).json({ message: "Nenhum arquivo enviado" });
     }
 
-    // Processar anexos - converter para Base64
-    const anexos = req.files.map((file) => {
-      const fileExtension = path.extname(file.originalname).toLowerCase();
-      let mimeType;
-      
-      // Determinar o tipo MIME com base na extensão do arquivo
-      switch (fileExtension) {
-        case '.jpg':
-        case '.jpeg':
-          mimeType = 'image/jpeg';
-          break;
-        case '.png':
-          mimeType = 'image/png';
-          break;
-        case '.pdf':
-          mimeType = 'application/pdf';
-          break;
-        case '.doc':
-        case '.docx':
-          mimeType = 'application/msword';
-          break;
-        case '.xls':
-        case '.xlsx':
-          mimeType = 'application/vnd.ms-excel';
-          break;
-        default:
-          mimeType = 'application/octet-stream';
-      }
-      
-      // Converter o buffer para Base64 e criar uma Data URL
-      const base64Data = file.buffer.toString('base64');
-      
-      return {
-        nome: file.originalname,
-        tipo: file.mimetype,
-        tamanho: file.size,
-        conteudo: `data:${mimeType};base64,${base64Data}`,
-        dataUpload: new Date(),
-      };
-    });
+    // Processar anexos
+    const anexos = req.files.map((file) => ({
+      nome: file.originalname,
+      tipo: file.mimetype,
+      tamanho: file.size,
+      caminho: `/api/obras/uploads/documentos/${file.filename}`,
+      dataUpload: new Date(),
+    }));
 
     // Adicionar os documentos à obra
     if (!obra.documentos) {
@@ -2075,29 +1996,11 @@ router.put(
           .json({ message: "Registro diário não encontrado" });
       }
 
-      // Processar as novas fotos - converter para Base64
+      // Processar as novas fotos
       const novasFotos = req.files
-        ? req.files.map((file) => {
-            const fileExtension = path.extname(file.originalname).toLowerCase();
-            let mimeType;
-            
-            // Determinar o tipo MIME com base na extensão do arquivo
-            switch (fileExtension) {
-              case '.jpg':
-              case '.jpeg':
-                mimeType = 'image/jpeg';
-                break;
-              case '.png':
-                mimeType = 'image/png';
-                break;
-              default:
-                mimeType = 'image/jpeg'; // Padrão para fotos
-            }
-            
-            // Converter o buffer para Base64 e criar uma Data URL
-            const base64Data = file.buffer.toString('base64');
-            return `data:${mimeType};base64,${base64Data}`;
-          })
+        ? req.files.map(
+            (file) => `/api/obras/uploads/documentos/${file.filename}`
+          )
         : [];
 
       // Se houver fotos existentes e não foi solicitada a substituição total
