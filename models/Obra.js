@@ -46,6 +46,7 @@ const ReceitaSchema = new mongoose.Schema({
       tipo: { type: String },
       tamanho: { type: Number },
       caminho: { type: String },
+      conteudo: { type: String }, // Conteúdo do arquivo em base64
       dataUpload: { type: Date, default: Date.now },
     },
   ],
@@ -107,6 +108,7 @@ const PagamentoSchema = new mongoose.Schema({
       tipo: { type: String },
       tamanho: { type: Number },
       caminho: { type: String },
+      conteudo: { type: String }, // Conteúdo do arquivo em base64
       dataUpload: { type: Date, default: Date.now },
     },
   ],
@@ -154,6 +156,8 @@ const DespesaSchema = new mongoose.Schema({
       tipo: { type: String },
       tamanho: { type: Number },
       caminho: { type: String },
+      conteudo: { type: String }, // Conteúdo do arquivo em base64
+      dataUpload: { type: Date, default: Date.now },
     },
   ],
 });

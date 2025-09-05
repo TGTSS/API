@@ -696,7 +696,7 @@ router.get("/:id/receitas", async (req, res) => {
 });
 
 // Rota para adicionar uma receita
-router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
+router.post("/:id/receitas", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -723,13 +723,14 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
       }
     }
 
-    // Processar anexos se existirem
-    const anexos = req.files
-      ? req.files.map((file) => ({
-          nome: file.originalname,
-          tipo: file.mimetype,
-          tamanho: file.size,
-          caminho: `/api/obras/uploads/documentos/${file.filename}`,
+    // Processar anexos em base64 se existirem
+    const anexos = req.body.anexos
+      ? JSON.parse(req.body.anexos).map((anexo) => ({
+          nome: anexo.nome,
+          tipo: anexo.tipo,
+          tamanho: anexo.tamanho,
+          caminho: anexo.caminho || "",
+          conteudo: anexo.conteudo, // Conteúdo em base64
           dataUpload: new Date(),
         }))
       : [];
@@ -748,7 +749,19 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
     }
 
     const novaReceita = {
-      ...req.body,
+      // Campos vindos diretamente do body
+      descricao: req.body.descricao,
+      valor: req.body.valor,
+      status: req.body.status,
+      categoria: req.body.categoria,
+      categoriaOutros: req.body.categoriaOutros,
+      formaPagamento: req.body.formaPagamento,
+      documento: req.body.documento,
+      valorRecebido: req.body.valorRecebido
+        ? parseFloat(req.body.valorRecebido)
+        : 0,
+
+      // Campos processados ou gerados
       id: new mongoose.Types.ObjectId(),
       data: new Date(req.body.data),
       dataVencimento: req.body.dataVencimento
@@ -758,16 +771,14 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
         ? new mongoose.Types.ObjectId(req.body.beneficiario)
         : null,
       centroCusto: obra.nome,
-      anexos: anexos,
       associacaoOrcamento: associacaoOrcamento,
-      valorRecebido: req.body.valorRecebido
-        ? parseFloat(req.body.valorRecebido)
-        : 0,
-      // Campos para transações múltiplas
       isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
       transacaoPrincipalId: req.body.transacaoPrincipalId
         ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
         : null,
+
+      // Array de anexos processado
+      anexos: anexos,
     };
 
     obra.receitas.push(novaReceita);
@@ -781,106 +792,103 @@ router.post("/:id/receitas", upload.array("anexos", 5), async (req, res) => {
 });
 
 // Rota para atualizar uma receita
-router.put(
-  "/:id/receitas/:receitaId",
-  upload.array("anexos", 5),
-  async (req, res) => {
-    try {
-      const { id, receitaId } = req.params;
-      if (
-        !mongoose.Types.ObjectId.isValid(id) ||
-        !mongoose.Types.ObjectId.isValid(receitaId)
-      ) {
-        return res.status(400).json({ message: "ID inválido" });
-      }
-
-      const obra = await Obra.findById(id);
-      if (!obra) {
-        return res.status(404).json({ message: "Obra não encontrada" });
-      }
-
-      // Validar campos obrigatórios
-      const camposObrigatorios = {
-        descricao: "Descrição é obrigatória",
-        valor: "Valor é obrigatório",
-        categoria: "Categoria é obrigatória",
-        data: "Data é obrigatória",
-        status: "Status é obrigatório",
-      };
-
-      for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
-        if (!req.body[campo]) {
-          return res.status(400).json({ message: mensagem });
-        }
-      }
-
-      const receitaIndex = obra.receitas.findIndex(
-        (r) => r._id.toString() === receitaId
-      );
-      if (receitaIndex === -1) {
-        return res.status(404).json({ message: "Receita não encontrada" });
-      }
-
-      // Processar anexos se existirem
-      const anexos = req.files
-        ? req.files.map((file) => ({
-            nome: file.originalname,
-            tipo: file.mimetype,
-            tamanho: file.size,
-            caminho: `/api/obras/uploads/documentos/${file.filename}`,
-            dataUpload: new Date(),
-          }))
-        : [];
-
-      // Se houver anexos existentes, mantê-los
-      const anexosExistentes = obra.receitas[receitaIndex].anexos || [];
-      const todosAnexos = [...anexosExistentes, ...anexos];
-
-      // Processar associacaoOrcamento
-      let associacaoOrcamento = null;
-      if (req.body.associacaoOrcamento) {
-        try {
-          associacaoOrcamento =
-            typeof req.body.associacaoOrcamento === "string"
-              ? JSON.parse(req.body.associacaoOrcamento)
-              : req.body.associacaoOrcamento;
-        } catch (error) {
-          console.error("Erro ao processar associacaoOrcamento:", error);
-        }
-      }
-
-      const receitaAtualizada = {
-        ...obra.receitas[receitaIndex],
-        ...req.body,
-        _id: new mongoose.Types.ObjectId(receitaId),
-        anexos: todosAnexos,
-        data: new Date(req.body.data),
-        dataVencimento: req.body.dataVencimento
-          ? new Date(req.body.dataVencimento)
-          : null,
-        beneficiario: req.body.beneficiario
-          ? new mongoose.Types.ObjectId(req.body.beneficiario)
-          : null,
-        associacaoOrcamento: associacaoOrcamento,
-        valorRecebido: req.body.valorRecebido
-          ? parseFloat(req.body.valorRecebido)
-          : 0,
-        // Campos para transações múltiplas
-        isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
-        transacaoPrincipalId: req.body.transacaoPrincipalId
-          ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
-          : null,
-      };
-
-      obra.receitas[receitaIndex] = receitaAtualizada;
-      await obra.save();
-      res.json(receitaAtualizada);
-    } catch (error) {
-      console.error("Erro ao atualizar receita:", error);
-      res.status(500).json({ message: error.message });
+router.put("/:id/receitas/:receitaId", async (req, res) => {
+  try {
+    const { id, receitaId } = req.params;
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(receitaId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
     }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Validar campos obrigatórios
+    const camposObrigatorios = {
+      descricao: "Descrição é obrigatória",
+      valor: "Valor é obrigatório",
+      categoria: "Categoria é obrigatória",
+      data: "Data é obrigatória",
+      status: "Status é obrigatório",
+    };
+
+    for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+      if (!req.body[campo]) {
+        return res.status(400).json({ message: mensagem });
+      }
+    }
+
+    const receitaIndex = obra.receitas.findIndex(
+      (r) => r._id.toString() === receitaId
+    );
+    if (receitaIndex === -1) {
+      return res.status(404).json({ message: "Receita não encontrada" });
+    }
+
+    // Processar anexos em base64 se existirem
+    const anexos = req.body.anexos
+      ? JSON.parse(req.body.anexos).map((anexo) => ({
+          nome: anexo.nome,
+          tipo: anexo.tipo,
+          tamanho: anexo.tamanho,
+          caminho: anexo.caminho || "",
+          conteudo: anexo.conteudo, // Conteúdo em base64
+          dataUpload: new Date(),
+        }))
+      : [];
+
+    // Se houver anexos existentes, mantê-los
+    const anexosExistentes = obra.receitas[receitaIndex].anexos || [];
+    const todosAnexos = [...anexosExistentes, ...anexos];
+
+    // Processar associacaoOrcamento
+    let associacaoOrcamento = null;
+    if (req.body.associacaoOrcamento) {
+      try {
+        associacaoOrcamento =
+          typeof req.body.associacaoOrcamento === "string"
+            ? JSON.parse(req.body.associacaoOrcamento)
+            : req.body.associacaoOrcamento;
+      } catch (error) {
+        console.error("Erro ao processar associacaoOrcamento:", error);
+      }
+    }
+
+    const receitaAtualizada = {
+      ...obra.receitas[receitaIndex],
+      ...req.body,
+      _id: new mongoose.Types.ObjectId(receitaId),
+      anexos: todosAnexos,
+      data: new Date(req.body.data),
+      dataVencimento: req.body.dataVencimento
+        ? new Date(req.body.dataVencimento)
+        : null,
+      beneficiario: req.body.beneficiario
+        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+        : null,
+      associacaoOrcamento: associacaoOrcamento,
+      valorRecebido: req.body.valorRecebido
+        ? parseFloat(req.body.valorRecebido)
+        : 0,
+      // Campos para transações múltiplas
+      isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
+      transacaoPrincipalId: req.body.transacaoPrincipalId
+        ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
+        : null,
+    };
+
+    obra.receitas[receitaIndex] = receitaAtualizada;
+    await obra.save();
+    res.json(receitaAtualizada);
+  } catch (error) {
+    console.error("Erro ao atualizar receita:", error);
+    res.status(500).json({ message: error.message });
   }
-);
+});
 
 // Rota para excluir anexo de uma receita (DEVE VIR ANTES da rota de excluir receita)
 router.delete(
@@ -1012,7 +1020,7 @@ router.get("/:id/pagamentos/:pagamentoId", async (req, res) => {
 });
 
 // Rota para adicionar um pagamento
-router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
+router.post("/:id/pagamentos", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1039,13 +1047,14 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
       }
     }
 
-    // Processar anexos se existirem
-    const anexos = req.files
-      ? req.files.map((file) => ({
-          nome: file.originalname,
-          tipo: file.mimetype,
-          tamanho: file.size,
-          caminho: `/api/obras/uploads/documentos/${file.filename}`,
+    // Processar anexos em base64 se existirem
+    const anexos = req.body.anexos
+      ? JSON.parse(req.body.anexos).map((anexo) => ({
+          nome: anexo.nome,
+          tipo: anexo.tipo,
+          tamanho: anexo.tamanho,
+          caminho: anexo.caminho || "",
+          conteudo: anexo.conteudo, // Conteúdo em base64
           dataUpload: new Date(),
         }))
       : [];
@@ -1064,7 +1073,17 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
     }
 
     const novoPagamento = {
-      ...req.body,
+      // Campos vindos diretamente do body
+      descricao: req.body.descricao,
+      valor: req.body.valor,
+      status: req.body.status,
+      categoria: req.body.categoria,
+      categoriaOutros: req.body.categoriaOutros,
+      formaPagamento: req.body.formaPagamento,
+      documento: req.body.documento,
+      valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
+
+      // Campos processados ou gerados
       data: new Date(req.body.data),
       dataVencimento: req.body.dataVencimento
         ? new Date(req.body.dataVencimento)
@@ -1073,14 +1092,14 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
         ? new mongoose.Types.ObjectId(req.body.beneficiario)
         : null,
       centroCusto: obra.nome,
-      anexos: anexos,
       associacaoOrcamento: associacaoOrcamento,
-      valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
-      // Campos para transações múltiplas
       isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
       transacaoPrincipalId: req.body.transacaoPrincipalId
         ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
         : null,
+
+      // Array de anexos processado
+      anexos: anexos,
     };
 
     obra.pagamentos.push(novoPagamento);
@@ -1096,104 +1115,101 @@ router.post("/:id/pagamentos", upload.array("anexos", 5), async (req, res) => {
 });
 
 // Rota para atualizar um pagamento
-router.put(
-  "/:id/pagamentos/:pagamentoId",
-  upload.array("anexos", 5),
-  async (req, res) => {
-    try {
-      const { id, pagamentoId } = req.params;
-      if (
-        !mongoose.Types.ObjectId.isValid(id) ||
-        !mongoose.Types.ObjectId.isValid(pagamentoId)
-      ) {
-        return res.status(400).json({ message: "ID inválido" });
-      }
-
-      const obra = await Obra.findById(id);
-      if (!obra) {
-        return res.status(404).json({ message: "Obra não encontrada" });
-      }
-
-      // Validar campos obrigatórios
-      const camposObrigatorios = {
-        descricao: "Descrição é obrigatória",
-        valor: "Valor é obrigatório",
-        categoria: "Categoria é obrigatória",
-        data: "Data é obrigatória",
-        status: "Status é obrigatório",
-      };
-
-      for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
-        if (!req.body[campo]) {
-          return res.status(400).json({ message: mensagem });
-        }
-      }
-
-      const pagamentoIndex = obra.pagamentos.findIndex(
-        (p) => p._id.toString() === pagamentoId
-      );
-      if (pagamentoIndex === -1) {
-        return res.status(404).json({ message: "Pagamento não encontrado" });
-      }
-
-      // Processar anexos se existirem
-      const anexos = req.files
-        ? req.files.map((file) => ({
-            nome: file.originalname,
-            tipo: file.mimetype,
-            tamanho: file.size,
-            caminho: `/api/obras/uploads/documentos/${file.filename}`,
-            dataUpload: new Date(),
-          }))
-        : [];
-
-      // Se houver anexos existentes, mantê-los
-      const anexosExistentes = obra.pagamentos[pagamentoIndex].anexos || [];
-      const todosAnexos = [...anexosExistentes, ...anexos];
-
-      // Processar associacaoOrcamento
-      let associacaoOrcamento = null;
-      if (req.body.associacaoOrcamento) {
-        try {
-          associacaoOrcamento =
-            typeof req.body.associacaoOrcamento === "string"
-              ? JSON.parse(req.body.associacaoOrcamento)
-              : req.body.associacaoOrcamento;
-        } catch (error) {
-          console.error("Erro ao processar associacaoOrcamento:", error);
-        }
-      }
-
-      const pagamentoAtualizado = {
-        ...obra.pagamentos[pagamentoIndex],
-        ...req.body,
-        _id: new mongoose.Types.ObjectId(pagamentoId),
-        anexos: todosAnexos,
-        data: new Date(req.body.data),
-        dataVencimento: req.body.dataVencimento
-          ? new Date(req.body.dataVencimento)
-          : null,
-        beneficiario: req.body.beneficiario
-          ? new mongoose.Types.ObjectId(req.body.beneficiario)
-          : null,
-        associacaoOrcamento: associacaoOrcamento,
-        valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
-        // Campos para transações múltiplas
-        isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
-        transacaoPrincipalId: req.body.transacaoPrincipalId
-          ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
-          : null,
-      };
-
-      obra.pagamentos[pagamentoIndex] = pagamentoAtualizado;
-      await obra.save();
-      res.json(pagamentoAtualizado);
-    } catch (error) {
-      console.error("Erro ao atualizar pagamento:", error);
-      res.status(500).json({ message: error.message });
+router.put("/:id/pagamentos/:pagamentoId", async (req, res) => {
+  try {
+    const { id, pagamentoId } = req.params;
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(pagamentoId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
     }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    // Validar campos obrigatórios
+    const camposObrigatorios = {
+      descricao: "Descrição é obrigatória",
+      valor: "Valor é obrigatório",
+      categoria: "Categoria é obrigatória",
+      data: "Data é obrigatória",
+      status: "Status é obrigatório",
+    };
+
+    for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+      if (!req.body[campo]) {
+        return res.status(400).json({ message: mensagem });
+      }
+    }
+
+    const pagamentoIndex = obra.pagamentos.findIndex(
+      (p) => p._id.toString() === pagamentoId
+    );
+    if (pagamentoIndex === -1) {
+      return res.status(404).json({ message: "Pagamento não encontrado" });
+    }
+
+    // Processar anexos em base64 se existirem
+    const anexos = req.body.anexos
+      ? JSON.parse(req.body.anexos).map((anexo) => ({
+          nome: anexo.nome,
+          tipo: anexo.tipo,
+          tamanho: anexo.tamanho,
+          caminho: anexo.caminho || "",
+          conteudo: anexo.conteudo, // Conteúdo em base64
+          dataUpload: new Date(),
+        }))
+      : [];
+
+    // Se houver anexos existentes, mantê-los
+    const anexosExistentes = obra.pagamentos[pagamentoIndex].anexos || [];
+    const todosAnexos = [...anexosExistentes, ...anexos];
+
+    // Processar associacaoOrcamento
+    let associacaoOrcamento = null;
+    if (req.body.associacaoOrcamento) {
+      try {
+        associacaoOrcamento =
+          typeof req.body.associacaoOrcamento === "string"
+            ? JSON.parse(req.body.associacaoOrcamento)
+            : req.body.associacaoOrcamento;
+      } catch (error) {
+        console.error("Erro ao processar associacaoOrcamento:", error);
+      }
+    }
+
+    const pagamentoAtualizado = {
+      ...obra.pagamentos[pagamentoIndex],
+      ...req.body,
+      _id: new mongoose.Types.ObjectId(pagamentoId),
+      anexos: todosAnexos,
+      data: new Date(req.body.data),
+      dataVencimento: req.body.dataVencimento
+        ? new Date(req.body.dataVencimento)
+        : null,
+      beneficiario: req.body.beneficiario
+        ? new mongoose.Types.ObjectId(req.body.beneficiario)
+        : null,
+      associacaoOrcamento: associacaoOrcamento,
+      valorPago: req.body.valorPago ? parseFloat(req.body.valorPago) : 0,
+      // Campos para transações múltiplas
+      isTransacaoMultipla: req.body.transacaoPrincipalId ? true : false,
+      transacaoPrincipalId: req.body.transacaoPrincipalId
+        ? new mongoose.Types.ObjectId(req.body.transacaoPrincipalId)
+        : null,
+    };
+
+    obra.pagamentos[pagamentoIndex] = pagamentoAtualizado;
+    await obra.save();
+    res.json(pagamentoAtualizado);
+  } catch (error) {
+    console.error("Erro ao atualizar pagamento:", error);
+    res.status(500).json({ message: error.message });
   }
-);
+});
 
 // Rota para excluir anexo de um pagamento (DEVE VIR ANTES da rota de excluir pagamento)
 router.delete(
