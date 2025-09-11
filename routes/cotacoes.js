@@ -702,7 +702,7 @@ router.post("/:cotacaoId/itens", async (req, res) => {
       return res.status(404).json({ message: "Cotação não encontrada" });
     }
 
-    if (!descricao || quantidade <= 0 || valor <= 0) {
+    if (!descricao || quantidade <= 0 || valor < 0) {
       return res.status(400).json({ message: "Dados do item inválidos" });
     }
 
