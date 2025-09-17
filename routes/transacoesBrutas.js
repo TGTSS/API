@@ -249,6 +249,31 @@ router.patch("/duplicatas/:id", async (req, res) => {
   }
 });
 
+router.patch("/duplicatas/:id/nfe", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const nfeInfo = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID da duplicata inválido" });
+    }
+
+    const duplicata = await Duplicata.findById(id);
+    if (!duplicata) {
+      return res.status(404).json({ message: "Duplicata não encontrada" });
+    }
+
+    // Adiciona ou atualiza as informações da NF-e
+    duplicata.nfeInfo = nfeInfo;
+    await duplicata.save();
+
+    res.status(200).json(duplicata);
+  } catch (error) {
+    console.error("Erro ao associar NF-e à duplicata:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Excluir uma transação bruta
 router.delete("/duplicatas/:id", async (req, res) => {
   try {

@@ -1114,6 +1114,39 @@ router.post("/:id/pagamentos", async (req, res) => {
   }
 });
 
+router.patch("/:id/pagamentos/:pagamentoId/nfe", async (req, res) => {
+  try {
+    const { id, pagamentoId } = req.params;
+    const nfeInfo = req.body; // { numero, serie, dataEmissao, chaveAcesso }
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(pagamentoId)
+    ) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const obra = await Obra.findById(id);
+    if (!obra) {
+      return res.status(404).json({ message: "Obra não encontrada" });
+    }
+
+    const pagamento = obra.pagamentos.id(pagamentoId);
+    if (!pagamento) {
+      return res.status(404).json({ message: "Pagamento não encontrado" });
+    }
+
+    // Adiciona ou atualiza as informações da NF-e no pagamento
+    pagamento.nfeInfo = nfeInfo;
+
+    await obra.save();
+    res.status(200).json(pagamento);
+  } catch (error) {
+    console.error("Erro ao associar NF-e ao pagamento:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para atualizar um pagamento
 router.put("/:id/pagamentos/:pagamentoId", async (req, res) => {
   try {
