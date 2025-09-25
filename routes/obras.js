@@ -8,6 +8,7 @@ import fs from "fs";
 import TipoObra from "../models/TipoObra.js";
 import QuemPaga from "../models/QuemPaga.js";
 import Conta from "../models/Conta.js";
+import { uploadDocumento, uploadImagem } from "../cloudinary.js";
 
 const router = express.Router();
 
@@ -296,10 +297,12 @@ router.post("/", upload.single("imagem"), async (req, res) => {
       }
     };
 
-    // Processar a imagem se existir
+    // ✅ MUDANÇA: Usar URL do Cloudinary
     let imagem = null;
+    let imagemPublicId = null;
     if (req.file) {
-      imagem = `/api/obras/uploads/documentos/${req.file.filename}`;
+      imagem = req.file.path; // URL do Cloudinary
+      imagemPublicId = req.file.public_id; // ID para deletar depois
     }
 
     // Converter os dados do FormData
@@ -352,6 +355,7 @@ router.post("/", upload.single("imagem"), async (req, res) => {
         ? new Date(req.body.dataPrevisao)
         : null,
       imagem,
+      imagemPublicId, // ✅ NOVO: Salvar public_id
     };
 
     // Validar campos obrigatórios
