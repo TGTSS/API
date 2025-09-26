@@ -8,13 +8,28 @@ import fs from "fs";
 import TipoObra from "../models/TipoObra.js";
 import QuemPaga from "../models/QuemPaga.js";
 import Conta from "../models/Conta.js";
-import { uploadDocumento, uploadImagem } from "../cloudinary.js";
+import cloudinary, { uploadDocumento, uploadImagem } from "../cloudinary.js";
 
 const router = express.Router();
 
 // Rota de teste para verificar se as rotas estão funcionando
 router.get("/test", (req, res) => {
   res.json({ message: "Rotas de obras funcionando!", timestamp: new Date() });
+});
+
+router.get("teste-cloudinary", (req, res) => {
+  console.log("Testando Cloudinaru");
+  console.log("Cloudinary_cloud_name:", process.env.CLOUDINARY_CLOUD_NAME);
+  console.log("Cloudinary_api_key:", process.env.CLOUDINARY_API_KEY);
+  console.log("Cloudinary_api_secret:", process.env.CLOUDINARY_API_SECRET);
+
+  res.json({
+    cloudinary: !!(
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+    ),
+  });
 });
 
 // Rota de debug para verificar IDs de pagamentos
