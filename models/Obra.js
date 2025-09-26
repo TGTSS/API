@@ -468,6 +468,7 @@ const ObraSchema = new mongoose.Schema(
     ],
     dataPrevisao: { type: Date }, // Novo campo
     imagem: { type: String },
+    imagemPublicId: { type: String },
     orcamento: OrcamentoSchema,
     pagamentos: [PagamentoSchema],
     medicoes: [MedicaoSchema],

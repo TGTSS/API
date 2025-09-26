@@ -286,7 +286,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Rota para criar uma nova obra
-router.post("/", upload.single("imagem"), async (req, res) => {
+router.post("/", uploadImagem.single("imagem"), async (req, res) => {
   try {
     // Parse JSON strings from FormData
     const parseFormData = (value) => {
@@ -556,10 +556,12 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
       }
     };
 
-    // Processar a imagem se existir
+    // Depois (Cloudinary):
     let imagem = null;
+    let imagemPublicId = null;
     if (req.file) {
-      imagem = `/api/obras/uploads/documentos/${req.file.filename}`;
+      imagem = req.file.path; // URL completa do Cloudinary
+      imagemPublicId = req.file.public_id; // ID para deletar depois
     }
 
     // Converter os dados do FormData
