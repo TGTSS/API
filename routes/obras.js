@@ -571,11 +571,11 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
       }
     };
 
-    // Depois (Cloudinary):
+    // ✅ MUDANÇA: Usar URL do Cloudinary
     let imagem = null;
     let imagemPublicId = null;
     if (req.file) {
-      imagem = req.file.path; // URL completa do Cloudinary
+      imagem = req.file.path; // URL do Cloudinary
       imagemPublicId = req.file.public_id; // ID para deletar depois
     }
 
@@ -628,6 +628,8 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
       dataPrevisao: req.body.dataPrevisao
         ? new Date(req.body.dataPrevisao)
         : null,
+      imagem,
+      imagemPublicId, // ✅ NOVO: Salvar public_id se houver nova imagem
     };
 
     // Adicionar imagem apenas se uma nova foi enviada
