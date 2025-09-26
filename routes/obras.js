@@ -555,14 +555,22 @@ router.post("/duplicar", async (req, res) => {
 });
 
 // Rota para atualizar uma obra
-router.put("/:id", upload.single("imagem"), async (req, res) => {
+router.put("/:id", uploadImagem.single("imagem"), async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    // Parse JSON strings from FormData
+    // 1. Busca a obra que será atualizada para verificar se ela tem uma imagem antiga
+    const obraExistente = await Obra.findById(id);
+    if (!obraExistente) {
+      return res
+        .status(404)
+        .json({ message: "Obra não encontrada para atualizar" });
+    }
+
+    // Função para parsear dados do FormData
     const parseFormData = (value) => {
       try {
         return JSON.parse(value);
@@ -571,15 +579,7 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
       }
     };
 
-    // ✅ MUDANÇA: Usar URL do Cloudinary
-    let imagem = null;
-    let imagemPublicId = null;
-    if (req.file) {
-      imagem = req.file.path; // URL do Cloudinary
-      imagemPublicId = req.file.public_id; // ID para deletar depois
-    }
-
-    // Converter os dados do FormData
+    // Monta o objeto com os dados da requisição
     const updateData = {
       nome: req.body.nome,
       status: req.body.status,
@@ -628,23 +628,27 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
       dataPrevisao: req.body.dataPrevisao
         ? new Date(req.body.dataPrevisao)
         : null,
-      imagem,
-      imagemPublicId, // ✅ NOVO: Salvar public_id se houver nova imagem
     };
 
-    // Adicionar imagem apenas se uma nova foi enviada
-    if (imagem) {
-      updateData.imagem = imagem;
+    // 2. Lógica para tratar a nova imagem e apagar a antiga
+    if (req.file) {
+      // Se a obra já tinha uma imagem, deleta a antiga do Cloudinary
+      if (obraExistente.imagemPublicId) {
+        await cloudinary.uploader.destroy(obraExistente.imagemPublicId);
+      }
+      // Adiciona a nova imagem e seu public_id aos dados de atualização
+      updateData.imagem = req.file.path; // URL segura do Cloudinary
+      updateData.imagemPublicId = req.file.public_id; // ID para futuras exclusões
     }
 
-    // Remover campos undefined ou null que não devem ser atualizados
+    // Remove campos undefined ou null que não devem ser atualizados
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] === undefined || updateData[key] === null) {
         delete updateData[key];
       }
     });
 
-    // Atualizar a obra
+    // 3. Atualiza a obra no banco de dados com os novos dados
     const updatedObra = await Obra.findByIdAndUpdate(
       id,
       { $set: updateData },
@@ -659,7 +663,7 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
       return res.status(404).json({ message: "Obra não encontrada" });
     }
 
-    // Retornar a obra atualizada com os campos populados
+    // Retorna a obra atualizada com os campos populados
     const populatedObra = await Obra.findById(updatedObra._id)
       .populate("tipo")
       .populate("cliente")
