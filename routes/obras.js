@@ -17,7 +17,7 @@ router.get("/test", (req, res) => {
   res.json({ message: "Rotas de obras funcionando!", timestamp: new Date() });
 });
 
-router.get("teste-cloudinary", (req, res) => {
+router.get("/teste-cloudinary", (req, res) => {
   console.log("Testando Cloudinaru");
   console.log("Cloudinary_cloud_name:", process.env.CLOUDINARY_CLOUD_NAME);
   console.log("Cloudinary_api_key:", process.env.CLOUDINARY_API_KEY);
