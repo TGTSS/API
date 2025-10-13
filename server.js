@@ -46,6 +46,8 @@ import solicitacoesRouter from "./routes/solicitacoes.js";
 import nfeRouter from "./routes/nfe.js";
 import inventarioRouter from "./routes/inventario.js";
 import medicoesRouter from "./routes/medicoes.js";
+import contratosRouter from "./routes/contratos.js";
+import Contrato from "./models/Contrato.js";
 import fs from "fs";
 import path from "path";
 import { initScheduler, runDailyReminders } from "./services/scheduler.js";
@@ -1398,6 +1400,8 @@ app.use("/api/nfe", nfeRouter);
 app.use("/api/inventario", inventarioRouter);
 
 app.use("/api/medicoes", medicoesRouter);
+
+app.use("/api/contratos", contratosRouter);
 
 // Rota para servir arquivos de upload
 
