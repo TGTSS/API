@@ -55,6 +55,36 @@ const contratoSchema = new mongoose.Schema(
       model: { type: String, enum: ["Cliente", "Fornecedor"], required: false },
     },
 
+    contratante: {
+      id: { type: String },
+      tipo: {
+        type: String,
+        enum: ["Cliente", "Fornecedor"],
+        default: "Cliente",
+      },
+      nome: { type: String, trim: true },
+      razaoSocial: { type: String, default: "" },
+      nomeFantasia: { type: String, default: "" },
+      nacionalidade: { type: String, default: "Brasileira" },
+      profissao: { type: String, default: "" },
+      estadoCivil: { type: String, default: "Solteiro(a)" },
+      rg: { type: String, default: "" },
+      cpfCnpj: { type: String, default: "" },
+      inscricaoEstadual: { type: String, default: "" },
+      inscricaoMunicipal: { type: String, default: "" },
+      endereco: { type: String, default: "" },
+      numero: { type: String, default: "" },
+      bairro: { type: String, default: "" },
+      cidade: { type: String, default: "Mossoró" },
+      estado: { type: String, default: "RN" },
+      cep: { type: String, default: "" },
+      telefone1: { type: String, default: "" },
+      telefone2: { type: String, default: "" },
+      email: { type: String, default: "" },
+      complemento: { type: String, default: "" },
+      informacoesComplementares: { type: String, default: "" },
+    },
+
     // Empreiteiro referenciado (Funcionario) + snapshot
     empreiteiroRef: {
       id: { type: mongoose.Schema.Types.ObjectId, ref: "Funcionario" },
