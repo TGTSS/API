@@ -83,14 +83,14 @@ const contratoSchema = new mongoose.Schema(
       nomePai: { type: String, default: "" },
       nomeMae: { type: String, default: "" },
       quantidadeFilhos: { type: Number, default: 0 },
-      documentos: [
-        {
-          tipo: String,
-          numero: String,
-          orgaoEmissor: String,
-          dataEmissao: Date,
-        },
-      ],
+      //documentos: [
+      //{
+      //  tipo: String,
+      //  numero: String,
+      //  orgaoEmissor: String,
+      //  dataEmissao: Date,
+      //},
+      //],
     },
 
     // Obras vinculadas por referência
