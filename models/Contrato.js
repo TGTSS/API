@@ -49,178 +49,40 @@ const contratoSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Informações do contratante
-    contratante: {
-      id: {
-        type: String,
-        required: true,
-      },
-      nome: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      nacionalidade: {
-        type: String,
-        default: "Brasileira",
-      },
-      profissao: {
-        type: String,
-        default: "",
-      },
-      estadoCivil: {
-        type: String,
-        default: "Solteiro(a)",
-      },
-      rg: {
-        type: String,
-        default: "",
-      },
-      cpf: {
-        type: String,
-        default: "",
-      },
-      endereco: {
-        type: String,
-        default: "",
-      },
-      numero: {
-        type: String,
-        default: "",
-      },
-      bairro: {
-        type: String,
-        default: "",
-      },
-      cidade: {
-        type: String,
-        default: "Mossoró",
-      },
-      estado: {
-        type: String,
-        default: "RN",
-      },
-      cep: {
-        type: String,
-        default: "",
-      },
-      telefone1: {
-        type: String,
-        default: "",
-      },
-      telefone2: {
-        type: String,
-        default: "",
-      },
-      email: {
-        type: String,
-        default: "",
-      },
-      complemento: {
-        type: String,
-        default: "",
-      },
-      informacoesComplementares: {
-        type: String,
-        default: "",
-      },
+    // Referência polimórfica do contratante (Cliente ou Fornecedor)
+    contratanteRef: {
+      id: { type: mongoose.Schema.Types.ObjectId, required: false },
+      model: { type: String, enum: ["Cliente", "Fornecedor"], required: false },
     },
 
-    // Informações do empreiteiro
+    // Empreiteiro referenciado (Funcionario) + snapshot
+    empreiteiroRef: {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: "Funcionario" },
+    },
     empreiteiro: {
-      id: {
-        type: String,
-        required: true,
-      },
-      nome: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      nacionalidade: {
-        type: String,
-        default: "Brasileira",
-      },
-      profissao: {
-        type: String,
-        default: "",
-      },
-      estadoCivil: {
-        type: String,
-        default: "Solteiro(a)",
-      },
-      rg: {
-        type: String,
-        default: "",
-      },
-      cpf: {
-        type: String,
-        default: "",
-      },
-      endereco: {
-        type: String,
-        default: "",
-      },
-      numero: {
-        type: String,
-        default: "",
-      },
-      bairro: {
-        type: String,
-        default: "",
-      },
-      cidade: {
-        type: String,
-        default: "Mossoró",
-      },
-      estado: {
-        type: String,
-        default: "RN",
-      },
-      cep: {
-        type: String,
-        default: "",
-      },
-      telefone1: {
-        type: String,
-        default: "",
-      },
-      telefone2: {
-        type: String,
-        default: "",
-      },
-      email: {
-        type: String,
-        default: "",
-      },
-      cargo: {
-        type: String,
-        default: "",
-      },
-      salario: {
-        type: Number,
-        default: 0,
-      },
-      complemento: {
-        type: String,
-        default: "",
-      },
-      informacoesComplementares: {
-        type: String,
-        default: "",
-      },
-      nomePai: {
-        type: String,
-        default: "",
-      },
-      nomeMae: {
-        type: String,
-        default: "",
-      },
-      quantidadeFilhos: {
-        type: Number,
-        default: 0,
-      },
+      id: { type: String },
+      nome: { type: String, trim: true },
+      nacionalidade: { type: String, default: "Brasileira" },
+      profissao: { type: String, default: "" },
+      estadoCivil: { type: String, default: "Solteiro(a)" },
+      rg: { type: String, default: "" },
+      cpf: { type: String, default: "" },
+      endereco: { type: String, default: "" },
+      numero: { type: String, default: "" },
+      bairro: { type: String, default: "" },
+      cidade: { type: String, default: "Mossoró" },
+      estado: { type: String, default: "RN" },
+      cep: { type: String, default: "" },
+      telefone1: { type: String, default: "" },
+      telefone2: { type: String, default: "" },
+      email: { type: String, default: "" },
+      cargo: { type: String, default: "" },
+      salario: { type: Number, default: 0 },
+      complemento: { type: String, default: "" },
+      informacoesComplementares: { type: String, default: "" },
+      nomePai: { type: String, default: "" },
+      nomeMae: { type: String, default: "" },
+      quantidadeFilhos: { type: Number, default: 0 },
       documentos: [
         {
           tipo: String,
@@ -231,34 +93,8 @@ const contratoSchema = new mongoose.Schema(
       ],
     },
 
-    // Dados do imóvel
-    imovel: {
-      tipo: {
-        type: String,
-        enum: ["Residencial", "Comercial", "Industrial", "Rural"],
-        default: "Residencial",
-      },
-      endereco: {
-        type: String,
-        default: "",
-      },
-      numero: {
-        type: String,
-        default: "",
-      },
-      bairro: {
-        type: String,
-        default: "",
-      },
-      cidade: {
-        type: String,
-        default: "Mossoró",
-      },
-      estado: {
-        type: String,
-        default: "RN",
-      },
-    },
+    // Obras vinculadas por referência
+    obrasRef: [{ type: mongoose.Schema.Types.ObjectId, ref: "Obra" }],
 
     // Dados da planta
     planta: {
@@ -294,104 +130,12 @@ const contratoSchema = new mongoose.Schema(
       },
     },
 
-    // Obras vinculadas ao contrato
-    obras: [
-      {
-        id: {
-          type: String,
-          required: true,
-        },
-        nome: {
-          type: String,
-          required: true,
-        },
-        valorContrato: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        progresso: {
-          type: Number,
-          default: 0,
-          min: 0,
-          max: 100,
-        },
-        endereco: {
-          logradouro: String,
-          numero: String,
-          complemento: String,
-          bairro: String,
-          cidade: String,
-          estado: String,
-          cep: String,
-          enderecoCompleto: String,
-        },
-      },
-    ],
+    // Insumos por referência
+    insumosRef: [{ type: mongoose.Schema.Types.ObjectId, ref: "Insumo" }],
 
-    // Endereços das obras (para facilitar consultas)
-    enderecosObras: [String],
-
-    // Insumos do contrato
-    insumos: [
-      {
-        id: {
-          type: String,
-          required: true,
-        },
-        nome: {
-          type: String,
-          required: true,
-        },
-        descricao: {
-          type: String,
-          default: "",
-        },
-        unidade: {
-          type: String,
-          required: true,
-        },
-        valorUnitario: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        categoria: {
-          type: String,
-          default: "",
-        },
-      },
-    ],
-
-    // Composições do contrato
-    composicoes: [
-      {
-        id: {
-          type: String,
-          required: true,
-        },
-        nome: {
-          type: String,
-          required: true,
-        },
-        descricaoComposicao: {
-          type: String,
-          default: "",
-        },
-        unidade: {
-          type: String,
-          required: true,
-        },
-        valorUnitario: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        categoria: {
-          type: String,
-          default: "",
-        },
-      },
+    // Composições por referência
+    composicoesRef: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Composicao" },
     ],
 
     // Medições do contrato
@@ -488,6 +232,102 @@ contratoSchema.pre("save", function (next) {
   next();
 });
 
+// Pre-validate to hydrate contratante snapshot from Cliente/Fornecedor if contratanteRef provided
+contratoSchema.pre("validate", async function (next) {
+  try {
+    if (
+      !this.contratanteRef ||
+      !this.contratanteRef.id ||
+      !this.contratanteRef.model
+    ) {
+      return next();
+    }
+
+    const modelName = this.contratanteRef.model;
+    const referencedId = this.contratanteRef.id;
+
+    const Model = this.model(modelName);
+    if (!Model) return next();
+
+    const refDoc = await Model.findById(referencedId).lean();
+    if (!refDoc) return next();
+
+    // Map core fields from Cliente/Fornecedor into contratante snapshot
+    const snapshot = {
+      id: String(refDoc._id),
+      nome: refDoc.nome || refDoc.nomeFantasia || refDoc.razaoSocial || "",
+      nacionalidade: this.contratante?.nacionalidade || "Brasileira",
+      profissao: this.contratante?.profissao || "",
+      estadoCivil: this.contratante?.estadoCivil || "Solteiro(a)",
+      rg: this.contratante?.rg || "",
+      cpf: refDoc.cpf || this.contratante?.cpf || "",
+      endereco: refDoc.logradouro || this.contratante?.endereco || "",
+      numero: refDoc.numero || this.contratante?.numero || "",
+      bairro: refDoc.bairro || this.contratante?.bairro || "",
+      cidade: refDoc.cidade || this.contratante?.cidade || "Mossoró",
+      estado: refDoc.estado || this.contratante?.estado || "RN",
+      cep: refDoc.cep || this.contratante?.cep || "",
+      telefone1: refDoc.telefone1 || this.contratante?.telefone1 || "",
+      telefone2: this.contratante?.telefone2 || "",
+      email: refDoc.email || this.contratante?.email || "",
+      complemento: refDoc.complemento || this.contratante?.complemento || "",
+      informacoesComplementares:
+        refDoc.informacoesComplementares ||
+        this.contratante?.informacoesComplementares ||
+        "",
+    };
+
+    this.contratante = snapshot;
+    // Hydrate empreiteiro snapshot if empreiteiroRef provided
+    if (this.empreiteiroRef && this.empreiteiroRef.id) {
+      const FuncionarioModel = this.model("Funcionario");
+      if (FuncionarioModel) {
+        const func = await FuncionarioModel.findById(
+          this.empreiteiroRef.id
+        ).lean();
+        if (func) {
+          this.empreiteiro = {
+            id: String(func._id),
+            nome: func.nome || this.empreiteiro?.nome || "",
+            nacionalidade: this.empreiteiro?.nacionalidade || "Brasileira",
+            profissao: this.empreiteiro?.profissao || "",
+            estadoCivil:
+              func.estadoCivil ||
+              this.empreiteiro?.estadoCivil ||
+              "Solteiro(a)",
+            rg: this.empreiteiro?.rg || "",
+            cpf: func.cpf || this.empreiteiro?.cpf || "",
+            endereco: func.logradouro || this.empreiteiro?.endereco || "",
+            numero: func.numero || this.empreiteiro?.numero || "",
+            bairro: func.bairro || this.empreiteiro?.bairro || "",
+            cidade: func.cidade || this.empreiteiro?.cidade || "Mossoró",
+            estado: func.estado || this.empreiteiro?.estado || "RN",
+            cep: func.cep || this.empreiteiro?.cep || "",
+            telefone1: func.telefone1 || this.empreiteiro?.telefone1 || "",
+            telefone2: func.telefone2 || this.empreiteiro?.telefone2 || "",
+            email: func.email || this.empreiteiro?.email || "",
+            cargo: func.cargo || this.empreiteiro?.cargo || "",
+            salario: func.salario || this.empreiteiro?.salario || 0,
+            complemento:
+              func.complemento || this.empreiteiro?.complemento || "",
+            informacoesComplementares:
+              func.informacoesComplementares ||
+              this.empreiteiro?.informacoesComplementares ||
+              "",
+            nomePai: func.nomePai || this.empreiteiro?.nomePai || "",
+            nomeMae: func.nomeMae || this.empreiteiro?.nomeMae || "",
+            quantidadeFilhos:
+              func.quantidadeFilhos || this.empreiteiro?.quantidadeFilhos || 0,
+          };
+        }
+      }
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Middleware para atualizar updatedAt antes de atualizar
 contratoSchema.pre("findOneAndUpdate", function (next) {
   this.set({ updatedAt: new Date() });
@@ -505,19 +345,22 @@ contratoSchema.index({ createdAt: -1 });
 
 // Método para calcular progresso médio
 contratoSchema.methods.calcularProgressoMedio = function () {
-  if (this.obras.length === 0) return 0;
-
-  const somaProgresso = this.obras.reduce(
-    (acc, obra) => acc + obra.progresso,
+  const obrasEmb = Array.isArray(this.obras) ? this.obras : [];
+  if (obrasEmb.length === 0) return 0;
+  const somaProgresso = obrasEmb.reduce(
+    (acc, obra) => acc + (obra.progresso || 0),
     0
   );
-  return somaProgresso / this.obras.length;
+  return somaProgresso / obrasEmb.length;
 };
 
 // Método para calcular valor executado
 contratoSchema.methods.calcularValorExecutado = function () {
-  return this.obras.reduce((acc, obra) => {
-    return acc + obra.valorContrato * (obra.progresso / 100);
+  const obrasEmb = Array.isArray(this.obras) ? this.obras : [];
+  return obrasEmb.reduce((acc, obra) => {
+    const valor = Number(obra.valorContrato || 0);
+    const prog = Number(obra.progresso || 0);
+    return acc + valor * (prog / 100);
   }, 0);
 };
 
