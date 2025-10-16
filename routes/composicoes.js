@@ -26,6 +26,19 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/:id", async (req, res) => {
+  try {
+    const composicao = await Composicao.findById(req.params._id).lean();
+    if (!composicao) {
+      return res.status(404).json({ message: "Composição não encontrada" });
+    }
+    res.json(composicao);
+  } catch (error) {
+    console.error("Erro ao buscar composição:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Rota para adicionar uma nova composição
 router.post("/", async (req, res) => {
   try {
