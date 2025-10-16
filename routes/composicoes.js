@@ -26,7 +26,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:_id", async (req, res) => {
   try {
     const composicao = await Composicao.findById(req.params._id).lean();
     if (!composicao) {
