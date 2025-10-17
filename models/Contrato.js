@@ -241,6 +241,81 @@ const contratoSchema = new mongoose.Schema(
       },
     ],
 
+    // Assinatura Digital
+    assinaturaDigital: {
+      contratante: {
+        assinado: {
+          type: Boolean,
+          default: false,
+        },
+        dataAssinatura: {
+          type: Date,
+        },
+        assinatura: {
+          type: String, // Base64 da imagem da assinatura
+        },
+        dadosSeguranca: {
+          ip: { type: String },
+          userAgent: { type: String },
+          localizacao: {
+            latitude: { type: Number },
+            longitude: { type: Number },
+            endereco: { type: String },
+            cidade: { type: String },
+            estado: { type: String },
+            pais: { type: String },
+          },
+          dispositivo: {
+            plataforma: { type: String },
+            idioma: { type: String },
+            resolucao: { type: String },
+            timezone: { type: String },
+            timestamp: { type: Date },
+          },
+          hashAssinatura: { type: String }, // Hash único da assinatura
+        },
+      },
+      empreiteiro: {
+        assinado: {
+          type: Boolean,
+          default: false,
+        },
+        dataAssinatura: {
+          type: Date,
+        },
+        assinatura: {
+          type: String, // Base64 da imagem da assinatura
+        },
+        dadosSeguranca: {
+          ip: { type: String },
+          userAgent: { type: String },
+          localizacao: {
+            latitude: { type: Number },
+            longitude: { type: Number },
+            endereco: { type: String },
+            cidade: { type: String },
+            estado: { type: String },
+            pais: { type: String },
+          },
+          dispositivo: {
+            plataforma: { type: String },
+            idioma: { type: String },
+            resolucao: { type: String },
+            timezone: { type: String },
+            timestamp: { type: Date },
+          },
+          hashAssinatura: { type: String }, // Hash único da assinatura
+        },
+      },
+      contratoCompleto: {
+        type: Boolean,
+        default: false,
+      },
+      dataAssinaturaCompleta: {
+        type: Date,
+      },
+    },
+
     // Metadados
     createdAt: {
       type: Date,
@@ -423,6 +498,107 @@ contratoSchema.virtual("valorExecutado").get(function () {
 contratoSchema.virtual("saldoRestante").get(function () {
   return this.calcularSaldoRestante();
 });
+
+// Virtual para verificar se contrato está assinado
+contratoSchema.virtual("assinadoCompletamente").get(function () {
+  return this.assinaturaDigital?.contratoCompleto || false;
+});
+
+// Virtual para verificar se contratante assinou
+contratoSchema.virtual("contratanteAssinado").get(function () {
+  return this.assinaturaDigital?.contratante?.assinado || false;
+});
+
+// Virtual para verificar se empreiteiro assinou
+contratoSchema.virtual("empreiteiroAssinado").get(function () {
+  return this.assinaturaDigital?.empreiteiro?.assinado || false;
+});
+
+// Método para assinar como contratante
+contratoSchema.methods.assinarContratante = function (
+  assinaturaData,
+  dadosSeguranca
+) {
+  this.assinaturaDigital = this.assinaturaDigital || {};
+  this.assinaturaDigital.contratante = {
+    assinado: true,
+    dataAssinatura: new Date(),
+    assinatura: assinaturaData.assinatura,
+    dadosSeguranca: {
+      ip: dadosSeguranca.ip,
+      userAgent: dadosSeguranca.userAgent,
+      localizacao: dadosSeguranca.localizacao,
+      dispositivo: dadosSeguranca.dispositivo,
+      hashAssinatura: assinaturaData.hash,
+    },
+  };
+
+  // Verificar se ambas as partes assinaram
+  this.verificarAssinaturaCompleta();
+
+  return this.save();
+};
+
+// Método para assinar como empreiteiro
+contratoSchema.methods.assinarEmpreiteiro = function (
+  assinaturaData,
+  dadosSeguranca
+) {
+  this.assinaturaDigital = this.assinaturaDigital || {};
+  this.assinaturaDigital.empreiteiro = {
+    assinado: true,
+    dataAssinatura: new Date(),
+    assinatura: assinaturaData.assinatura,
+    dadosSeguranca: {
+      ip: dadosSeguranca.ip,
+      userAgent: dadosSeguranca.userAgent,
+      localizacao: dadosSeguranca.localizacao,
+      dispositivo: dadosSeguranca.dispositivo,
+      hashAssinatura: assinaturaData.hash,
+    },
+  };
+
+  // Verificar se ambas as partes assinaram
+  this.verificarAssinaturaCompleta();
+
+  return this.save();
+};
+
+// Método para verificar se a assinatura está completa
+contratoSchema.methods.verificarAssinaturaCompleta = function () {
+  const contratanteAssinado =
+    this.assinaturaDigital?.contratante?.assinado || false;
+  const empreiteiroAssinado =
+    this.assinaturaDigital?.empreiteiro?.assinado || false;
+
+  if (contratanteAssinado && empreiteiroAssinado) {
+    this.assinaturaDigital.contratoCompleto = true;
+    this.assinaturaDigital.dataAssinaturaCompleta = new Date();
+
+    // Atualizar status do contrato para "Em Andamento" se ainda estiver "A iniciar"
+    if (this.status === "A iniciar") {
+      this.status = "Em Andamento";
+    }
+  }
+
+  return this.assinaturaDigital?.contratoCompleto || false;
+};
+
+// Método para obter status da assinatura
+contratoSchema.methods.getStatusAssinatura = function () {
+  const contratanteAssinado =
+    this.assinaturaDigital?.contratante?.assinado || false;
+  const empreiteiroAssinado =
+    this.assinaturaDigital?.empreiteiro?.assinado || false;
+
+  if (contratanteAssinado && empreiteiroAssinado) {
+    return "Completo";
+  } else if (contratanteAssinado || empreiteiroAssinado) {
+    return "Parcial";
+  } else {
+    return "Pendente";
+  }
+};
 
 // Configurar para incluir virtuals no JSON
 contratoSchema.set("toJSON", { virtuals: true });

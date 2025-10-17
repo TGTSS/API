@@ -1,6 +1,7 @@
 import express from "express";
 import Contrato from "../models/Contrato.js";
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 const router = express.Router();
 
@@ -565,6 +566,254 @@ router.post("/import", async (req, res) => {
       });
     }
 
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// Função para gerar hash da assinatura
+const generateSignatureHash = (assinatura, dadosSeguranca) => {
+  const data = `${assinatura}-${dadosSeguranca.ip}-${
+    dadosSeguranca.userAgent
+  }-${new Date().toISOString()}`;
+  return crypto.createHash("sha256").update(data).digest("hex");
+};
+
+// Função para capturar dados de segurança da requisição
+const captureSecurityData = (req) => {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = forwarded
+    ? forwarded.split(",")[0]
+    : req.connection.remoteAddress || req.socket.remoteAddress;
+
+  return {
+    ip: ip,
+    userAgent: req.headers["user-agent"] || "",
+    timestamp: new Date(),
+  };
+};
+
+// POST /api/contratos/:id/assinatura/contratante - Assinar como contratante
+router.post("/:id/assinatura/contratante", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assinatura, localizacao, dispositivo } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    if (!assinatura) {
+      return res.status(400).json({ message: "Assinatura é obrigatória" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    // Verificar se já foi assinado pelo contratante
+    if (contrato.assinaturaDigital?.contratante?.assinado) {
+      return res
+        .status(400)
+        .json({ message: "Contrato já foi assinado pelo contratante" });
+    }
+
+    // Capturar dados de segurança
+    const dadosSeguranca = captureSecurityData(req);
+    dadosSeguranca.localizacao = localizacao || {};
+    dadosSeguranca.dispositivo = dispositivo || {};
+
+    // Gerar hash da assinatura
+    const hashAssinatura = generateSignatureHash(assinatura, dadosSeguranca);
+
+    // Assinar como contratante
+    await contrato.assinarContratante(
+      { assinatura, hash: hashAssinatura },
+      dadosSeguranca
+    );
+
+    res.json({
+      message: "Contrato assinado com sucesso pelo contratante",
+      statusAssinatura: contrato.getStatusAssinatura(),
+      assinadoCompletamente: contrato.assinadoCompletamente,
+    });
+  } catch (error) {
+    console.error("Erro ao assinar contrato como contratante:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// POST /api/contratos/:id/assinatura/empreiteiro - Assinar como empreiteiro
+router.post("/:id/assinatura/empreiteiro", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assinatura, localizacao, dispositivo } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    if (!assinatura) {
+      return res.status(400).json({ message: "Assinatura é obrigatória" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    // Verificar se já foi assinado pelo empreiteiro
+    if (contrato.assinaturaDigital?.empreiteiro?.assinado) {
+      return res
+        .status(400)
+        .json({ message: "Contrato já foi assinado pelo empreiteiro" });
+    }
+
+    // Capturar dados de segurança
+    const dadosSeguranca = captureSecurityData(req);
+    dadosSeguranca.localizacao = localizacao || {};
+    dadosSeguranca.dispositivo = dispositivo || {};
+
+    // Gerar hash da assinatura
+    const hashAssinatura = generateSignatureHash(assinatura, dadosSeguranca);
+
+    // Assinar como empreiteiro
+    await contrato.assinarEmpreiteiro(
+      { assinatura, hash: hashAssinatura },
+      dadosSeguranca
+    );
+
+    res.json({
+      message: "Contrato assinado com sucesso pelo empreiteiro",
+      statusAssinatura: contrato.getStatusAssinatura(),
+      assinadoCompletamente: contrato.assinadoCompletamente,
+    });
+  } catch (error) {
+    console.error("Erro ao assinar contrato como empreiteiro:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// GET /api/contratos/:id/assinatura/status - Obter status da assinatura
+router.get("/:id/assinatura/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const contrato = await Contrato.findById(id).select(
+      "assinaturaDigital status"
+    );
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    res.json({
+      statusAssinatura: contrato.getStatusAssinatura(),
+      contratanteAssinado: contrato.contratanteAssinado,
+      empreiteiroAssinado: contrato.empreiteiroAssinado,
+      assinadoCompletamente: contrato.assinadoCompletamente,
+      dataAssinaturaCompleta:
+        contrato.assinaturaDigital?.dataAssinaturaCompleta,
+    });
+  } catch (error) {
+    console.error("Erro ao obter status da assinatura:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// GET /api/contratos/:id/assinatura/contratante - Obter assinatura do contratante
+router.get("/:id/assinatura/contratante", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const contrato = await Contrato.findById(id).select(
+      "assinaturaDigital.contratante"
+    );
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (!contrato.assinaturaDigital?.contratante?.assinado) {
+      return res
+        .status(404)
+        .json({ message: "Contratante ainda não assinou o contrato" });
+    }
+
+    res.json({
+      assinado: contrato.assinaturaDigital.contratante.assinado,
+      dataAssinatura: contrato.assinaturaDigital.contratante.dataAssinatura,
+      assinatura: contrato.assinaturaDigital.contratante.assinatura,
+      hashAssinatura:
+        contrato.assinaturaDigital.contratante.dadosSeguranca?.hashAssinatura,
+    });
+  } catch (error) {
+    console.error("Erro ao obter assinatura do contratante:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// GET /api/contratos/:id/assinatura/empreiteiro - Obter assinatura do empreiteiro
+router.get("/:id/assinatura/empreiteiro", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const contrato = await Contrato.findById(id).select(
+      "assinaturaDigital.empreiteiro"
+    );
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (!contrato.assinaturaDigital?.empreiteiro?.assinado) {
+      return res
+        .status(404)
+        .json({ message: "Empreiteiro ainda não assinou o contrato" });
+    }
+
+    res.json({
+      assinado: contrato.assinaturaDigital.empreiteiro.assinado,
+      dataAssinatura: contrato.assinaturaDigital.empreiteiro.dataAssinatura,
+      assinatura: contrato.assinaturaDigital.empreiteiro.assinatura,
+      hashAssinatura:
+        contrato.assinaturaDigital.empreiteiro.dadosSeguranca?.hashAssinatura,
+    });
+  } catch (error) {
+    console.error("Erro ao obter assinatura do empreiteiro:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// GET /server/info - Obter informações do servidor para captura de dados de segurança
+router.get("/server/info", async (req, res) => {
+  try {
+    const forwarded = req.headers["x-forwarded-for"];
+    const ip = forwarded
+      ? forwarded.split(",")[0]
+      : req.connection.remoteAddress || req.socket.remoteAddress;
+
+    res.json({
+      ip: ip,
+      userAgent: req.headers["user-agent"] || "",
+      timestamp: new Date().toISOString(),
+      location: {
+        // Dados básicos que podem ser obtidos do servidor
+        server: process.env.NODE_ENV || "development",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao obter informações do servidor:", error);
     res.status(500).json({ message: "Erro interno do servidor" });
   }
 });
