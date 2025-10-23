@@ -31,7 +31,27 @@ router.get("/", async (req, res) => {
     const filters = {};
 
     if (status && status !== "all") {
-      filters.status = status;
+      // Verificar se é um status de contrato ou status de execução
+      const statusContrato = [
+        "Rascunho",
+        "Pendente",
+        "Para aprovação",
+        "Aprovado",
+        "Rejeitado",
+      ];
+      const statusExecucao = [
+        "A iniciar",
+        "Em Andamento",
+        "Concluído",
+        "Suspenso",
+        "Cancelado",
+      ];
+
+      if (statusContrato.includes(status)) {
+        filters.statusContrato = status;
+      } else if (statusExecucao.includes(status)) {
+        filters.status = status;
+      }
     }
 
     if (tipoContrato && tipoContrato !== "all") {
@@ -49,7 +69,13 @@ router.get("/", async (req, res) => {
 
     // Configurar ordenação
     const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    if (sortBy === "statusContrato") {
+      sortOptions.statusContrato = sortOrder === "desc" ? -1 : 1;
+    } else if (sortBy === "status") {
+      sortOptions.status = sortOrder === "desc" ? -1 : 1;
+    } else {
+      sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    }
 
     // Calcular paginação
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -152,15 +178,24 @@ router.get("/stats", async (req, res) => {
       },
     ]);
 
-    // Calcular valor executado total
+    // Calcular valor executado total baseado nas medições
     const contratosComProgresso = await Contrato.find({
       status: { $in: ["Em Andamento", "Concluído"] },
     }).lean();
 
     const valorExecutado = contratosComProgresso.reduce((acc, contrato) => {
-      const valorExecutadoContrato = contrato.obras.reduce((sum, obra) => {
-        return sum + obra.valorContrato * (obra.progresso / 100);
-      }, 0);
+      // Calcular valor executado baseado nas medições
+      const valorExecutadoContrato = contrato.medicoes.reduce(
+        (sum, medicao) => {
+          return (
+            sum +
+            medicao.medicoesPorObra.reduce((sumObra, medicaoObra) => {
+              return sumObra + (medicaoObra.valorExecutado || 0);
+            }, 0)
+          );
+        },
+        0
+      );
       return acc + valorExecutadoContrato;
     }, 0);
 
@@ -211,31 +246,19 @@ router.post("/", async (req, res) => {
   try {
     const contratoData = req.body;
 
-    // Gerar endereços das obras se não existirem
-    if (contratoData.obras && contratoData.obras.length > 0) {
-      contratoData.enderecosObras = contratoData.obras.map((obra) => {
-        if (obra.endereco && typeof obra.endereco === "object") {
-          const endereco = obra.endereco;
-          return `${endereco.logradouro || ""}${
-            endereco.numero ? `, ${endereco.numero}` : ""
-          }${endereco.complemento ? `, ${endereco.complemento}` : ""}${
-            endereco.bairro ? `, ${endereco.bairro}` : ""
-          }${endereco.cidade ? `, ${endereco.cidade}` : ""}${
-            endereco.estado ? ` - ${endereco.estado}` : ""
-          }${endereco.cep ? `, CEP: ${endereco.cep}` : ""}`
-            .replace(/^,\s*/, "")
-            .trim();
-        }
-        return obra.endereco || "";
-      });
+    // Validar e processar dados do contrato
+    if (
+      contratoData.contratanteRef &&
+      contratoData.contratanteRef.id &&
+      contratoData.contratanteRef.model
+    ) {
+      // O modelo irá hidratar automaticamente o snapshot do contratante
+      console.log("Contratante será hidratado automaticamente pelo modelo");
     }
 
-    // Garantir que as obras tenham progresso inicializado
-    if (contratoData.obras) {
-      contratoData.obras = contratoData.obras.map((obra) => ({
-        ...obra,
-        progresso: obra.progresso || 0,
-      }));
+    if (contratoData.empreiteiroRef && contratoData.empreiteiroRef.id) {
+      // O modelo irá hidratar automaticamente o snapshot do empreiteiro
+      console.log("Empreiteiro será hidratado automaticamente pelo modelo");
     }
 
     const novoContrato = new Contrato(contratoData);
@@ -267,23 +290,19 @@ router.put("/:id", async (req, res) => {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    // Gerar endereços das obras se não existirem
-    if (contratoData.obras && contratoData.obras.length > 0) {
-      contratoData.enderecosObras = contratoData.obras.map((obra) => {
-        if (obra.endereco && typeof obra.endereco === "object") {
-          const endereco = obra.endereco;
-          return `${endereco.logradouro || ""}${
-            endereco.numero ? `, ${endereco.numero}` : ""
-          }${endereco.complemento ? `, ${endereco.complemento}` : ""}${
-            endereco.bairro ? `, ${endereco.bairro}` : ""
-          }${endereco.cidade ? `, ${endereco.cidade}` : ""}${
-            endereco.estado ? ` - ${endereco.estado}` : ""
-          }${endereco.cep ? `, CEP: ${endereco.cep}` : ""}`
-            .replace(/^,\s*/, "")
-            .trim();
-        }
-        return obra.endereco || "";
-      });
+    // Validar e processar dados do contrato
+    if (
+      contratoData.contratanteRef &&
+      contratoData.contratanteRef.id &&
+      contratoData.contratanteRef.model
+    ) {
+      // O modelo irá hidratar automaticamente o snapshot do contratante
+      console.log("Contratante será hidratado automaticamente pelo modelo");
+    }
+
+    if (contratoData.empreiteiroRef && contratoData.empreiteiroRef.id) {
+      // O modelo irá hidratar automaticamente o snapshot do empreiteiro
+      console.log("Empreiteiro será hidratado automaticamente pelo modelo");
     }
 
     const contratoAtualizado = await Contrato.findByIdAndUpdate(
@@ -316,29 +335,57 @@ router.put("/:id", async (req, res) => {
 router.patch("/:id/status", async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, statusContrato } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const statusValidos = [
-      "A iniciar",
-      "Em Andamento",
-      "Concluído",
-      "Suspenso",
-      "Cancelado",
-    ];
-    if (!statusValidos.includes(status)) {
+    const updateData = {};
+
+    if (status) {
+      const statusValidos = [
+        "A iniciar",
+        "Em Andamento",
+        "Concluído",
+        "Suspenso",
+        "Cancelado",
+      ];
+      if (!statusValidos.includes(status)) {
+        return res.status(400).json({
+          message: "Status de execução inválido",
+          statusValidos,
+        });
+      }
+      updateData.status = status;
+    }
+
+    if (statusContrato) {
+      const statusContratoValidos = [
+        "Rascunho",
+        "Pendente",
+        "Para aprovação",
+        "Aprovado",
+        "Rejeitado",
+      ];
+      if (!statusContratoValidos.includes(statusContrato)) {
+        return res.status(400).json({
+          message: "Status de contrato inválido",
+          statusValidos: statusContratoValidos,
+        });
+      }
+      updateData.statusContrato = statusContrato;
+    }
+
+    if (Object.keys(updateData).length === 0) {
       return res.status(400).json({
-        message: "Status inválido",
-        statusValidos,
+        message: "Nenhum status fornecido para atualização",
       });
     }
 
     const contratoAtualizado = await Contrato.findByIdAndUpdate(
       id,
-      { status },
+      updateData,
       { new: true }
     );
 
@@ -376,15 +423,9 @@ router.post("/:id/medicoes", async (req, res) => {
     // Adicionar medição
     contrato.medicoes.push(medicaoData);
 
-    // Atualizar progresso das obras baseado na medição
-    if (medicaoData.medicoesPorObra) {
-      medicaoData.medicoesPorObra.forEach((medicaoObra) => {
-        const obra = contrato.obras.find((o) => o.id === medicaoObra.obraId);
-        if (obra) {
-          obra.progresso = medicaoObra.percentualExecutado;
-        }
-      });
-    }
+    // As medições são armazenadas no array medicoes do contrato
+    // O progresso das obras é calculado baseado nas medições
+    console.log("Medição adicionada ao contrato:", medicaoData.id);
 
     // Atualizar status do contrato se necessário
     if (contrato.status === "A iniciar") {
@@ -443,7 +484,7 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// GET /api/contratos/:id/obras - Listar obras do contrato
+// GET /api/contratos/:id/obras - Listar obras do contrato (via obrasRef)
 router.get("/:id/obras", async (req, res) => {
   try {
     const { id } = req.params;
@@ -452,19 +493,21 @@ router.get("/:id/obras", async (req, res) => {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const contrato = await Contrato.findById(id).select("obras");
+    const contrato = await Contrato.findById(id)
+      .select("obrasRef")
+      .populate("obrasRef");
     if (!contrato) {
       return res.status(404).json({ message: "Contrato não encontrado" });
     }
 
-    res.json(contrato.obras);
+    res.json(contrato.obrasRef);
   } catch (error) {
     console.error("Erro ao buscar obras do contrato:", error);
     res.status(500).json({ message: "Erro interno do servidor" });
   }
 });
 
-// GET /api/contratos/:id/insumos - Listar insumos do contrato
+// GET /api/contratos/:id/insumos - Listar insumos do contrato (via itens)
 router.get("/:id/insumos", async (req, res) => {
   try {
     const { id } = req.params;
@@ -473,19 +516,27 @@ router.get("/:id/insumos", async (req, res) => {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const contrato = await Contrato.findById(id).select("insumos");
+    const contrato = await Contrato.findById(id).select("itens");
     if (!contrato) {
       return res.status(404).json({ message: "Contrato não encontrado" });
     }
 
-    res.json(contrato.insumos);
+    // Extrair todos os insumos dos itens
+    const insumos = [];
+    contrato.itens.forEach((item) => {
+      if (item.insumos) {
+        insumos.push(...item.insumos);
+      }
+    });
+
+    res.json(insumos);
   } catch (error) {
     console.error("Erro ao buscar insumos do contrato:", error);
     res.status(500).json({ message: "Erro interno do servidor" });
   }
 });
 
-// GET /api/contratos/:id/composicoes - Listar composições do contrato
+// GET /api/contratos/:id/composicoes - Listar composições do contrato (via itens)
 router.get("/:id/composicoes", async (req, res) => {
   try {
     const { id } = req.params;
@@ -494,12 +545,20 @@ router.get("/:id/composicoes", async (req, res) => {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const contrato = await Contrato.findById(id).select("composicoes");
+    const contrato = await Contrato.findById(id).select("itens");
     if (!contrato) {
       return res.status(404).json({ message: "Contrato não encontrado" });
     }
 
-    res.json(contrato.composicoes);
+    // Extrair todas as composições dos itens
+    const composicoes = [];
+    contrato.itens.forEach((item) => {
+      if (item.composicoes) {
+        composicoes.push(...item.composicoes);
+      }
+    });
+
+    res.json(composicoes);
   } catch (error) {
     console.error("Erro ao buscar composições do contrato:", error);
     res.status(500).json({ message: "Erro interno do servidor" });
@@ -519,31 +578,17 @@ router.post("/import", async (req, res) => {
 
     // Processar cada contrato
     const contratosProcessados = contratos.map((contrato) => {
-      // Gerar endereços das obras se não existirem
-      if (contrato.obras && contrato.obras.length > 0) {
-        contrato.enderecosObras = contrato.obras.map((obra) => {
-          if (obra.endereco && typeof obra.endereco === "object") {
-            const endereco = obra.endereco;
-            return `${endereco.logradouro || ""}${
-              endereco.numero ? `, ${endereco.numero}` : ""
-            }${endereco.complemento ? `, ${endereco.complemento}` : ""}${
-              endereco.bairro ? `, ${endereco.bairro}` : ""
-            }${endereco.cidade ? `, ${endereco.cidade}` : ""}${
-              endereco.estado ? ` - ${endereco.estado}` : ""
-            }${endereco.cep ? `, CEP: ${endereco.cep}` : ""}`
-              .replace(/^,\s*/, "")
-              .trim();
-          }
-          return obra.endereco || "";
-        });
+      // Validar referências polimórficas
+      if (
+        contrato.contratanteRef &&
+        contrato.contratanteRef.id &&
+        contrato.contratanteRef.model
+      ) {
+        console.log("Contratante será hidratado automaticamente pelo modelo");
       }
 
-      // Garantir que as obras tenham progresso inicializado
-      if (contrato.obras) {
-        contrato.obras = contrato.obras.map((obra) => ({
-          ...obra,
-          progresso: obra.progresso || 0,
-        }));
+      if (contrato.empreiteiroRef && contrato.empreiteiroRef.id) {
+        console.log("Empreiteiro será hidratado automaticamente pelo modelo");
       }
 
       return contrato;
@@ -814,6 +859,160 @@ router.get("/server/info", async (req, res) => {
     });
   } catch (error) {
     console.error("Erro ao obter informações do servidor:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// GET /api/contratos/:id/itens - Listar itens do contrato
+router.get("/:id/itens", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const contrato = await Contrato.findById(id).select("itens");
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    res.json(contrato.itens);
+  } catch (error) {
+    console.error("Erro ao buscar itens do contrato:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// POST /api/contratos/:id/itens - Adicionar item ao contrato
+router.post("/:id/itens", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const itemData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    contrato.itens.push(itemData);
+    const contratoAtualizado = await contrato.save();
+
+    res
+      .status(201)
+      .json(contratoAtualizado.itens[contratoAtualizado.itens.length - 1]);
+  } catch (error) {
+    console.error("Erro ao adicionar item ao contrato:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// PUT /api/contratos/:id/itens/:itemIndex - Atualizar item do contrato
+router.put("/:id/itens/:itemIndex", async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+    const itemData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({ message: "Índice do item inválido" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Item não encontrado" });
+    }
+
+    contrato.itens[index] = { ...contrato.itens[index], ...itemData };
+    const contratoAtualizado = await contrato.save();
+
+    res.json(contratoAtualizado.itens[index]);
+  } catch (error) {
+    console.error("Erro ao atualizar item do contrato:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// DELETE /api/contratos/:id/itens/:itemIndex - Remover item do contrato
+router.delete("/:id/itens/:itemIndex", async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({ message: "Índice do item inválido" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Item não encontrado" });
+    }
+
+    contrato.itens.splice(index, 1);
+    await contrato.save();
+
+    res.json({ message: "Item removido com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover item do contrato:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// GET /api/contratos/:id/assinatura/verificar - Verificar se contrato pode ser assinado
+router.get("/:id/assinatura/verificar", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const contrato = await Contrato.findById(id).select(
+      "assinaturaDigital status contratante empreiteiro"
+    );
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    // Verificar se o contrato tem todos os dados necessários para assinatura
+    const podeAssinar = {
+      contratante: {
+        temDados: !!(contrato.contratante && contrato.contratante.nome),
+        jaAssinado: contrato.assinaturaDigital?.contratante?.assinado || false,
+      },
+      empreiteiro: {
+        temDados: !!(contrato.empreiteiro && contrato.empreiteiro.nome),
+        jaAssinado: contrato.assinaturaDigital?.empreiteiro?.assinado || false,
+      },
+    };
+
+    res.json({
+      podeAssinar: podeAssinar,
+      statusAssinatura: contrato.getStatusAssinatura(),
+      assinadoCompletamente: contrato.assinadoCompletamente,
+    });
+  } catch (error) {
+    console.error("Erro ao verificar assinatura:", error);
     res.status(500).json({ message: "Erro interno do servidor" });
   }
 });

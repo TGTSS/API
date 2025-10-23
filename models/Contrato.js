@@ -13,6 +13,14 @@ const contratoSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
+    statusContrato: {
+      type: String,
+      required: true,
+      enum: ["Rascunho", "Pendente", "Para aprovação", "Aprovado", "Rejeitado"],
+      default: "Rascunho",
+    },
+
     tipoContrato: {
       type: String,
       required: true,
@@ -160,14 +168,45 @@ const contratoSchema = new mongoose.Schema(
       },
     },
 
-    // Insumos por referência
-    insumosRef: [{ type: mongoose.Schema.Types.ObjectId, ref: "Insumo" }],
+    itens: [
+      // Insumos por referência
+      {
+        item: [
+          {
+            descricao: { type: String },
+            quantidade: { type: Number },
+            unidade: { type: String },
+            valor: { type: Number },
+            valorTotal: { type: Number },
+          },
+        ],
+        insumos: [
+          {
+            descricao: { type: String },
+            quantidade: { type: Number },
+            unidade: { type: String },
+            valor: { type: Number },
+            valorTotal: { type: Number },
+            insumoRef: [
+              { type: mongoose.Schema.Types.ObjectId, ref: "Insumo" },
+            ],
+          },
+        ],
 
-    // Composições por referência
-    composicoesRef: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "Composicao" },
+        composicoes: [
+          {
+            descricao: { type: String },
+            quantidade: { type: Number },
+            unidade: { type: String },
+            valor: { type: Number },
+            valorTotal: { type: Number },
+            composicaoRef: [
+              { type: mongoose.Schema.Types.ObjectId, ref: "Composicao" },
+            ],
+          },
+        ],
+      },
     ],
-
     // Medições do contrato
     medicoes: [
       {
