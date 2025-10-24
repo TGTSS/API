@@ -36,12 +36,7 @@ const contratoSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    status: {
-      type: String,
-      required: true,
-      enum: ["A iniciar", "Em Andamento", "Concluído", "Suspenso", "Cancelado"],
-      default: "A iniciar",
-    },
+
     dataInicio: {
       type: Date,
       required: true,
