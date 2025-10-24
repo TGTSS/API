@@ -1017,4 +1017,560 @@ router.get("/:id/assinatura/verificar", async (req, res) => {
   }
 });
 
+// ============================================================
+// ROTAS GRANULARES PARA GERENCIAR ITENS, INSUMOS E COMPOSIÇÕES
+// ============================================================
+
+// POST /api/contratos/:id/itens/:itemIndex/item - Adicionar item individual ao grupo
+router.post("/:id/itens/:itemIndex/item", async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+    const itemData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({ message: "Índice do item inválido" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    if (!contrato.itens[index].item) {
+      contrato.itens[index].item = [];
+    }
+
+    contrato.itens[index].item.push(itemData);
+    const contratoAtualizado = await contrato.save();
+
+    res.status(201).json({
+      message: "Item adicionado com sucesso",
+      item: contrato.itens[index].item[contrato.itens[index].item.length - 1],
+      grupo: contratoAtualizado.itens[index],
+    });
+  } catch (error) {
+    console.error("Erro ao adicionar item:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// PUT /api/contratos/:id/itens/:itemIndex/item/:itemId - Atualizar item individual
+router.put("/:id/itens/:itemIndex/item/:itemId", async (req, res) => {
+  try {
+    const { id, itemIndex, itemId } = req.params;
+    const itemData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    const itemIdInt = parseInt(itemId);
+
+    if (isNaN(index) || index < 0 || isNaN(itemIdInt) || itemIdInt < 0) {
+      return res.status(400).json({ message: "Índices inválidos" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    if (
+      !contrato.itens[index].item ||
+      itemIdInt >= contrato.itens[index].item.length
+    ) {
+      return res.status(404).json({ message: "Item não encontrado" });
+    }
+
+    contrato.itens[index].item[itemIdInt] = {
+      ...contrato.itens[index].item[itemIdInt],
+      ...itemData,
+    };
+
+    const contratoAtualizado = await contrato.save();
+
+    res.json({
+      message: "Item atualizado com sucesso",
+      item: contratoAtualizado.itens[index].item[itemIdInt],
+      grupo: contratoAtualizado.itens[index],
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar item:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// DELETE /api/contratos/:id/itens/:itemIndex/item/:itemId - Remover item individual
+router.delete("/:id/itens/:itemIndex/item/:itemId", async (req, res) => {
+  try {
+    const { id, itemIndex, itemId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    const itemIdInt = parseInt(itemId);
+
+    if (isNaN(index) || index < 0 || isNaN(itemIdInt) || itemIdInt < 0) {
+      return res.status(400).json({ message: "Índices inválidos" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    if (
+      !contrato.itens[index].item ||
+      itemIdInt >= contrato.itens[index].item.length
+    ) {
+      return res.status(404).json({ message: "Item não encontrado" });
+    }
+
+    contrato.itens[index].item.splice(itemIdInt, 1);
+    await contrato.save();
+
+    res.json({ message: "Item removido com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover item:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// POST /api/contratos/:id/itens/:itemIndex/insumos - Adicionar insumo ao grupo
+router.post("/:id/itens/:itemIndex/insumos", async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+    const insumoData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({ message: "Índice do item inválido" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    if (!contrato.itens[index].insumos) {
+      contrato.itens[index].insumos = [];
+    }
+
+    contrato.itens[index].insumos.push(insumoData);
+    const contratoAtualizado = await contrato.save();
+
+    res.status(201).json({
+      message: "Insumo adicionado com sucesso",
+      insumo:
+        contrato.itens[index].insumos[contrato.itens[index].insumos.length - 1],
+      grupo: contratoAtualizado.itens[index],
+    });
+  } catch (error) {
+    console.error("Erro ao adicionar insumo:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// PUT /api/contratos/:id/itens/:itemIndex/insumos/:insumoId - Atualizar insumo
+router.put("/:id/itens/:itemIndex/insumos/:insumoId", async (req, res) => {
+  try {
+    const { id, itemIndex, insumoId } = req.params;
+    const insumoData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    const insumoIdInt = parseInt(insumoId);
+
+    if (isNaN(index) || index < 0 || isNaN(insumoIdInt) || insumoIdInt < 0) {
+      return res.status(400).json({ message: "Índices inválidos" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    if (
+      !contrato.itens[index].insumos ||
+      insumoIdInt >= contrato.itens[index].insumos.length
+    ) {
+      return res.status(404).json({ message: "Insumo não encontrado" });
+    }
+
+    contrato.itens[index].insumos[insumoIdInt] = {
+      ...contrato.itens[index].insumos[insumoIdInt],
+      ...insumoData,
+    };
+
+    const contratoAtualizado = await contrato.save();
+
+    res.json({
+      message: "Insumo atualizado com sucesso",
+      insumo: contratoAtualizado.itens[index].insumos[insumoIdInt],
+      grupo: contratoAtualizado.itens[index],
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar insumo:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// DELETE /api/contratos/:id/itens/:itemIndex/insumos/:insumoId - Remover insumo
+router.delete("/:id/itens/:itemIndex/insumos/:insumoId", async (req, res) => {
+  try {
+    const { id, itemIndex, insumoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    const insumoIdInt = parseInt(insumoId);
+
+    if (isNaN(index) || index < 0 || isNaN(insumoIdInt) || insumoIdInt < 0) {
+      return res.status(400).json({ message: "Índices inválidos" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    if (
+      !contrato.itens[index].insumos ||
+      insumoIdInt >= contrato.itens[index].insumos.length
+    ) {
+      return res.status(404).json({ message: "Insumo não encontrado" });
+    }
+
+    contrato.itens[index].insumos.splice(insumoIdInt, 1);
+    await contrato.save();
+
+    res.json({ message: "Insumo removido com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover insumo:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// POST /api/contratos/:id/itens/:itemIndex/composicoes - Adicionar composição ao grupo
+router.post("/:id/itens/:itemIndex/composicoes", async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+    const composicaoData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({ message: "Índice do item inválido" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    if (!contrato.itens[index].composicoes) {
+      contrato.itens[index].composicoes = [];
+    }
+
+    contrato.itens[index].composicoes.push(composicaoData);
+    const contratoAtualizado = await contrato.save();
+
+    res.status(201).json({
+      message: "Composição adicionada com sucesso",
+      composicao:
+        contrato.itens[index].composicoes[
+          contrato.itens[index].composicoes.length - 1
+        ],
+      grupo: contratoAtualizado.itens[index],
+    });
+  } catch (error) {
+    console.error("Erro ao adicionar composição:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// PUT /api/contratos/:id/itens/:itemIndex/composicoes/:composicaoId - Atualizar composição
+router.put(
+  "/:id/itens/:itemIndex/composicoes/:composicaoId",
+  async (req, res) => {
+    try {
+      const { id, itemIndex, composicaoId } = req.params;
+      const composicaoData = req.body;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      const index = parseInt(itemIndex);
+      const composicaoIdInt = parseInt(composicaoId);
+
+      if (
+        isNaN(index) ||
+        index < 0 ||
+        isNaN(composicaoIdInt) ||
+        composicaoIdInt < 0
+      ) {
+        return res.status(400).json({ message: "Índices inválidos" });
+      }
+
+      const contrato = await Contrato.findById(id);
+      if (!contrato) {
+        return res.status(404).json({ message: "Contrato não encontrado" });
+      }
+
+      if (index >= contrato.itens.length) {
+        return res
+          .status(404)
+          .json({ message: "Grupo de itens não encontrado" });
+      }
+
+      if (
+        !contrato.itens[index].composicoes ||
+        composicaoIdInt >= contrato.itens[index].composicoes.length
+      ) {
+        return res.status(404).json({ message: "Composição não encontrada" });
+      }
+
+      contrato.itens[index].composicoes[composicaoIdInt] = {
+        ...contrato.itens[index].composicoes[composicaoIdInt],
+        ...composicaoData,
+      };
+
+      const contratoAtualizado = await contrato.save();
+
+      res.json({
+        message: "Composição atualizada com sucesso",
+        composicao:
+          contratoAtualizado.itens[index].composicoes[composicaoIdInt],
+        grupo: contratoAtualizado.itens[index],
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar composição:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+);
+
+// DELETE /api/contratos/:id/itens/:itemIndex/composicoes/:composicaoId - Remover composição
+router.delete(
+  "/:id/itens/:itemIndex/composicoes/:composicaoId",
+  async (req, res) => {
+    try {
+      const { id, itemIndex, composicaoId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      const index = parseInt(itemIndex);
+      const composicaoIdInt = parseInt(composicaoId);
+
+      if (
+        isNaN(index) ||
+        index < 0 ||
+        isNaN(composicaoIdInt) ||
+        composicaoIdInt < 0
+      ) {
+        return res.status(400).json({ message: "Índices inválidos" });
+      }
+
+      const contrato = await Contrato.findById(id);
+      if (!contrato) {
+        return res.status(404).json({ message: "Contrato não encontrado" });
+      }
+
+      if (index >= contrato.itens.length) {
+        return res
+          .status(404)
+          .json({ message: "Grupo de itens não encontrado" });
+      }
+
+      if (
+        !contrato.itens[index].composicoes ||
+        composicaoIdInt >= contrato.itens[index].composicoes.length
+      ) {
+        return res.status(404).json({ message: "Composição não encontrada" });
+      }
+
+      contrato.itens[index].composicoes.splice(composicaoIdInt, 1);
+      await contrato.save();
+
+      res.json({ message: "Composição removida com sucesso" });
+    } catch (error) {
+      console.error("Erro ao remover composição:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+);
+
+// PUT /api/contratos/:id/itens - Atualizar todos os itens do contrato (útil para edição em lote)
+router.put("/:id/itens", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { itens } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    if (!Array.isArray(itens)) {
+      return res.status(400).json({ message: "Itens deve ser um array" });
+    }
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    contrato.itens = itens;
+    const contratoAtualizado = await contrato.save();
+
+    res.json({
+      message: "Itens atualizados com sucesso",
+      itens: contratoAtualizado.itens,
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar itens:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// GET /api/contratos/:id/itens/:itemIndex/item - Listar itens individuais de um grupo
+router.get("/:id/itens/:itemIndex/item", async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({ message: "Índice do item inválido" });
+    }
+
+    const contrato = await Contrato.findById(id).select("itens");
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    res.json(contrato.itens[index].item || []);
+  } catch (error) {
+    console.error("Erro ao buscar itens:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// GET /api/contratos/:id/itens/:itemIndex/insumos - Listar insumos de um grupo
+router.get("/:id/itens/:itemIndex/insumos", async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({ message: "Índice do item inválido" });
+    }
+
+    const contrato = await Contrato.findById(id).select("itens");
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    res.json(contrato.itens[index].insumos || []);
+  } catch (error) {
+    console.error("Erro ao buscar insumos:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
+// GET /api/contratos/:id/itens/:itemIndex/composicoes - Listar composições de um grupo
+router.get("/:id/itens/:itemIndex/composicoes", async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const index = parseInt(itemIndex);
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({ message: "Índice do item inválido" });
+    }
+
+    const contrato = await Contrato.findById(id).select("itens");
+    if (!contrato) {
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
+    if (index >= contrato.itens.length) {
+      return res.status(404).json({ message: "Grupo de itens não encontrado" });
+    }
+
+    res.json(contrato.itens[index].composicoes || []);
+  } catch (error) {
+    console.error("Erro ao buscar composições:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
 export default router;
