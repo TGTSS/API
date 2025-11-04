@@ -317,6 +317,7 @@ export const buscarNotasNovas = async (req, res) => {
 const buscarTodasNotas = async (certificado, agentOptions) => {
   let todasNotas = [];
   let nsuAtual = certificado.ultimoNSU || 0; // Usar o último NSU salvo no certificado
+  let ultimoNSUProcessado = nsuAtual; // rastrear o último NSU efetivamente processado
   let maxNSU = 0;
   let tentativas = 0;
   const maxTentativas = 100; // Aumentar limite para buscar mais notas
@@ -382,11 +383,13 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
             }
           }
         }
+        ultimoNSUProcessado = ultimoNSU;
         nsuAtual = ultimoNSU + 1;
       } else if (statusCode === "137") {
         // Nenhum documento encontrado
         status656Count = 0; // Resetar contador de status 656
         console.log("Nenhum documento encontrado neste lote");
+        ultimoNSUProcessado = ultimoNSU;
         nsuAtual = ultimoNSU + 1;
       } else if (statusCode === "656") {
         // Consumo Indevido - deve usar ultNSU nas solicitações subsequentes
@@ -395,23 +398,30 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
           `Status 656 - Rejeicao: Consumo Indevido (Tentativa ${status656Count}/${maxStatus656Retries})`
         );
 
+        // Se já processamos algum documento neste ciclo, interromper para salvar progresso
+        if (todasNotas.length > 0 || ultimoNSUProcessado !== certificado.ultimoNSU) {
+          console.log(
+            "Status 656 após progresso. Interrompendo para salvar progresso e atualizar NSU."
+          );
+          break;
+        }
+
         if (status656Count >= maxStatus656Retries) {
           console.log(
-            "Máximo de tentativas para status 656 atingido. Aguardando 1 hora..."
+            "Máximo de tentativas para status 656 atingido neste ciclo. Interrompendo para tentar novamente mais tarde."
           );
-          // Aguardar 1 hora antes de tentar novamente
-          await new Promise((resolve) => setTimeout(resolve, 3600000)); // 1 hora
-          status656Count = 0; // Resetar contador
+          break;
         } else {
-          // Aguardar um pouco antes de tentar novamente
+          // Aguardar um pouco antes de tentar novamente no mesmo ciclo
           await new Promise((resolve) => setTimeout(resolve, 5000)); // 5 segundos
         }
-        continue; // Tentar novamente com o mesmo NSU
+        continue; // Tentar novamente com o mesmo NSU enquanto não atingir o limite
       } else {
         console.error(
           `Status inesperado: ${statusCode} - ${retDistDFeInt.xMotivo[0]}`
         );
         // Para outros status inesperados, tentar continuar
+        ultimoNSUProcessado = ultimoNSU;
         nsuAtual = ultimoNSU + 1;
       }
 
@@ -440,8 +450,10 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
   console.log(
     `Busca concluída. Total de notas encontradas: ${todasNotas.length}`
   );
-  console.log(`NSU final: ${maxNSU}, Tentativas realizadas: ${tentativas}`);
-  return { notas: todasNotas, ultimoNSU: maxNSU, maxNSU };
+  console.log(
+    `NSU final processado: ${ultimoNSUProcessado}, Max NSU reportado: ${maxNSU}, Tentativas realizadas: ${tentativas}`
+  );
+  return { notas: todasNotas, ultimoNSU: ultimoNSUProcessado, maxNSU };
 };
 
 // Função para buscar apenas notas novas a partir do último NSU salvo
@@ -452,6 +464,7 @@ const buscarNotasNovasInterno = async (
 ) => {
   let todasNotas = [];
   let nsuAtual = certificado.ultimoNSU || 0; // Usar o último NSU salvo no certificado
+  let ultimoNSUProcessado = nsuAtual; // rastrear o último NSU efetivamente processado
   let maxNSU = 0;
   let tentativas = 0;
   const maxTentativas = 50;
@@ -526,11 +539,13 @@ const buscarNotasNovasInterno = async (
             }
           }
         }
+        ultimoNSUProcessado = ultimoNSU;
         nsuAtual = ultimoNSU + 1;
       } else if (statusCode === "137") {
         // Nenhum documento encontrado
         status656Count = 0;
         console.log("Nenhum documento encontrado neste lote");
+        ultimoNSUProcessado = ultimoNSU;
         nsuAtual = ultimoNSU + 1;
       } else if (statusCode === "656") {
         // Consumo Indevido
@@ -539,12 +554,19 @@ const buscarNotasNovasInterno = async (
           `Status 656 - Rejeicao: Consumo Indevido (Tentativa ${status656Count}/${maxStatus656Retries})`
         );
 
+        // Se já houve progresso nesta execução, interromper para salvar e atualizar NSU
+        if (todasNotas.length > 0 || ultimoNSUProcessado !== certificado.ultimoNSU) {
+          console.log(
+            "Status 656 após progresso. Interrompendo para salvar progresso e atualizar NSU."
+          );
+          break;
+        }
+
         if (status656Count >= maxStatus656Retries) {
           console.log(
-            "Máximo de tentativas para status 656 atingido. Aguardando 1 hora..."
+            "Máximo de tentativas para status 656 atingido neste ciclo. Interrompendo para tentar novamente mais tarde."
           );
-          await new Promise((resolve) => setTimeout(resolve, 3600000));
-          status656Count = 0;
+          break;
         } else {
           await new Promise((resolve) => setTimeout(resolve, 5000));
         }
@@ -553,6 +575,7 @@ const buscarNotasNovasInterno = async (
         console.error(
           `Status inesperado: ${statusCode} - ${retDistDFeInt.xMotivo[0]}`
         );
+        ultimoNSUProcessado = ultimoNSU;
         nsuAtual = ultimoNSU + 1;
       }
 
@@ -578,8 +601,10 @@ const buscarNotasNovasInterno = async (
   console.log(
     `Busca de notas novas concluída. Total de notas encontradas: ${todasNotas.length}`
   );
-  console.log(`NSU final: ${maxNSU}, Tentativas realizadas: ${tentativas}`);
-  return { notas: todasNotas, ultimoNSU: maxNSU, maxNSU };
+  console.log(
+    `NSU final processado: ${ultimoNSUProcessado}, Max NSU reportado: ${maxNSU}, Tentativas realizadas: ${tentativas}`
+  );
+  return { notas: todasNotas, ultimoNSU: ultimoNSUProcessado, maxNSU };
 };
 
 export const buscarNotasRecentes = async (req, res) => {
