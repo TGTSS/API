@@ -77,6 +77,21 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// GET /api/contratos-reserva/obra/:obraId
+router.get("/obra/:obraId", async (req, res) => {
+  try {
+    const { obraId } = req.params;
+    const doc = await ContratoReserva.find({ obraRef: obraId });
+    res.json(doc);
+    if (!doc)
+      return res.status(404).json({ message: "Contrato não encontrado" });
+    res.json(doc);
+  } catch (error) {
+    console.error("Erro ao buscar contratos de reserva por obra:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
+
 // POST /api/contratos-reserva
 router.post("/", async (req, res) => {
   try {
