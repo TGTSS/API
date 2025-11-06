@@ -59,6 +59,7 @@ const CompradorSchema = new mongoose.Schema(
 
 const ImovelSchema = new mongoose.Schema(
   {
+    nome: String,
     endereco: String,
     cidade: String,
     estado: String,
