@@ -18,7 +18,7 @@ const EnderecoSchema = new mongoose.Schema(
 
 const ImobiliariaSchema = new mongoose.Schema(
   {
-    razaoSocial: { type: String, required: true },
+    razaoSocial: { type: String },
     cnpj: String,
     creci: String,
     endereco: String,
@@ -44,7 +44,7 @@ const ConstrutoraSchema = new mongoose.Schema(
 
 const CompradorSchema = new mongoose.Schema(
   {
-    nome: { type: String, required: true },
+    nome: { type: String },
     cpf: String,
     rg: String,
     profissao: String,
@@ -93,9 +93,9 @@ const ContratoReservaSchema = new mongoose.Schema(
     estado: String,
 
     imobiliaria: ImobiliariaSchema,
-    construtora: ConstrutoraSchema,
+    construtora: { type: ConstrutoraSchema, required: true },
     comprador: CompradorSchema,
-    imovel: ImovelSchema,
+    imovel: { type: ImovelSchema, required: true },
     condicoes: CondicoesSchema,
 
     // Links de relacionamento úteis

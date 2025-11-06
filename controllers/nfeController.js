@@ -399,7 +399,10 @@ const buscarTodasNotas = async (certificado, agentOptions) => {
         );
 
         // Se já processamos algum documento neste ciclo, interromper para salvar progresso
-        if (todasNotas.length > 0 || ultimoNSUProcessado !== certificado.ultimoNSU) {
+        if (
+          todasNotas.length > 0 ||
+          ultimoNSUProcessado !== certificado.ultimoNSU
+        ) {
           console.log(
             "Status 656 após progresso. Interrompendo para salvar progresso e atualizar NSU."
           );
@@ -555,7 +558,10 @@ const buscarNotasNovasInterno = async (
         );
 
         // Se já houve progresso nesta execução, interromper para salvar e atualizar NSU
-        if (todasNotas.length > 0 || ultimoNSUProcessado !== certificado.ultimoNSU) {
+        if (
+          todasNotas.length > 0 ||
+          ultimoNSUProcessado !== certificado.ultimoNSU
+        ) {
           console.log(
             "Status 656 após progresso. Interrompendo para salvar progresso e atualizar NSU."
           );
