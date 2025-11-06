@@ -82,9 +82,11 @@ router.get("/obra/:obraId", async (req, res) => {
   try {
     const { obraId } = req.params;
     const doc = await ContratoReserva.find({ obraRef: obraId });
-    res.json(doc);
-    if (!doc)
+
+    if (!doc || doc.length === 0) {
       return res.status(404).json({ message: "Contrato não encontrado" });
+    }
+
     res.json(doc);
   } catch (error) {
     console.error("Erro ao buscar contratos de reserva por obra:", error);
