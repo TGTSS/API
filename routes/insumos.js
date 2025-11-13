@@ -62,16 +62,40 @@ router.get("/:id", async (req, res) => {
 });
 
 // Rota para atualizar um insumo
+// Rota para atualizar um insumo (também registra histórico se o custo mudar)
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedInsumo = await Insumo.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!updatedInsumo) {
+
+    const insumo = await Insumo.findById(id);
+    if (!insumo) {
       return res.status(404).json({ message: "Insumo não encontrado" });
     }
+
+    const custoAnterior = insumo.custo;
+
+    // Atualiza campos do insumo com os dados enviados
+    Object.keys(req.body).forEach((key) => {
+      insumo[key] = req.body[key];
+    });
+
+    // Se o custo foi enviado e é diferente do anterior, registra no histórico
+    if (
+      Object.prototype.hasOwnProperty.call(req.body, "custo") &&
+      typeof req.body.custo === "number" &&
+      req.body.custo !== custoAnterior
+    ) {
+      insumo.historicoValores = insumo.historicoValores || [];
+      insumo.historicoValores.push({
+        data: new Date(),
+        valor: req.body.custo,
+        origem: req.body.origem || "Atualização Manual",
+      });
+      insumo.ultimaAtualizacao = new Date();
+    }
+
+    // Salva com validação
+    const updatedInsumo = await insumo.save();
     res.json(updatedInsumo);
   } catch (error) {
     console.error("Erro ao atualizar insumo:", error);
@@ -90,6 +114,45 @@ router.delete("/:id", async (req, res) => {
     res.json({ message: "Insumo deletado com sucesso" });
   } catch (error) {
     console.error("Erro ao deletar insumo:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ➕ NOVA ROTA: Atualiza custo e registra histórico (usada por entradas de estoque ou integrações)
+router.put("/:id/valor", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { valor, origem } = req.body;
+
+    if (typeof valor !== "number" || !(valor > 0)) {
+      return res.status(400).json({ message: "Valor inválido." });
+    }
+
+    const insumo = await Insumo.findById(id);
+    if (!insumo) {
+      return res.status(404).json({ message: "Insumo não encontrado." });
+    }
+
+    // Atualiza os dados principais
+    insumo.custo = valor;
+    insumo.ultimaAtualizacao = new Date();
+
+    // Adiciona o registro no histórico
+    insumo.historicoValores = insumo.historicoValores || [];
+    insumo.historicoValores.push({
+      data: new Date(),
+      valor,
+      origem: origem || "Atualização de Estoque",
+    });
+
+    await insumo.save();
+
+    res.json({
+      message: "Custo atualizado e histórico registrado com sucesso!",
+      insumo,
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar valor do insumo:", error);
     res.status(500).json({ message: error.message });
   }
 });

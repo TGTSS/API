@@ -49,6 +49,7 @@ import medicoesRouter from "./routes/medicoes.js";
 import contratosRouter from "./routes/contratos.js";
 import Contrato from "./models/Contrato.js";
 import contratosReservaRouter from "./routes/contratosReserva.js";
+import estoqueRouter from "./routes/estoque.js";
 import fs from "fs";
 import path from "path";
 import { initScheduler, runDailyReminders } from "./services/scheduler.js";
@@ -1405,6 +1406,8 @@ app.use("/api/medicoes", medicoesRouter);
 app.use("/api/contratos", contratosRouter);
 
 app.use("/api/contratos-reserva", contratosReservaRouter);
+
+app.use("/api/estoque", estoqueRouter);
 
 // Rota para servir arquivos de upload
 

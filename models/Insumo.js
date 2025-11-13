@@ -1,4 +1,9 @@
 import mongoose from "mongoose";
+const HistoricoValorSchema = new mongoose.Schema({
+  data: { type: Date, default: Date.now },
+  valor: { type: Number, required: true },
+  origem: { type: String }, // Ex: "Entrada de Estoque", "Cadastro Manual"
+});
 
 const InsumoSchema = new mongoose.Schema({
   codigo: { type: String },
@@ -15,6 +20,10 @@ const InsumoSchema = new mongoose.Schema({
   status: { type: String, default: "Ativo" },
   observacoes: { type: String },
   arquivos: { type: String },
+
+  // novos campos para histórico de valores
+  ultimaAtualizacao: { type: Date, default: Date.now },
+  historicoValores: { type: [HistoricoValorSchema], default: [] },
 });
 
 const Insumo = mongoose.model("Insumo", InsumoSchema);
