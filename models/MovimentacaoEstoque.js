@@ -51,6 +51,27 @@ const MovimentacaoEstoqueSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    insumo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Insumo",
+      default: null,
+    },
+    fornecedor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Fornecedor",
+      default: null,
+    },
+    unitCost: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalCost: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     date: {
       type: String,
       required: true,

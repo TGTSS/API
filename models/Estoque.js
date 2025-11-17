@@ -40,6 +40,16 @@ const EstoqueSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
+    insumoId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Insumo",
+      default: null,
+    },
+    fornecedorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Fornecedor",
+      default: null,
+    },
     lastUpdate: {
       type: Date,
       default: Date.now,

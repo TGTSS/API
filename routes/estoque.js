@@ -4,6 +4,14 @@ import MovimentacaoEstoque from "../models/MovimentacaoEstoque.js";
 
 const router = express.Router();
 
+const getCurrentDateTime = () => {
+  const now = new Date();
+  return {
+    currentDate: now.toISOString().split("T")[0],
+    currentTime: now.toLocaleTimeString("pt-BR"),
+  };
+};
+
 // ===== ROTAS DE ESTOQUE =====
 
 // Listar todos os itens de estoque
@@ -70,8 +78,17 @@ router.get("/:id", async (req, res) => {
 // Criar novo item de estoque
 router.post("/", async (req, res) => {
   try {
-    const { name, category, quantity, unit, minQuantity, location, cost } =
-      req.body;
+    const {
+      name,
+      category,
+      quantity,
+      unit,
+      minQuantity,
+      location,
+      cost,
+      insumoId,
+      fornecedorId,
+    } = req.body;
 
     if (!name || !category || !unit || !location) {
       return res.status(400).json({ message: "Campos obrigatórios faltando" });
@@ -85,9 +102,35 @@ router.post("/", async (req, res) => {
       minQuantity: minQuantity || 0,
       location,
       cost: cost || 0,
+      insumoId: insumoId || null,
+      fornecedorId: fornecedorId || null,
     });
 
     const savedEstoque = await estoque.save();
+
+    if (savedEstoque.quantity > 0) {
+      const { currentDate, currentTime } = getCurrentDateTime();
+      await MovimentacaoEstoque.create({
+        estoque: savedEstoque._id,
+        insumo: savedEstoque.insumoId,
+        fornecedor: savedEstoque.fornecedorId,
+        itemName: savedEstoque.name,
+        itemCategory: savedEstoque.category,
+        type: "entrada",
+        quantity: savedEstoque.quantity,
+        previousQuantity: 0,
+        newQuantity: savedEstoque.quantity,
+        responsible: "Sistema",
+        location: savedEstoque.location,
+        source: "Cadastro Inicial",
+        work: "",
+        unitCost: savedEstoque.cost || 0,
+        totalCost: (savedEstoque.cost || 0) * (savedEstoque.quantity || 0),
+        date: currentDate,
+        time: currentTime,
+      });
+    }
+
     res.status(201).json(savedEstoque);
   } catch (error) {
     console.error("Erro ao criar estoque:", error);
@@ -99,13 +142,33 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedEstoque = await Estoque.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!updatedEstoque) {
+    const estoque = await Estoque.findById(id);
+
+    if (!estoque) {
       return res.status(404).json({ message: "Estoque não encontrado" });
     }
+
+    const previousCost = estoque.cost;
+
+    Object.keys(req.body || {}).forEach((key) => {
+      estoque[key] = req.body[key];
+    });
+
+    const updatedEstoque = await estoque.save();
+
+    if (
+      Object.prototype.hasOwnProperty.call(req.body, "cost") &&
+      typeof req.body.cost === "number" &&
+      req.body.cost !== previousCost &&
+      updatedEstoque.insumoId
+    ) {
+      await registrarHistoricoValorInsumo({
+        insumoId: updatedEstoque.insumoId,
+        valor: req.body.cost,
+        origem: "Atualização Manual de Estoque",
+      });
+    }
+
     res.json(updatedEstoque);
   } catch (error) {
     console.error("Erro ao atualizar estoque:", error);
@@ -153,56 +216,83 @@ router.post("/import/batch", async (req, res) => {
 // Registrar uma movimentação (entrada ou saída)
 router.post("/movimentacao/registrar", async (req, res) => {
   try {
-    const { estoqueId, type, quantity, responsible, location, source, work } =
-      req.body;
+    const {
+      estoqueId,
+      type,
+      quantity,
+      responsible,
+      location,
+      source,
+      work,
+      unitCost,
+      fornecedorId,
+    } = req.body;
 
     if (!estoqueId || !type || !quantity || !responsible) {
       return res.status(400).json({ message: "Campos obrigatórios faltando" });
     }
 
-    // Buscar o estoque
     const estoque = await Estoque.findById(estoqueId);
     if (!estoque) {
       return res.status(404).json({ message: "Estoque não encontrado" });
     }
 
     const quantityNum = Number(quantity);
+    if (!Number.isFinite(quantityNum) || quantityNum <= 0) {
+      return res.status(400).json({ message: "Quantidade inválida" });
+    }
 
-    // Validar saída
     if (type === "saida" && quantityNum > estoque.quantity) {
       return res.status(400).json({
         message: `Quantidade de saída não pode ultrapassar o estoque disponível! Estoque atual: ${estoque.quantity} ${estoque.unit}`,
       });
     }
 
-    // Calcular nova quantidade
     const previousQuantity = estoque.quantity;
     const newQuantity =
       type === "entrada"
         ? estoque.quantity + quantityNum
         : Math.max(0, estoque.quantity - quantityNum);
 
-    // Atualizar estoque
+    const parsedUnitCost =
+      unitCost !== undefined && unitCost !== null
+        ? Number(unitCost)
+        : undefined;
+    const hasUnitCost =
+      typeof parsedUnitCost === "number" && Number.isFinite(parsedUnitCost);
+    const unitCostToSave = hasUnitCost ? parsedUnitCost : estoque.cost || 0;
+    const totalCost = unitCostToSave * quantityNum;
+
     estoque.quantity = newQuantity;
+    if (type === "entrada") {
+      if (hasUnitCost) {
+        estoque.cost = unitCostToSave;
+      }
+      if (fornecedorId) {
+        estoque.fornecedorId = fornecedorId;
+      }
+    }
     estoque.lastUpdate = new Date();
     await estoque.save();
 
-    // Registrar movimentação
-    const currentDate = new Date().toISOString().split("T")[0];
-    const currentTime = new Date().toLocaleTimeString("pt-BR");
+    const { currentDate, currentTime } = getCurrentDateTime();
 
     const movimentacao = new MovimentacaoEstoque({
       estoque: estoqueId,
+      insumo: estoque.insumoId || null,
+      fornecedor: fornecedorId || estoque.fornecedorId || null,
       itemName: estoque.name,
       itemCategory: estoque.category,
       type,
       quantity: quantityNum,
       previousQuantity,
       newQuantity,
-      responsible: type === "saida" ? responsible : "Sistema",
+      responsible: type === "saida" ? responsible : responsible || "Sistema",
       location: location || estoque.location,
-      source: type === "entrada" ? source : "",
+      source: type === "entrada" ? source || "Entrada Manual" : "",
       work: type === "saida" ? work : "",
+      unitCost: unitCostToSave,
+      totalCost,
       date: currentDate,
       time: currentTime,
     });
@@ -212,7 +302,7 @@ router.post("/movimentacao/registrar", async (req, res) => {
     res.status(201).json({
       message: `Movimentação de ${type} registrada com sucesso!`,
       movimentacao: savedMovimentacao,
-      estoque: estoque,
+      estoque,
     });
   } catch (error) {
     console.error("Erro ao registrar movimentação:", error);
