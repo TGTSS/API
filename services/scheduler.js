@@ -2,6 +2,7 @@ import cron from "node-cron";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import Obra from "../models/Obra.js";
+import Estoque from "../models/Estoque.js";
 import sendEmail from "../utils/sendEmail.js";
 
 dotenv.config();
@@ -20,6 +21,108 @@ function formatDate(date) {
 function formatCurrency(valor) {
   if (typeof valor !== "number") return valor;
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function generateLowStockHTMLEmail(items) {
+  if (!items.length) {
+    return `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Alerta de Estoque Baixo</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #f4f4f4; margin: 0; padding: 0; }
+            .container { max-width: 640px; margin: 0 auto; background: #fff; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.08); }
+            h1 { margin-top: 0; color: #c0392b; font-weight: 600; }
+            p { margin: 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Alerta de Estoque</h1>
+            <p>Não existem itens com estoque baixo no momento.</p>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  const rows = items
+    .map(
+      (item) => `
+        <tr>
+          <td>${item.name}</td>
+          <td>${item.category || "-"}</td>
+          <td>${item.location || "-"}</td>
+          <td>${item.quantity} ${item.unit || ""}</td>
+          <td>${item.minQuantity} ${item.unit || ""}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  return `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Alerta de Estoque Baixo</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #f4f4f4; margin: 0; padding: 0; }
+          .container { max-width: 720px; margin: 0 auto; background: #fff; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.08); }
+          h1 { margin-top: 0; color: #c0392b; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { padding: 12px 10px; border: 1px solid #eaeaea; text-align: left; font-size: 14px; }
+          th { background: #feeadd; color: #333; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+          tr:nth-child(even) { background: #fafafa; }
+          .summary { margin-top: 15px; font-weight: 600; color: #c0392b; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>⚠️ Itens com Estoque Baixo</h1>
+          <p>Os itens abaixo estão com a quantidade atual menor ou igual ao mínimo definido.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Categoria</th>
+                <th>Local</th>
+                <th>Qtd Atual</th>
+                <th>Qtd Mínima</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+          <p class="summary">Total de itens em alerta: ${items.length}</p>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateLowStockTextEmail(items) {
+  if (!items.length) {
+    return "Não existem itens com estoque baixo no momento.";
+  }
+
+  let text = "Itens com estoque baixo:\n\n";
+  text += items
+    .map(
+      (item) =>
+        `- ${item.name} (${item.category || "-"}) em ${
+          item.location || "-"
+        }: ${item.quantity} ${item.unit || ""} (mínimo ${item.minQuantity} ${
+          item.unit || ""
+        })`
+    )
+    .join("\n");
+
+  text += `\n\nTotal de itens em alerta: ${items.length}`;
+  return text;
 }
 
 function generateHTMLEmail(
@@ -389,6 +492,40 @@ async function sendDailyReminders() {
         console.log(`✅ E-mail enviado para: ${email}`);
       } catch (emailError) {
         console.error(`❌ Erro ao enviar para ${email}:`, emailError);
+      }
+    }
+
+    // Enviar alertas de estoque baixo
+    console.log("📦 Verificando itens com estoque baixo...");
+    const lowStockItems = await Estoque.find({ status: "Estoque Baixo" })
+      .select("name category quantity minQuantity unit location")
+      .sort({ quantity: 1 })
+      .lean();
+
+    if (!lowStockItems.length) {
+      console.log("✅ Nenhum item com estoque baixo encontrado.");
+    } else {
+      console.log(
+        `⚠️ Encontrados ${lowStockItems.length} itens com estoque baixo. Enviando alerta...`
+      );
+      const lowStockHtml = generateLowStockHTMLEmail(lowStockItems);
+      const lowStockText = generateLowStockTextEmail(lowStockItems);
+
+      for (const email of EMAIL_TO) {
+        try {
+          await sendEmail(
+            email,
+            "⚠️ Alerta Diário: Itens com Estoque Baixo",
+            lowStockText,
+            lowStockHtml
+          );
+          console.log(`✅ Alerta de estoque baixo enviado para: ${email}`);
+        } catch (lowStockError) {
+          console.error(
+            `❌ Erro ao enviar alerta de estoque para ${email}:`,
+            lowStockError
+          );
+        }
       }
     }
 
