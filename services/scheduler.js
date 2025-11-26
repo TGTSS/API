@@ -10,10 +10,7 @@ dotenv.config();
 const MONGO_URI =
   process.env.MONGO_URI ||
   "mongodb://Nexus_wayfallpan:84e7091321e8c8bbdd74986f5dadd8abf919018e@5f7qa.h.filess.io:27018/Nexus_wayfallpan";
-const EMAIL_TO = [
-  //"modernaedificacoes@gmail.com",
-  "tiagosilvaff18@gmail.com",
-];
+const EMAIL_TO = ["modernaedificacoes@gmail.com", "tiagosilvaff18@gmail.com"];
 
 // Funções auxiliares
 function formatDate(date) {
@@ -116,9 +113,11 @@ function generateLowStockTextEmail(items) {
   text += items
     .map(
       (item) =>
-        `- ${item.name} (${item.category || "-"}) em ${item.location || "-"}: ${
-          item.quantity
-        } ${item.unit || ""} (mínimo ${item.minQuantity} ${item.unit || ""})`
+        `- ${item.name} (${item.category || "-"}) em ${
+          item.location || "-"
+        }: ${item.quantity} ${item.unit || ""} (mínimo ${item.minQuantity} ${
+          item.unit || ""
+        })`
     )
     .join("\n");
 
@@ -554,28 +553,9 @@ export function initScheduler() {
   console.log("   - Timezone: America/Sao_Paulo");
   console.log("   - Emails para: " + EMAIL_TO.join(", "));
   console.log("   - MongoDB URI configurado:", !!MONGO_URI);
-  console.log("   - Ambiente:", process.env.NODE_ENV || "development");
-  console.log("");
-  console.log("📧 Verificando credenciais de email:");
-  console.log(
-    `   - EMAIL_USER: ${
-      process.env.EMAIL_USER ? "✅ Configurado" : "❌ NÃO CONFIGURADO"
-    }`
-  );
-  console.log(
-    `   - EMAIL_PASS: ${
-      process.env.EMAIL_PASS ? "✅ Configurado" : "❌ NÃO CONFIGURADO"
-    }`
-  );
-  console.log(
-    `   - EMAIL_FROM: ${
-      process.env.EMAIL_FROM ? "✅ Configurado" : "❌ NÃO CONFIGURADO"
-    }`
-  );
 
   // Verificar conexão com MongoDB
   if (mongoose.connection.readyState !== 1) {
-    console.log("");
     console.log("⏳ Aguardando conexão com MongoDB...");
     console.log("   - Estado atual:", mongoose.connection.readyState);
 
@@ -592,7 +572,6 @@ export function initScheduler() {
       console.log("⚠️ MongoDB desconectado");
     });
   } else {
-    console.log("");
     console.log("✅ MongoDB já conectado, iniciando agendamentos...");
     startScheduledTasks();
   }
@@ -606,7 +585,7 @@ function startScheduledTasks() {
   const cronExpression = "0 8 * * *";
   console.log("   - Cron expression:", cronExpression);
 
-  const task = cron.schedule(
+  cron.schedule(
     cronExpression,
     async () => {
       console.log("📅 Executando lembrete diário agendado...");
@@ -622,26 +601,6 @@ function startScheduledTasks() {
   console.log("✅ Scheduler configurado:");
   console.log("   📧 Lembrete diário: 08:00 (horário de Brasília)");
   console.log("   ⏰ Próxima execução: 08:00 de amanhã (horário de Brasília)");
-  console.log("   Status da tarefa:", task ? "✅ Ativa" : "❌ Inativa");
-
-  // Keep-alive: executar a cada 15 minutos para manter servidor ativo no Render
-  console.log("");
-  console.log("💓 Configurando keep-alive (para evitar sleep no Render)...");
-
-  const keepAliveTask = cron.schedule("*/15 * * * *", async () => {
-    try {
-      if (mongoose.connection.readyState === 1) {
-        await Obra.countDocuments().lean();
-        const now = new Date().toLocaleString("pt-BR");
-        console.log(`💓 Keep-alive: ${now} - Servidor mantido ativo`);
-      }
-    } catch (error) {
-      console.error("❌ Erro no keep-alive:", error.message);
-    }
-  });
-
-  console.log("   ✅ Keep-alive configurado: a cada 15 minutos");
-  console.log("   Status:", keepAliveTask ? "✅ Ativa" : "❌ Inativa");
 }
 
 // Função para executar manualmente (para testes)
