@@ -1588,6 +1588,15 @@ app.post("/api/scheduler/test", async (req, res) => {
   }
 });
 
+app.get("/api/scheduler/teste", async (req, res) => {
+  try {
+    await runDailyReminders();
+    res.json({ message: "Lembrete diário executado com sucesso!" });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao executar lembrete diário" });
+  }
+});
+
 // Rota para verificar status do scheduler
 
 app.get("/api/scheduler/status", async (req, res) => {

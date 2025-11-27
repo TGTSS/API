@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import Obra from "../models/Obra.js";
 import Estoque from "../models/Estoque.js";
 import sendEmail from "../utils/sendEmail.js";
+import TransacaoBruta from "../models/TransacaoBruta.js";
+import TransacaoIndependente from "../models/TransacaoIndependente.js";
 
 dotenv.config();
 
@@ -113,11 +115,9 @@ function generateLowStockTextEmail(items) {
   text += items
     .map(
       (item) =>
-        `- ${item.name} (${item.category || "-"}) em ${
-          item.location || "-"
-        }: ${item.quantity} ${item.unit || ""} (mínimo ${item.minQuantity} ${
-          item.unit || ""
-        })`
+        `- ${item.name} (${item.category || "-"}) em ${item.location || "-"}: ${
+          item.quantity
+        } ${item.unit || ""} (mínimo ${item.minQuantity} ${item.unit || ""})`
     )
     .join("\n");
 
@@ -130,7 +130,8 @@ function generateHTMLEmail(
   hoje,
   daqui7,
   totalReceitas,
-  totalPagamentos
+  totalPagamentos,
+  additionalSections = ""
 ) {
   const htmlTemplate = `
     <!DOCTYPE html>
@@ -210,15 +211,15 @@ function generateHTMLEmail(
                     </div>
                 `
                     : `
+                    ${additionalSections}
                     ${obras
                       .map((obra) => {
                         // Filtrar e ordenar receitas por data de vencimento (mais próximas primeiro)
                         const receitasVencer = (obra.receitas || [])
                           .filter(
                             (r) =>
-                              r.status === "pendente" &&
+                              ["pendente", "atrasado"].includes(r.status) &&
                               r.dataVencimento &&
-                              new Date(r.dataVencimento) >= hoje &&
                               new Date(r.dataVencimento) <= daqui7
                           )
                           .sort(
@@ -231,9 +232,8 @@ function generateHTMLEmail(
                         const pagamentosVencer = (obra.pagamentos || [])
                           .filter(
                             (p) =>
-                              p.status === "pendente" &&
+                              ["pendente", "atrasado"].includes(p.status) &&
                               p.dataVencimento &&
-                              new Date(p.dataVencimento) >= hoje &&
                               new Date(p.dataVencimento) <= daqui7
                           )
                           .sort(
@@ -270,9 +270,15 @@ function generateHTMLEmail(
                                                         <span class="valor">${formatCurrency(
                                                           r.valor
                                                         )}</span> • 
-                                                        <span class="vencimento">Vence em ${formatDate(
-                                                          r.dataVencimento
-                                                        )}</span>
+                                                        <span class="vencimento">${
+                                                          new Date(
+                                                            r.dataVencimento
+                                                          ) < hoje
+                                                            ? "Atrasada em"
+                                                            : "Vence em"
+                                                        } ${formatDate(
+                                                  r.dataVencimento
+                                                )}</span>
                                                     </div>
                                                 </div>
                                             `
@@ -298,9 +304,15 @@ function generateHTMLEmail(
                                                         <span class="valor despesa">${formatCurrency(
                                                           p.valor
                                                         )}</span> • 
-                                                        <span class="vencimento">Vence em ${formatDate(
-                                                          p.dataVencimento
-                                                        )}</span>
+                                                        <span class="vencimento">${
+                                                          new Date(
+                                                            p.dataVencimento
+                                                          ) < hoje
+                                                            ? "Atrasada em"
+                                                            : "Vence em"
+                                                        } ${formatDate(
+                                                  p.dataVencimento
+                                                )}</span>
                                                     </div>
                                                 </div>
                                             `
@@ -350,7 +362,8 @@ function generateTextEmail(
   hoje,
   daqui7,
   totalReceitas,
-  totalPagamentos
+  totalPagamentos,
+  additionalText = ""
 ) {
   let corpoEmail = `Resumo de receitas e despesas a vencer nos próximos 7 dias (de ${formatDate(
     hoje
@@ -361,9 +374,8 @@ function generateTextEmail(
     const receitasVencer = (obra.receitas || [])
       .filter(
         (r) =>
-          r.status === "pendente" &&
+          ["pendente", "atrasado"].includes(r.status) &&
           r.dataVencimento &&
-          new Date(r.dataVencimento) >= hoje &&
           new Date(r.dataVencimento) <= daqui7
       )
       .sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento));
@@ -372,9 +384,8 @@ function generateTextEmail(
     const pagamentosVencer = (obra.pagamentos || [])
       .filter(
         (p) =>
-          p.status === "pendente" &&
+          ["pendente", "atrasado"].includes(p.status) &&
           p.dataVencimento &&
-          new Date(p.dataVencimento) >= hoje &&
           new Date(p.dataVencimento) <= daqui7
       )
       .sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento));
@@ -407,7 +418,153 @@ function generateTextEmail(
     corpoEmail += `Total de receitas a vencer: ${totalReceitas}\nTotal de despesas a vencer: ${totalPagamentos}`;
   }
 
-  return corpoEmail;
+  return corpoEmail + (additionalText ? "\n" + additionalText : "");
+}
+
+function buildTransactionsHTML(duplicatas, independentes) {
+  const dupRows = duplicatas
+    .map((t) => {
+      const parcela = t.numeroParcela
+        ? ` • Parcela ${t.numeroParcela}/${t.totalParcelas || 1}`
+        : "";
+      const nf =
+        t.nfeInfo && t.nfeInfo.length
+          ? ` • NF-e ${t.nfeInfo[0].numero || ""}/${t.nfeInfo[0].serie || ""}`
+          : "";
+      const benef =
+        t.beneficiario && t.beneficiario.nome
+          ? ` • Beneficiário: ${t.beneficiario.nome}`
+          : "";
+      return `
+        <div class="item">
+          <div class="item-title">${t.descricao || "Duplicata"}</div>
+          <div class="item-details">
+            <span class="valor despesa">${formatCurrency(t.valor || 0)}</span> •
+            <span class="vencimento">Vence em ${formatDate(
+              t.dataVencimento
+            )}</span>
+            ${parcela}${nf}${benef}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  const indepByObra = {};
+  independentes.forEach((t) => {
+    const grupos = Array.isArray(t.transacoesDivididas)
+      ? t.transacoesDivididas
+      : [];
+    if (!grupos.length) {
+      indepByObra["Sem Obra"] = indepByObra["Sem Obra"] || [];
+      indepByObra["Sem Obra"].push(t);
+    } else {
+      grupos.forEach((g) => {
+        const key =
+          g.obraId && g.obraId.nome
+            ? g.obraId.nome
+            : String(g.obraId || "Sem Obra");
+        indepByObra[key] = indepByObra[key] || [];
+        indepByObra[key].push(t);
+      });
+    }
+  });
+
+  const indepSections = Object.keys(indepByObra)
+    .map((obraNome) => {
+      const rows = indepByObra[obraNome]
+        .map((t) => {
+          const isReceita = t.tipo === "receita";
+          const benef =
+            t.beneficiario && t.beneficiario.nome
+              ? ` • Beneficiário: ${t.beneficiario.nome}`
+              : "";
+          return `
+            <div class="item">
+              <div class="item-title">${t.descricao || "Transação"}</div>
+              <div class="item-details">
+                <span class="valor ${
+                  isReceita ? "" : "despesa"
+                }">${formatCurrency(t.valor || 0)}</span> •
+                <span class="vencimento">Vence em ${formatDate(
+                  t.dataVencimento
+                )}</span>
+                ${benef}
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+      return `
+        <div class="secao">
+          <h4>Transações Independentes • ${obraNome} (${indepByObra[obraNome].length})</h4>
+          ${rows}
+        </div>
+      `;
+    })
+    .join("");
+
+  const dupSection = duplicatas.length
+    ? `
+      <div class="secao">
+        <h4>Duplicatas NF-e (${duplicatas.length})</h4>
+        ${dupRows}
+      </div>
+    `
+    : "";
+
+  const container =
+    dupSection || indepSections
+      ? `
+    <div class="obra">
+      <div class="obra-header">
+        <h3>📑 Transações Complementares</h3>
+      </div>
+      <div class="obra-content">
+        ${dupSection}
+        ${indepSections}
+      </div>
+    </div>
+  `
+      : "";
+
+  return container;
+}
+
+function buildTransactionsText(duplicatas, independentes) {
+  let text = "\nTransações Complementares:\n";
+  if (duplicatas.length) {
+    text += "\nDuplicatas NF-e:\n";
+    duplicatas.forEach((t) => {
+      const parcela = t.numeroParcela
+        ? ` Parcela ${t.numeroParcela}/${t.totalParcelas || 1}`
+        : "";
+      const nf =
+        t.nfeInfo && t.nfeInfo.length
+          ? ` NF-e ${t.nfeInfo[0].numero || ""}/${t.nfeInfo[0].serie || ""}`
+          : "";
+      const marcador =
+        new Date(t.dataVencimento) < new Date() ? " (ATRASADA)" : "";
+      text += `  - ${t.descricao || "Duplicata"} | Valor: ${formatCurrency(
+        t.valor || 0
+      )} | Vencimento: ${formatDate(
+        t.dataVencimento
+      )}${parcela}${nf}${marcador}\n`;
+    });
+  }
+  if (independentes.length) {
+    text += "\nTransações Independentes:\n";
+    independentes.forEach((t) => {
+      const marcador =
+        new Date(t.dataVencimento) < new Date() ? " (ATRASADA)" : "";
+      text += `  - ${t.descricao || "Transação"} | ${
+        t.tipo
+      } | Valor: ${formatCurrency(t.valor || 0)} | Vencimento: ${formatDate(
+        t.dataVencimento
+      )}${marcador}\n`;
+    });
+  }
+  return text;
 }
 
 // Função principal do lembrete diário
@@ -440,16 +597,14 @@ async function sendDailyReminders() {
     for (const obra of obras) {
       const receitasVencer = (obra.receitas || []).filter(
         (r) =>
-          r.status === "pendente" &&
+          ["pendente", "atrasado"].includes(r.status) &&
           r.dataVencimento &&
-          new Date(r.dataVencimento) >= hoje &&
           new Date(r.dataVencimento) <= daqui7
       );
       const pagamentosVencer = (obra.pagamentos || []).filter(
         (p) =>
-          p.status === "pendente" &&
+          ["pendente", "atrasado"].includes(p.status) &&
           p.dataVencimento &&
-          new Date(p.dataVencimento) >= hoje &&
           new Date(p.dataVencimento) <= daqui7
       );
 
@@ -461,20 +616,51 @@ async function sendDailyReminders() {
       `📈 Total: ${totalReceitas} receitas e ${totalPagamentos} despesas a vencer`
     );
 
+    const duplicatas = await TransacaoBruta.find({
+      status: { $in: ["pendente", "atrasado"] },
+      dataVencimento: { $lte: daqui7 },
+    })
+      .select(
+        "descricao valor dataVencimento numeroParcela totalParcelas nfeInfo beneficiario"
+      )
+      .populate("beneficiario")
+      .sort({ dataVencimento: 1 })
+      .lean();
+
+    const independentes = await TransacaoIndependente.find({
+      status: { $in: ["pendente", "atrasado"] },
+      dataVencimento: { $lte: daqui7 },
+    })
+      .select(
+        "descricao valor dataVencimento tipo beneficiario transacoesDivididas"
+      )
+      .populate("beneficiario")
+      .populate("transacoesDivididas.obraId", "nome")
+      .sort({ dataVencimento: 1 })
+      .lean();
+
+    const htmlTransacoes = buildTransactionsHTML(duplicatas, independentes);
+    const textTransacoes = buildTransactionsText(duplicatas, independentes);
+
+    const totalDuplicatas = duplicatas.length;
+    const totalIndependentes = independentes.length;
+
     // Gerar e-mails
     const htmlEmail = generateHTMLEmail(
       obras,
       hoje,
       daqui7,
       totalReceitas,
-      totalPagamentos
+      totalPagamentos,
+      htmlTransacoes
     );
     const textEmail = generateTextEmail(
       obras,
       hoje,
       daqui7,
       totalReceitas,
-      totalPagamentos
+      totalPagamentos,
+      textTransacoes
     );
 
     console.log("📧 Enviando e-mails...");
