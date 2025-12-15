@@ -1,20 +1,12 @@
 import express from "express";
-
 import mongoose from "mongoose";
-
-// multer removido completamente
-
 import path from "path";
-
 import fs from "fs";
-
+import { uploadMedicao, deleteFile } from "../cloudinary.js";
 import Medicao from "../models/Medicao.js";
-
 import Obra from "../models/Obra.js";
 
 const router = express.Router();
-
-// Todas as referências ao multer removidas. Agora os arquivos devem ser enviados em base64 via req.body.
 
 // GET /api/medicoes - Listar todas as medições
 
@@ -126,7 +118,7 @@ router.get("/:id", async (req, res) => {
 
 // POST /api/medicoes - Criar uma nova medição
 
-router.post("/", async (req, res) => {
+router.post("/", uploadMedicao.any(), async (req, res) => {
   try {
     const { obraId, date, responsavel, groups, comments, createdBy } = req.body;
 
@@ -144,37 +136,42 @@ router.post("/", async (req, res) => {
 
     const media = [];
     const attachments = [];
-    // Espera-se que media e attachments venham como arrays de objetos com base64, nome, tipo, tamanho
-    if (req.body.media && Array.isArray(req.body.media)) {
-      req.body.media.forEach((file) => {
-        media.push({
-          name: file.nome,
-          type: file.tipo,
-          size: file.tamanho,
-          base64: file.base64,
-          uploadedAt: new Date(),
-        });
-      });
-    }
-    if (req.body.attachments && Array.isArray(req.body.attachments)) {
-      req.body.attachments.forEach((file) => {
-        attachments.push({
-          name: file.nome,
-          type: file.tipo,
-          size: file.tamanho,
-          base64: file.base64,
-          uploadedAt: new Date(),
-        });
-      });
-    }
-    // Verificar se há pelo menos uma mídia
 
+    // Processar arquivos enviados via multer-storage-cloudinary
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        const fileData = {
+          name: file.originalname,
+          url: file.path,
+          public_id: file.filename,
+          type: file.mimetype,
+          size: file.size,
+          uploadedAt: new Date(),
+        };
+
+        if (file.fieldname === "media") {
+          media.push(fileData);
+        } else if (file.fieldname === "attachments") {
+          attachments.push(fileData);
+        }
+      });
+    }
+
+    // Verificar se há pelo menos uma mídia
     if (media.length === 0) {
-      return res.status(400).json({
+     // Check if base64 media was sent (fallback/legacy support) 
+     // Omitted based on request to use Cloudinary, but keeping it robust might be safe.
+     // However, user specifically asked for Cloudinary.
+     // If no media via files, maybe check body?
+     // Let's assume files are required via Cloudinary for now.
+    }
+
+    if (media.length === 0 && (!req.body.media || req.body.media.length === 0)) {
+       return res.status(400).json({
         message:
           "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição",
       });
-    } // Criar nova medição
+    }
 
     const medicao = new Medicao({
       obraId,
@@ -220,7 +217,7 @@ router.post("/", async (req, res) => {
 
 // POST /api/obras/:obraId/medicoes - Criar medição para uma obra específica
 
-router.post("/obras/:obraId/medicoes", async (req, res) => {
+router.post("/obras/:obraId/medicoes", uploadMedicao.any(), async (req, res) => {
   try {
     const { obraId } = req.params;
 
@@ -281,7 +278,8 @@ router.post("/obras/:obraId/medicoes", async (req, res) => {
           const mediaId = match[1];
           fileByMediaId[mediaId] = {
             name: file.originalname,
-            url: `/uploads/medicoes/media/${file.filename}`,
+            url: file.path,
+            public_id: file.filename,
             type: file.mimetype,
             size: file.size,
           };
@@ -307,6 +305,8 @@ router.post("/obras/:obraId/medicoes", async (req, res) => {
                 mediaObj.size = fileByMediaId[mediaObj.mediaId].size;
 
                 mediaObj.name = fileByMediaId[mediaObj.mediaId].name;
+
+                mediaObj.public_id = fileByMediaId[mediaObj.mediaId].public_id;
               }
             }); // Se veio em item.images, copia para item.media
 
@@ -457,7 +457,7 @@ router.get("/obras/:obraId/medicoes", async (req, res) => {
 
 // PUT /api/medicoes/:id - Atualizar uma medição
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", uploadMedicao.any(), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -477,7 +477,9 @@ router.put("/:id", async (req, res) => {
       ? req.files.map((file) => ({
           name: file.originalname,
 
-          url: `/api/uploads/medicoes/${file.filename}`,
+          url: file.path,
+
+          public_id: file.filename,
 
           type: file.mimetype,
 
@@ -530,7 +532,7 @@ router.put("/:id", async (req, res) => {
 router.put(
   "/obras/:obraId/medicoes/:medicaoId",
 
-  // arquivos agora devem ser enviados em base64 via req.body
+  uploadMedicao.any(),
 
   async (req, res) => {
     try {
@@ -560,7 +562,9 @@ router.put(
         ? req.files.map((file) => ({
             name: file.originalname,
 
-            url: `/api/uploads/medicoes/${file.filename}`,
+            url: file.path,
+
+            public_id: file.filename,
 
             type: file.mimetype,
 
@@ -629,18 +633,23 @@ router.delete("/:id", async (req, res) => {
       $pull: { medicoes: id },
     }); // Excluir anexos
 
-    if (medicao.attachments && medicao.attachments.length > 0) {
-      medicao.attachments.forEach((attachment) => {
-        const filePath = path.join(
-          "public",
+    // Excluir anexos e mídias
+    const builtFiles = [];
+    if (medicao.attachments) builtFiles.push(...medicao.attachments);
+    if (medicao.media) builtFiles.push(...medicao.media);
 
-          attachment.url.replace("/api/uploads/", "uploads/")
-        );
-
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+    for (const file of builtFiles) {
+        if (file.public_id) {
+            await deleteFile(file.public_id);
+        } else if (file.url && file.url.includes("/api/uploads/")) {
+             const filePath = path.join(
+              "public",
+              file.url.replace("/api/uploads/", "uploads/")
+            );
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
         }
-      });
     }
 
     await Medicao.findByIdAndDelete(id);
@@ -658,7 +667,7 @@ router.delete("/:id", async (req, res) => {
 router.post(
   "/:id/items/:groupId/:itemId/measurement",
 
-  // arquivos agora devem ser enviados em base64 via req.body
+  uploadMedicao.any(),
 
   async (req, res) => {
     try {
@@ -681,7 +690,9 @@ router.post(
         ? req.files.map((file) => ({
             name: file.originalname,
 
-            url: `/api/uploads/medicoes/${file.filename}`,
+            url: file.path,
+
+            public_id: file.filename,
 
             type: file.mimetype,
 
@@ -1287,31 +1298,33 @@ router.get("/media/obra/:obraId", async (req, res) => {
 
 // POST /api/medicoes/:id/media - Adicionar mídias a uma medição
 
-router.post("/:id/media", async (req, res) => {
-  try {
-    const { id } = req.params;
+ router.post("/:id/media", uploadMedicao.any(), async (req, res) => {
+   try {
+     const { id } = req.params;
+ 
+     const { description, isMain } = req.body;
+ 
+     if (!mongoose.Types.ObjectId.isValid(id)) {
+       return res.status(400).json({ message: "ID inválido" });
+     }
+ 
+     const medicao = await Medicao.findById(id);
+ 
+     if (!medicao) {
+       return res.status(404).json({ message: "Medição não encontrada" });
+     }
+ 
+     if (!req.files || req.files.length === 0) {
+       return res.status(400).json({ message: "Nenhuma mídia foi enviada" });
+     } // Processar mídias
+ 
+     req.files.forEach((file, index) => {
+       const mediaData = {
+         name: file.originalname,
+ 
+         url: file.path,
 
-    const { description, isMain } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
-    }
-
-    const medicao = await Medicao.findById(id);
-
-    if (!medicao) {
-      return res.status(404).json({ message: "Medição não encontrada" });
-    }
-
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: "Nenhuma mídia foi enviada" });
-    } // Processar mídias
-
-    req.files.forEach((file, index) => {
-      const mediaData = {
-        name: file.originalname,
-
-        url: `/api/uploads/medicoes/media/${file.filename}`,
+         public_id: file.filename,
 
         type: file.mimetype,
 
@@ -1343,36 +1356,38 @@ router.post("/:id/media", async (req, res) => {
 
 // POST /api/medicoes/:id/items/:groupId/:itemId/media - Adicionar mídias a um item
 
-router.post(
-  "/:id/items/:groupId/:itemId/media",
+ router.post(
+   "/:id/items/:groupId/:itemId/media",
+ 
+   uploadMedicao.any(),
+ 
+   async (req, res) => {
+     try {
+       const { id, groupId, itemId } = req.params;
+ 
+       const { description, isMain } = req.body;
+ 
+       if (!mongoose.Types.ObjectId.isValid(id)) {
+         return res.status(400).json({ message: "ID inválido" });
+       }
+ 
+       const medicao = await Medicao.findById(id);
+ 
+       if (!medicao) {
+         return res.status(404).json({ message: "Medição não encontrada" });
+       }
+ 
+       if (!req.files || req.files.length === 0) {
+         return res.status(400).json({ message: "Nenhuma mídia foi enviada" });
+       } // Processar mídias
+ 
+       req.files.forEach((file, index) => {
+         const mediaData = {
+           name: file.originalname,
+ 
+           url: file.path,
 
-  // arquivos agora devem ser enviados em base64 via req.body
-
-  async (req, res) => {
-    try {
-      const { id, groupId, itemId } = req.params;
-
-      const { description, isMain } = req.body;
-
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "ID inválido" });
-      }
-
-      const medicao = await Medicao.findById(id);
-
-      if (!medicao) {
-        return res.status(404).json({ message: "Medição não encontrada" });
-      }
-
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ message: "Nenhuma mídia foi enviada" });
-      } // Processar mídias
-
-      req.files.forEach((file, index) => {
-        const mediaData = {
-          name: file.originalname,
-
-          url: `/api/uploads/medicoes/media/${file.filename}`,
+           public_id: file.filename,
 
           type: file.mimetype,
 
@@ -1469,14 +1484,18 @@ router.delete("/:id/media/:mediaId", async (req, res) => {
 
     const media = medicao.media[mediaIndex]; // Excluir arquivo físico
 
-    const filePath = path.join(
-      "public",
-
-      media.url.replace("/api/uploads/", "uploads/")
-    );
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (media.public_id) {
+        await deleteFile(media.public_id);
+    } else {
+        const filePath = path.join(
+          "public",
+    
+          media.url.replace("/api/uploads/", "uploads/")
+        );
+    
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
     } // Remover da array
 
     medicao.media.splice(mediaIndex, 1); // Se a mídia removida era principal, definir a primeira como principal

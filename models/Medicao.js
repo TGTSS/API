@@ -144,6 +144,9 @@ const medicaoSchema = new mongoose.Schema({
                   url: {
                     type: String,
                   },
+                  public_id: {
+                    type: String,
+                  },
                   type: {
                     type: String,
                   },
@@ -165,6 +168,9 @@ const medicaoSchema = new mongoose.Schema({
                 type: String,
               },
               url: {
+                type: String,
+              },
+              public_id: {
                 type: String,
               },
               type: {
@@ -222,6 +228,9 @@ const medicaoSchema = new mongoose.Schema({
               url: {
                 type: String,
               },
+              public_id: {
+                type: String,
+              },
               type: {
                 type: String,
               },
@@ -248,6 +257,9 @@ const medicaoSchema = new mongoose.Schema({
         type: String,
       },
       url: {
+        type: String,
+      },
+      public_id: {
         type: String,
       },
       type: {
@@ -291,6 +303,9 @@ const medicaoSchema = new mongoose.Schema({
         type: String,
       },
       url: {
+        type: String,
+      },
+      public_id: {
         type: String,
       },
       type: {

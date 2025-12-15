@@ -56,6 +56,31 @@ export const uploadRegistroDiario = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
 
+export const uploadMedicao = multer({
+  storage: createStorage("medicoes", {
+    resource_type: "auto",
+    allowed_formats: [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "mp4",
+      "avi",
+      "mov",
+      "wmv",
+      "pdf",
+      "doc",
+      "docx",
+      "xls",
+      "xlsx",
+    ],
+    transformation: [
+      { width: 1280, height: 720, crop: "limit", quality: "auto:good" }, // HD quality for medições
+    ],
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB (better video support)
+});
+
 // 4. Função para deletar arquivos
 export const deleteFile = async (publicId) => {
   try {
