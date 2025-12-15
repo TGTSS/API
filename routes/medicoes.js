@@ -1452,8 +1452,7 @@ router.put("/:id/media/:mediaId/main", async (req, res) => {
   }
 });
 
-// DELETE /api/medicoes/:id/media/:mediaId - Excluir mídia
-
+// DELETE /api/medicoes/:id/media/:mediaId - Excluir mídia (Geral ou de Item)
 router.delete("/:id/media/:mediaId", async (req, res) => {
   try {
     const { id, mediaId } = req.params;
@@ -1466,56 +1465,96 @@ router.delete("/:id/media/:mediaId", async (req, res) => {
 
     if (!medicao) {
       return res.status(404).json({ message: "Medição não encontrada" });
-    } // Verificar se é a última mídia
+    }
 
-    if (medicao.media.length <= 1) {
-      return res.status(400).json({
-        message: "Não é possível excluir a última mídia da medição",
-      });
-    } // Encontrar e remover a mídia
+    let mediaFound = false;
+    let mediaToDelete = null;
 
-    const mediaIndex = medicao.media.findIndex(
-      (media) => media._id.toString() === mediaId
+    // 1. Procurar na mídia principal da medição
+    const mainMediaIndex = medicao.media.findIndex(
+      (m) => m._id.toString() === mediaId
     );
 
-    if (mediaIndex === -1) {
+    if (mainMediaIndex !== -1) {
+      // Verificar se é a última mídia apenas se for da lista principal (regra de negócio pode variar)
+      if (medicao.media.length <= 1) {
+         return res.status(400).json({
+          message: "Não é possível excluir a última mídia da medição",
+        });
+      }
+
+      mediaToDelete = medicao.media[mainMediaIndex];
+      medicao.media.splice(mainMediaIndex, 1);
+      
+      // Se a mídia removida era principal, definir a primeira como principal
+      if (mediaToDelete.isMain && medicao.media.length > 0) {
+        medicao.media[0].isMain = true;
+      }
+      mediaFound = true;
+    }
+
+    // 2. Se não encontrou na principal, procurar nos itens
+    if (!mediaFound && medicao.groups) {
+      for (const group of medicao.groups) {
+        if (group.items) {
+          for (const item of group.items) {
+            if (item.media) {
+              const itemMediaIndex = item.media.findIndex(
+                (m) => m._id.toString() === mediaId
+              );
+
+              if (itemMediaIndex !== -1) {
+                mediaToDelete = item.media[itemMediaIndex];
+                item.media.splice(itemMediaIndex, 1);
+                
+                // Lógica de principal p/ item, se existir
+                if (mediaToDelete.isMain && item.media.length > 0) {
+                    item.media[0].isMain = true;
+                }
+                
+                mediaFound = true;
+                break; // Mídia encontrada e removida
+              }
+            }
+          }
+        }
+        if (mediaFound) break;
+      }
+    }
+
+    if (!mediaFound) {
       return res.status(404).json({ message: "Mídia não encontrada" });
     }
 
-    const media = medicao.media[mediaIndex]; // Excluir arquivo físico
-
-    if (media.public_id) {
-        await deleteFile(media.public_id);
-    } else {
-        const filePath = path.join(
-          "public",
-    
-          media.url.replace("/api/uploads/", "uploads/")
-        );
-    
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+    // Excluir arquivo físico ou do Cloudinary
+    if (mediaToDelete) {
+        if (mediaToDelete.public_id) {
+            try {
+                await deleteFile(mediaToDelete.public_id);
+            } catch (err) {
+                console.error("Erro ao deletar do Cloudinary:", err);
+            }
+        } else if (mediaToDelete.url && mediaToDelete.url.includes("/api/uploads/")) {
+            const filePath = path.join(
+              "public",
+              mediaToDelete.url.replace("/api/uploads/", "uploads/")
+            );
+        
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
         }
-    } // Remover da array
-
-    medicao.media.splice(mediaIndex, 1); // Se a mídia removida era principal, definir a primeira como principal
-
-    if (media.isMain && medicao.media.length > 0) {
-      medicao.media[0].isMain = true;
     }
 
     await medicao.save();
 
     const updatedMedicao = await Medicao.findById(id)
-
       .populate("obraId", "nome codigo")
-
       .populate("createdBy", "nome email");
 
     res.json(updatedMedicao);
   } catch (error) {
     console.error("Erro ao excluir mídia:", error);
-
     res.status(500).json({ message: error.message });
   }
 });
