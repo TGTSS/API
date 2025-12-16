@@ -279,7 +279,7 @@ router.post("/obras/:obraId/medicoes", uploadMedicao.any(), async (req, res) => 
           fileByMediaId[mediaId] = {
             name: file.originalname,
             url: file.path,
-            public_id: file.filename,
+            public_id: file.public_id,
             type: file.mimetype,
             size: file.size,
           };
@@ -564,7 +564,7 @@ router.put(
 
             url: file.path,
 
-            public_id: file.filename,
+            public_id: file.public_id,
 
             type: file.mimetype,
 
@@ -692,7 +692,7 @@ router.post(
 
             url: file.path,
 
-            public_id: file.filename,
+            public_id: file.public_id,
 
             type: file.mimetype,
 
