@@ -236,7 +236,19 @@ router.post("/obras/:obraId/medicoes", uploadMedicao.any(), async (req, res) => 
   try {
     const { obraId } = req.params;
 
-    const { date, responsavel, groups, comments, createdBy } = req.body; // Validação inicial
+    const { date, responsavel, groups, comments, createdBy } = req.body; 
+    
+    // LOG DETALHADO PARA DEBUG DE ARQUIVOS
+    console.log("=== INÍCIO DO UPLOAD DE MEDIÇÃO ===");
+    console.log("Obra ID:", obraId);
+    console.log("Arquivos recebidos:", req.files ? req.files.length : 0);
+    if (req.files) {
+      req.files.forEach((f, i) => console.log(`Arquivo ${i}: field=${f.fieldname}, original=${f.originalname}, public_id=${f.public_id}`));
+    }
+    console.log("Groups recebido (raw):", groups ? groups.substring(0, 200) + "..." : "null");
+    // FIM DO LOG
+
+    // Validação inicial
 
     if (!obraId || !responsavel || !groups) {
       return res.status(400).json({
@@ -601,6 +613,15 @@ router.put(
       ) {
         return res.status(400).json({ message: "ID inválido" });
       }
+
+      // LOG DETALHADO PARA DEBUG DE ARQUIVOS (PUT)
+      console.log("=== INÍCIO DA ATUALIZAÇÃO DE MEDIÇÃO ===");
+      console.log("Medição ID:", medicaoId);
+      console.log("Arquivos recebidos:", req.files ? req.files.length : 0);
+      if (req.files) {
+        req.files.forEach((f, i) => console.log(`Arquivo ${i}: field=${f.fieldname}, original=${f.originalname}, public_id=${f.public_id}`));
+      }
+      // FIM DO LOG
 
       const medicao = await Medicao.findOne({ _id: medicaoId, obraId });
 
