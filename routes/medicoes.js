@@ -8,6 +8,26 @@ import Obra from "../models/Obra.js";
 
 const router = express.Router();
 
+// Rota de teste para verificar se as rotas estão funcionando
+router.get("/test", (req, res) => {
+  res.json({ message: "Rotas de medições funcionando!", timestamp: new Date() });
+});
+
+router.get("/teste-cloudinary", (req, res) => {
+  console.log("Testando Cloudinary em Medições");
+  console.log("Cloudinary_cloud_name:", process.env.CLOUDINARY_CLOUD_NAME);
+  console.log("Cloudinary_api_key:", process.env.CLOUDINARY_API_KEY);
+  console.log("Cloudinary_api_secret:", process.env.CLOUDINARY_API_SECRET);
+
+  res.json({
+    cloudinary: !!(
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+    ),
+  });
+});
+
 // GET /api/medicoes - Listar todas as medições
 
 router.get("/", async (req, res) => {
