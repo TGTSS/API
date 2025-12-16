@@ -313,6 +313,9 @@ router.post("/obras/:obraId/medicoes", uploadMedicao.any(), async (req, res) => 
         }
       });
     }
+    
+    console.log("Arquivos processados por ID (POST):", Object.keys(fileByMediaId));
+
     // Atualiza os objetos de mídia dos itens usando o mediaId
 
     parsedGroups.forEach((group) => {
@@ -324,6 +327,7 @@ router.post("/obras/:obraId/medicoes", uploadMedicao.any(), async (req, res) => 
 
           if (medias && medias.length > 0) {
             medias.forEach((mediaObj) => {
+              console.log(`[POST] Processando media do item: mediaId=${mediaObj.mediaId}, temArquivo=${!!fileByMediaId[mediaObj.mediaId]}`);
               if (mediaObj.mediaId && fileByMediaId[mediaObj.mediaId]) {
                 mediaObj.url = fileByMediaId[mediaObj.mediaId].url;
 
@@ -546,6 +550,7 @@ router.put("/:id", uploadMedicao.any(), async (req, res) => {
             const medias = item.media || item.images;
             if (medias && medias.length > 0) {
               medias.forEach((mediaObj) => {
+                 console.log(`Processando media do item: mediaId=${mediaObj.mediaId}, temArquivo=${!!fileByMediaId[mediaObj.mediaId]}`);
                 if (mediaObj.mediaId && fileByMediaId[mediaObj.mediaId]) {
                    // Atualiza com os dados do arquivo novo
                    Object.assign(mediaObj, fileByMediaId[mediaObj.mediaId]);
@@ -670,6 +675,8 @@ router.put(
           }
         });
       }
+
+      console.log("Arquivos processados por ID (PUT):", Object.keys(fileByMediaId));
 
       parsedGroups.forEach((group) => {
         if (group.items) {
