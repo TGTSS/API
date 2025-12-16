@@ -179,11 +179,6 @@ router.post("/", uploadMedicao.any(), async (req, res) => {
 
     // Verificar se há pelo menos uma mídia
     if (media.length === 0) {
-     // Check if base64 media was sent (fallback/legacy support) 
-     // Omitted based on request to use Cloudinary, but keeping it robust might be safe.
-     // However, user specifically asked for Cloudinary.
-     // If no media via files, maybe check body?
-     // Let's assume files are required via Cloudinary for now.
     }
 
     if (media.length === 0 && (!req.body.media || req.body.media.length === 0)) {
@@ -209,13 +204,13 @@ router.post("/", uploadMedicao.any(), async (req, res) => {
       attachments,
 
       createdBy,
-    }); // Calcular totais
+    }); 
 
     medicao.calculateTotalMedido();
 
     medicao.calculateProgress();
 
-    await medicao.save(); // Adicionar a medição à obra
+    await medicao.save();
 
     obra.medicoes.push(medicao._id);
 
@@ -493,27 +488,66 @@ router.put("/:id", uploadMedicao.any(), async (req, res) => {
       return res.status(404).json({ message: "Medição não encontrada" });
     } // Processar novos anexos
 
+    // Processar novos anexos genéricos
     const newAttachments = req.files
-      ? req.files.map((file) => ({
-          name: file.originalname,
+      ? req.files
+          .filter((file) => file.fieldname === "attachments" || !file.fieldname.startsWith("media-item-"))
+          .map((file) => ({
+            name: file.originalname,
+            url: file.path,
+            public_id: file.public_id,
+            type: file.mimetype,
+            size: file.size,
+            uploadedAt: new Date(),
+          }))
+      : [];
 
-          url: file.path,
+    if (groups) {
+      let parsedGroups = JSON.parse(groups);
+      
+      const fileByMediaId = {};
 
-          public_id: file.public_id,
+      if (req.files && req.files.length > 0) {
+        req.files.forEach((file) => {
+          const match = file.fieldname.match(/^media-item-(.+)$/);
+          if (match) {
+            const mediaId = match[1];
+            fileByMediaId[mediaId] = {
+              name: file.originalname,
+              url: file.path,
+              public_id: file.public_id,
+              type: file.mimetype,
+              size: file.size,
+            };
+          }
+        });
+      }
 
-          type: file.mimetype,
+      parsedGroups.forEach((group) => {
+        if (group.items) {
+          group.items.forEach((item) => {
+             // Padronização de status
+             if (item.status === "pending") item.status = "Aprovação";
+             if (item.status === "Em Andamento") item.status = "Em andamento";
 
-          size: file.size,
-
-          uploadedAt: new Date(),
-        }))
-      : []; // Atualizar campos
-
-    if (date) medicao.date = new Date(date);
-
-    if (responsavel) medicao.responsavel = responsavel;
-
-    if (groups) medicao.groups = JSON.parse(groups);
+            // Processamento de mídia
+            const medias = item.media || item.images;
+            if (medias && medias.length > 0) {
+              medias.forEach((mediaObj) => {
+                if (mediaObj.mediaId && fileByMediaId[mediaObj.mediaId]) {
+                   // Atualiza com os dados do arquivo novo
+                   Object.assign(mediaObj, fileByMediaId[mediaObj.mediaId]);
+                }
+              });
+              if (!item.media && item.images) {
+                item.media = item.images;
+              }
+            }
+          });
+        }
+      });
+      medicao.groups = parsedGroups;
+    }
 
     if (comments !== undefined) medicao.comments = comments;
 
@@ -578,27 +612,66 @@ router.put(
           .json({ message: "Medição não encontrada para esta obra" });
       } // Processar novos anexos
 
-      const newAttachments = req.files
-        ? req.files.map((file) => ({
-            name: file.originalname,
-
-            url: file.path,
-
-            public_id: file.public_id,
-
-            type: file.mimetype,
-
-            size: file.size,
-
-            uploadedAt: new Date(),
-          }))
-        : []; // Atualizar campos
-
       if (date) medicao.date = new Date(date);
 
       if (responsavel) medicao.responsavel = responsavel;
 
-      if (groups) medicao.groups = JSON.parse(groups);
+    // Processar novos anexos genéricos
+    const newAttachments = req.files
+      ? req.files
+          .filter((file) => file.fieldname === "attachments" || !file.fieldname.startsWith("media-item-"))
+          .map((file) => ({
+            name: file.originalname,
+            url: file.path,
+            public_id: file.public_id,
+            type: file.mimetype,
+            size: file.size,
+            uploadedAt: new Date(),
+          }))
+      : [];
+
+    if (groups) {
+      let parsedGroups = JSON.parse(groups);
+      
+      const fileByMediaId = {};
+      if (req.files && req.files.length > 0) {
+        req.files.forEach((file) => {
+          const match = file.fieldname.match(/^media-item-(.+)$/);
+          if (match) {
+            const mediaId = match[1];
+            fileByMediaId[mediaId] = {
+              name: file.originalname,
+              url: file.path,
+              public_id: file.public_id,
+              type: file.mimetype,
+              size: file.size,
+            };
+          }
+        });
+      }
+
+      parsedGroups.forEach((group) => {
+        if (group.items) {
+          group.items.forEach((item) => {
+             if (item.status === "pending") item.status = "Aprovação";
+             if (item.status === "Em Andamento") item.status = "Em andamento";
+
+            const medias = item.media || item.images;
+            if (medias && medias.length > 0) {
+              medias.forEach((mediaObj) => {
+                if (mediaObj.mediaId && fileByMediaId[mediaObj.mediaId]) {
+                   Object.assign(mediaObj, fileByMediaId[mediaObj.mediaId]);
+                }
+              });
+              if (!item.media && item.images) {
+                item.media = item.images;
+              }
+            }
+          });
+        }
+      });
+      medicao.groups = parsedGroups;
+    }
 
       if (comments !== undefined) medicao.comments = comments;
 
