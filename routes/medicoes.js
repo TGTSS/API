@@ -163,7 +163,7 @@ router.post("/", uploadMedicao.any(), async (req, res) => {
         const fileData = {
           name: file.originalname,
           url: file.path,
-          public_id: file.filename,
+          public_id: file.public_id,
           type: file.mimetype,
           size: file.size,
           uploadedAt: new Date(),
@@ -499,7 +499,7 @@ router.put("/:id", uploadMedicao.any(), async (req, res) => {
 
           url: file.path,
 
-          public_id: file.filename,
+          public_id: file.public_id,
 
           type: file.mimetype,
 
