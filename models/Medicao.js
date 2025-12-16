@@ -175,16 +175,9 @@ const medicaoSchema = new mongoose.Schema({
               },
               type: {
                 type: String,
-
-                enum: [
-                  "image/jpeg",
-                  "image/png",
-                  "image/gif",
-                  "video/mp4",
-                  "video/avi",
-                  "video/mov",
-                  "video/wmv",
-                ],
+              },
+              mediaId: {
+                type: String,
               },
               size: {
                 type: Number,
