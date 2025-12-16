@@ -232,7 +232,7 @@ router.post("/", uploadMedicao.any(), async (req, res) => {
 
 // POST /api/obras/:obraId/medicoes - Criar medição para uma obra específica
 
-router.post("/obras/:obraId/medicoes", uploadMedicao.any(), async (req, res) => {
+router.post("/obras/:obraId/medicoes", async (req, res) => {
   try {
     const { obraId } = req.params;
 
@@ -262,92 +262,48 @@ router.post("/obras/:obraId/medicoes", uploadMedicao.any(), async (req, res) => 
       return res.status(404).json({ message: "Obra não encontrada" });
     } // 1. Parse dos dados JSON
 
-    let parsedGroups = JSON.parse(groups); // Padroniza status dos itens, lastMeasurement e history
+    // 1. Processar groups (já vem com base64 se enviado como JSON)
+    let parsedGroups = groups;
+    if (typeof groups === 'string') {
+        try {
+            parsedGroups = JSON.parse(groups);
+        } catch (e) {
+            console.error("Erro ao fazer parse de groups:", e);
+        }
+    }
 
-    parsedGroups.forEach((group) => {
+    if (parsedGroups) {
+      parsedGroups.forEach((group) => {
       if (group.items) {
         group.items.forEach((item) => {
           // status do item
-
           if (item.status === "pending") item.status = "Aprovação";
+          if (item.status === "Em Andamento") item.status = "Em andamento"; 
 
-          if (item.status === "Em Andamento") item.status = "Em andamento"; // status do lastMeasurement
-
+          // status do lastMeasurement
           if (item.lastMeasurement && item.lastMeasurement.status) {
             if (item.lastMeasurement.status === "Em Andamento")
               item.lastMeasurement.status = "Em andamento";
-
             if (item.lastMeasurement.status === "pending")
               item.lastMeasurement.status = "A iniciar";
-          } // status do history
-
+          } 
+          
+          // status do history
           if (item.history && item.history.length > 0) {
             item.history.forEach((h) => {
               if (h.status === "Em Andamento") h.status = "Em andamento";
-
               if (h.status === "pending") h.status = "A iniciar";
             });
           }
-        });
-      }
-    }); // 2. Mapeamento dos arquivos físicos enviados por mediaId
-
-    // Não exige mais obrigatoriedade de mídia
-    // Crie um mapa de arquivos por mediaId
-
-    const fileByMediaId = {};
-
-    if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
-        // Espera que o campo seja 'media-item-<mediaId>'
-        const match = file.fieldname.match(/^media-item-(.+)$/);
-        if (match) {
-          const mediaId = match[1];
-          fileByMediaId[mediaId] = {
-            name: file.originalname,
-            url: file.path,
-            public_id: file.public_id,
-            type: file.mimetype,
-            size: file.size,
-          };
-        }
-      });
-    }
-    
-    console.log("Arquivos processados por ID (POST):", Object.keys(fileByMediaId));
-
-    // Atualiza os objetos de mídia dos itens usando o mediaId
-
-    parsedGroups.forEach((group) => {
-      if (group.items) {
-        group.items.forEach((item) => {
-          // Suporte tanto para item.images quanto item.media
-
-          const medias = item.media || item.images;
-
-          if (medias && medias.length > 0) {
-            medias.forEach((mediaObj) => {
-              console.log(`[POST] Processando media do item: mediaId=${mediaObj.mediaId}, temArquivo=${!!fileByMediaId[mediaObj.mediaId]}`);
-              if (mediaObj.mediaId && fileByMediaId[mediaObj.mediaId]) {
-                mediaObj.url = fileByMediaId[mediaObj.mediaId].url;
-
-                mediaObj.type = fileByMediaId[mediaObj.mediaId].type;
-
-                mediaObj.size = fileByMediaId[mediaObj.mediaId].size;
-
-                mediaObj.name = fileByMediaId[mediaObj.mediaId].name;
-
-                mediaObj.public_id = fileByMediaId[mediaObj.mediaId].public_id;
-              }
-            }); // Se veio em item.images, copia para item.media
-
-            if (!item.media && item.images) {
+          
+           // Normalização de media/images
+           if (!item.media && item.images) {
               item.media = item.images;
-            }
-          }
+           }
         });
       }
-    }); // 3. Criação do documento Medicao com os dados consistentes
+    });
+    } // 3. Criação do documento Medicao com os dados consistentes
 
     const medicao = new Medicao({
       obraId,
@@ -603,8 +559,6 @@ router.put("/:id", uploadMedicao.any(), async (req, res) => {
 router.put(
   "/obras/:obraId/medicoes/:medicaoId",
 
-  uploadMedicao.any(),
-
   async (req, res) => {
     try {
       const { obraId, medicaoId } = req.params;
@@ -619,13 +573,9 @@ router.put(
         return res.status(400).json({ message: "ID inválido" });
       }
 
-      // LOG DETALHADO PARA DEBUG DE ARQUIVOS (PUT)
-      console.log("=== INÍCIO DA ATUALIZAÇÃO DE MEDIÇÃO ===");
+      // LOG DETALHADO PARA DEBUG (PUT)
+      console.log("=== INÍCIO DA ATUALIZAÇÃO DE MEDIÇÃO (BASE64) ===");
       console.log("Medição ID:", medicaoId);
-      console.log("Arquivos recebidos:", req.files ? req.files.length : 0);
-      if (req.files) {
-        req.files.forEach((f, i) => console.log(`Arquivo ${i}: field=${f.fieldname}, original=${f.originalname}, public_id=${f.public_id}`));
-      }
       // FIM DO LOG
 
       const medicao = await Medicao.findOne({ _id: medicaoId, obraId });
@@ -643,62 +593,33 @@ router.put(
       if (responsavel) medicao.responsavel = responsavel;
 
     // Processar novos anexos genéricos
-    const newAttachments = req.files
-      ? req.files
-          .filter((file) => file.fieldname === "attachments" || !file.fieldname.startsWith("media-item-"))
-          .map((file) => ({
-            name: file.originalname,
-            url: file.path,
-            public_id: file.public_id,
-            type: file.mimetype,
-            size: file.size,
-            uploadedAt: new Date(),
-          }))
-      : [];
+    const newAttachments = []; 
 
     if (groups) {
-      let parsedGroups = JSON.parse(groups);
-      
-      const fileByMediaId = {};
-      if (req.files && req.files.length > 0) {
-        req.files.forEach((file) => {
-          const match = file.fieldname.match(/^media-item-(.+)$/);
-          if (match) {
-            const mediaId = match[1];
-            fileByMediaId[mediaId] = {
-              name: file.originalname,
-              url: file.path,
-              public_id: file.public_id,
-              type: file.mimetype,
-              size: file.size,
-            };
+      let parsedGroups = groups;
+      if (typeof groups === 'string') {
+          try {
+              parsedGroups = JSON.parse(groups);
+          } catch(e) {
+              console.error("Erro parsing groups PUT:", e);
           }
-        });
       }
-
-      console.log("Arquivos processados por ID (PUT):", Object.keys(fileByMediaId));
-
-      parsedGroups.forEach((group) => {
-        if (group.items) {
-          group.items.forEach((item) => {
-             if (item.status === "pending") item.status = "Aprovação";
-             if (item.status === "Em Andamento") item.status = "Em andamento";
-
-            const medias = item.media || item.images;
-            if (medias && medias.length > 0) {
-              medias.forEach((mediaObj) => {
-                if (mediaObj.mediaId && fileByMediaId[mediaObj.mediaId]) {
-                   Object.assign(mediaObj, fileByMediaId[mediaObj.mediaId]);
-                }
+      
+      if(parsedGroups){
+          parsedGroups.forEach((group) => {
+            if (group.items) {
+              group.items.forEach((item) => {
+                 if (item.status === "pending") item.status = "Aprovação";
+                 if (item.status === "Em Andamento") item.status = "Em andamento";
+    
+                 if (!item.media && item.images) {
+                   item.media = item.images;
+                 }
               });
-              if (!item.media && item.images) {
-                item.media = item.images;
-              }
             }
           });
-        }
-      });
-      medicao.groups = parsedGroups;
+          medicao.groups = parsedGroups;
+      }
     }
 
       if (comments !== undefined) medicao.comments = comments;
