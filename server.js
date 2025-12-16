@@ -55,6 +55,7 @@ import categoriasRouter from "./routes/categoria.js";
 import fs from "fs";
 import path from "path";
 import { initScheduler, runDailyReminders } from "./services/scheduler.js";
+import valeRouter from "./Vale/router/routes.js";
 
 dotenv.config();
 
@@ -1414,6 +1415,7 @@ app.use("/api/estoque", estoqueRouter);
 app.use("/api/localizacoes", localizacoesRouter);
 
 app.use("/api/categorias", categoriasRouter);
+app.use("/api/vale", valeRouter);
 
 // Rota para servir arquivos de upload
 
