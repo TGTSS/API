@@ -172,7 +172,7 @@ const inventarioSchema = new mongoose.Schema(
 );
 
 // Índices para melhorar performance
-inventarioSchema.index({ codigo: 1 });
+// inventarioSchema.index({ codigo: 1 }); // Removido pois unique: true já cria índice
 inventarioSchema.index({ categoria: 1 });
 inventarioSchema.index({ subcategoria: 1 });
 inventarioSchema.index({ status: 1 });
