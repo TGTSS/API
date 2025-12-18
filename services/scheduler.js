@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import Obra from "../models/Obra.js";
 import Estoque from "../models/Estoque.js";
-import Inventario from "../models/Inventario.js"; // Importado
+import Inventario from "../models/Inventario.js";
 import sendEmail from "../utils/sendEmail.js";
 import TransacaoBruta from "../models/TransacaoBruta.js";
 import TransacaoIndependente from "../models/TransacaoIndependente.js";
@@ -35,9 +35,7 @@ async function sendDailyReminders() {
     const daqui7 = new Date();
     daqui7.setDate(hoje.getDate() + 7);
 
-    // ==========================================
-    // 1. PROCESSAR FINANCEIRO
-    // ==========================================    // 1. Financeiro
+
     console.log("📊 Analisando dados financeiros...");
     const obras = await Obra.find().lean();
     
@@ -98,17 +96,10 @@ async function sendDailyReminders() {
 
     const stockData = { lowStockItems, maintenanceItems };
     const stockHTML = generateStockHTML(stockData);
-
-    // ==========================================
-    // 3. ENVIAR E-MAILS SEPARADOS
-    // ==========================================
     
     console.log(`📮 Destinatários: ${EMAIL_TO.join(", ")}`);
 
     for (const email of EMAIL_TO) {
-        // Enviar Financeiro apenas se houver dados ou se for o resumo geral (opcional: filtrar se vazio?)
-        // O usuário pediu "não cortar", mas mesmo vazio é um status. Vamos enviar sempre para dar um "ping" de que o sistema rodou?
-        // Ou melhor, o template já trata o "All Clear". Então sempre envia.
         
         try {
             console.log(`📨 Enviando FINANCEIRO para ${email}...`);
@@ -119,13 +110,8 @@ async function sendDailyReminders() {
                 financeHTML
             );
 
-            // Pequena pausa para não floodar
             await new Promise(r => setTimeout(r, 1000));
 
-            // Enviar Estoque APENAS se houver algo (para evitar e-mail vazio todo dia se estoque estiver ok)
-            // OU enviar sempre? O usuário pediu para separar. Vamos enviar se houver alerta, ou se o usuário quiser saber que está tudo ok.
-            // Para "stock", é melhor enviar apenas se tiver alerta, ou um "Tudo OK" semanal. Mas diário "Tudo OK" de estoque pode incomodar.
-            // Vou manter a lógica do template: se não tiver nada, retorna "Tudo OK". Vamos enviar para dar consistência.
             
             console.log(`📨 Enviando ESTOQUE para ${email}...`);
             await sendEmail(

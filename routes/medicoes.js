@@ -177,16 +177,13 @@ router.post("/", uploadMedicao.any(), async (req, res) => {
       });
     }
 
-    // Verificar se há pelo menos uma mídia
-    if (media.length === 0) {
-    }
-
-    if (media.length === 0 && (!req.body.media || req.body.media.length === 0)) {
-       return res.status(400).json({
-        message:
-          "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição",
-      });
-    }
+    // Verificar se há pelo menos uma mídia (REMOVIDO A OBRIGATORIEDADE)
+    // if (media.length === 0 && (!req.body.media || req.body.media.length === 0)) {
+    //    return res.status(400).json({
+    //     message:
+    //       "É obrigatório enviar pelo menos uma mídia (imagem ou vídeo) da medição",
+    //   });
+    // }
 
     const medicao = new Medicao({
       obraId,
@@ -260,7 +257,25 @@ router.post("/obras/:obraId/medicoes", async (req, res) => {
 
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
-    } // 1. Parse dos dados JSON
+    }
+
+    // Processar arquivos para fileByMediaId (copiado do PUT para evitar ReferenceError)
+    const fileByMediaId = {};
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        const match = file.fieldname.match(/^media-item-(.+)$/);
+        if (match) {
+          const mediaId = match[1];
+          fileByMediaId[mediaId] = {
+            name: file.originalname,
+            url: file.path,
+            public_id: file.public_id,
+            type: file.mimetype,
+            size: file.size,
+          };
+        }
+      });
+    }
 
     // 1. Processar groups (já vem com base64 se enviado como JSON)
     let parsedGroups = groups;
