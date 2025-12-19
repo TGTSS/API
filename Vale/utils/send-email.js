@@ -39,8 +39,8 @@ const sendEmail = async (data) => {
 
   const transporter = nodemailer.createTransport({
     host: "smtppro.zoho.com",
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false, // STARTTLS
     auth: {
       user: emailUser,
       pass: emailPass,
@@ -48,6 +48,10 @@ const sendEmail = async (data) => {
     tls: {
       rejectUnauthorized: false,
     },
+    // Increase timeouts for cloud environments
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000, // 10 seconds
+    socketTimeout: 10000, // 10 seconds
   });
 
   const mailOptions = {
