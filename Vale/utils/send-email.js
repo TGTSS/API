@@ -31,27 +31,11 @@ const sendEmail = async (data) => {
     ? process.env.VALE_EMAIL_PASS.trim()
     : "Vale021618";
 
-  console.log("--- DEBUG SEND-EMAIL ---");
-  console.log(
-    "Variáveis de ambiente encontradas:",
-    !!process.env.VALE_EMAIL_USER
-  );
-  console.log("Usando usuário:", emailUser);
-  // Não logar a senha real, apenas o comprimento
-  console.log(
-    "Senha definida (comprimento):",
-    emailPass ? emailPass.length : 0
-  );
-  console.log("------------------------");
-
   if (!emailUser || !emailPass) {
     throw new Error(
       "Credenciais de email não puderam ser recuperadas nem do .env nem do fallback."
     );
   }
-
-  console.log("Tentando autenticação com:", emailUser);
-  console.log("Comprimento da senha:", emailPass.length); // Verifique se o tamanho bate com sua senha
 
   const transporter = nodemailer.createTransport({
     host: "smtppro.zoho.com",
@@ -67,8 +51,8 @@ const sendEmail = async (data) => {
   });
 
   const mailOptions = {
-    from: `"Formulário Site" <${process.env.VALE_EMAIL_USER}>`, // Remetente deve ser o email autenticado
-    to: process.env.VALE_EMAIL_TO || process.env.VALE_EMAIL_USER, // Para quem vai o email (geralmente você mesmo)
+    from: `"Formulário Site" <${emailUser}>`, // Remetente deve ser o email autenticado
+    to: process.env.VALE_EMAIL_TO || emailUser, // Para quem vai o email (geralmente você mesmo)
     replyTo: email, // O email do cliente vai no reply-to
     subject: `Nova Solicitação de Cotação - ${name}`,
     html: `
