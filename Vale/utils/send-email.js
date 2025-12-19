@@ -49,6 +49,8 @@ const sendEmail = async (data) => {
     connectionTimeout: 20000, // 20 seconds
     greetingTimeout: 20000, // 20 seconds
     socketTimeout: 20000, // 20 seconds
+    logger: true, // Enable logging
+    debug: true, // Show debug output
   });
 
   const mailOptions = {
