@@ -1,6 +1,16 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Get directory name in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Try to load .env from project root (2 levels up: Vale/utils -> Vale -> API)
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+// Fallback/standard load
 dotenv.config();
 
 const sendEmail = async (data) => {
@@ -19,9 +29,19 @@ const sendEmail = async (data) => {
     ? process.env.VALE_EMAIL_PASS.trim()
     : "";
 
+  console.log("--- DEBUG SEND-EMAIL ---");
+  console.log("CWD:", process.cwd());
+  console.log("VALE_EMAIL_USER:", emailUser);
+  console.log("VALE_EMAIL_PASS set:", !!emailPass);
+  console.log(
+    "All Env Keys:",
+    Object.keys(process.env).filter((k) => k.startsWith("VALE_"))
+  );
+  console.log("------------------------");
+
   if (!emailUser || !emailPass) {
     throw new Error(
-      "Credenciais de email (VALE_EMAIL_USER, VALE_EMAIL_PASS) não configuradas no .env"
+      `Credenciais de email não configuradas. User: '${emailUser}', Pass set: ${!!emailPass}`
     );
   }
 
