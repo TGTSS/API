@@ -22,26 +22,31 @@ const sendEmail = async (data) => {
     );
   }
 
+  // Tenta pegar do .env, se não existir, usa as credenciais fixas (fallback)
   const emailUser = process.env.VALE_EMAIL_USER
     ? process.env.VALE_EMAIL_USER.trim()
-    : "";
+    : "orcamento@valegnss.com.br";
+
   const emailPass = process.env.VALE_EMAIL_PASS
     ? process.env.VALE_EMAIL_PASS.trim()
-    : "";
+    : "Vale021618";
 
   console.log("--- DEBUG SEND-EMAIL ---");
-  console.log("CWD:", process.cwd());
-  console.log("VALE_EMAIL_USER:", emailUser);
-  console.log("VALE_EMAIL_PASS set:", !!emailPass);
   console.log(
-    "All Env Keys:",
-    Object.keys(process.env).filter((k) => k.startsWith("VALE_"))
+    "Variáveis de ambiente encontradas:",
+    !!process.env.VALE_EMAIL_USER
+  );
+  console.log("Usando usuário:", emailUser);
+  // Não logar a senha real, apenas o comprimento
+  console.log(
+    "Senha definida (comprimento):",
+    emailPass ? emailPass.length : 0
   );
   console.log("------------------------");
 
   if (!emailUser || !emailPass) {
     throw new Error(
-      `Credenciais de email não configuradas. User: '${emailUser}', Pass set: ${!!emailPass}`
+      "Credenciais de email não puderam ser recuperadas nem do .env nem do fallback."
     );
   }
 
