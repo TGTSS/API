@@ -7,11 +7,23 @@ const sendEmail = async (data) => {
   const { name, email, phone, message } = data;
 
   if (!name || !email || !phone || !message) {
-    throw new Error("Todos os campos (name, email, phone, message) são obrigatórios.");
+    throw new Error(
+      "Todos os campos (name, email, phone, message) são obrigatórios."
+    );
   }
 
-  const emailUser = process.env.VALE_EMAIL_USER ? process.env.VALE_EMAIL_USER.trim() : "";
-  const emailPass = process.env.VALE_EMAIL_PASS ? process.env.VALE_EMAIL_PASS.trim() : "";
+  const emailUser = process.env.VALE_EMAIL_USER
+    ? process.env.VALE_EMAIL_USER.trim()
+    : "";
+  const emailPass = process.env.VALE_EMAIL_PASS
+    ? process.env.VALE_EMAIL_PASS.trim()
+    : "";
+
+  if (!emailUser || !emailPass) {
+    throw new Error(
+      "Credenciais de email (VALE_EMAIL_USER, VALE_EMAIL_PASS) não configuradas no .env"
+    );
+  }
 
   console.log("Tentando autenticação com:", emailUser);
   console.log("Comprimento da senha:", emailPass.length); // Verifique se o tamanho bate com sua senha
@@ -25,8 +37,8 @@ const sendEmail = async (data) => {
       pass: emailPass,
     },
     tls: {
-       rejectUnauthorized: false
-    }
+      rejectUnauthorized: false,
+    },
   });
 
   const mailOptions = {
