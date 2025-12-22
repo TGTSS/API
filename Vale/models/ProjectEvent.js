@@ -7,6 +7,16 @@ const projectEventSchema = new mongoose.Schema({
   title: { type: String, required: true },
   date: { type: Date, required: true },
   completed: { type: Boolean, default: false },
+
+  // New fields from UI
+  time: { type: String }, // Storing as string "HH:mm" per UI
+  location: { type: String },
+  type: {
+    type: String,
+    enum: ["field", "meeting", "deadline", "office", "other"],
+    default: "field",
+  },
+  description: { type: String },
 });
 
 const ProjectEvent = mongoose.model("ValeProjectEvent", projectEventSchema);

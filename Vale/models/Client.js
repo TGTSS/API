@@ -8,6 +8,11 @@ const clientSchema = new mongoose.Schema({
   email: { type: String, required: true },
   phone: { type: String, required: true },
   address: { type: String, required: true },
+
+  // New fields from UI
+  contactName: { type: String },
+  notes: { type: String },
+
   userId: { type: String, ref: "ValeUser" }, // Link to User if they have access
   projects: [{ type: String, ref: "ValeProject" }], // Relationship
 });

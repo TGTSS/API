@@ -16,9 +16,14 @@ const projectSchema = new mongoose.Schema({
   longitude: { type: Number },
   startDate: { type: Date },
   deadline: { type: Date },
-  budget: { type: Number, required: true }, // Decimal in schema, Number in Mongoose usually fine for simple cases, or Decimal128
+  budget: { type: Number, required: true },
   technicalLead: { type: String, required: true },
   clientId: { type: String, ref: "ValeClient", required: true },
+  // New fields from UI
+  registry: { type: String },
+  hasDeed: { type: String, enum: ["yes", "no"], default: "no" },
+  area: { type: String },
+  perimeter: { type: String },
 });
 
 const Project = mongoose.model("ValeProject", projectSchema);
