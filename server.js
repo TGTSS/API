@@ -1397,6 +1397,7 @@ app.use("/api/transacoes", transacoesIndependentesRoutes);
 app.use("/api/duplicatas", transacoesBrutasRoutes);
 
 app.use("/api/solicitacoes", solicitacoesRouter);
+app.use(valeRouter); // Register Vale routes (includes /api/... paths internally)
 
 app.use("/api/obras/:obraId/solicitacoes", solicitacoesRouter);
 
