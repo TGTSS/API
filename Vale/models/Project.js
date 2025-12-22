@@ -18,8 +18,8 @@ const projectSchema = new mongoose.Schema({
   deadline: { type: Date },
   budget: { type: Number, required: true }, // Decimal in schema, Number in Mongoose usually fine for simple cases, or Decimal128
   technicalLead: { type: String, required: true },
-  clientId: { type: String, ref: "Client", required: true },
+  clientId: { type: String, ref: "ValeClient", required: true },
 });
 
-const Project = mongoose.model("Project", projectSchema);
+const Project = mongoose.model("ValeProject", projectSchema);
 export default Project;

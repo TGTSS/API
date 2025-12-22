@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const financialTransactionSchema = new mongoose.Schema({
   _id: { type: String, default: uuidv4 },
-  projectId: { type: String, ref: "Project", required: true },
+  projectId: { type: String, ref: "ValeProject", required: true },
   type: {
     type: String,
     enum: ["INCOME", "EXPENSE"],
@@ -15,7 +15,7 @@ const financialTransactionSchema = new mongoose.Schema({
 });
 
 const FinancialTransaction = mongoose.model(
-  "FinancialTransaction",
+  "ValeFinancialTransaction",
   financialTransactionSchema
 );
 export default FinancialTransaction;

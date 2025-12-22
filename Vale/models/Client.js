@@ -8,9 +8,9 @@ const clientSchema = new mongoose.Schema({
   email: { type: String, required: true },
   phone: { type: String, required: true },
   address: { type: String, required: true },
-  userId: { type: String, ref: "User" }, // Link to User if they have access
-  projects: [{ type: String, ref: "Project" }], // Relationship
+  userId: { type: String, ref: "ValeUser" }, // Link to User if they have access
+  projects: [{ type: String, ref: "ValeProject" }], // Relationship
 });
 
-const Client = mongoose.model("Client", clientSchema);
+const Client = mongoose.model("ValeClient", clientSchema);
 export default Client;
