@@ -88,6 +88,32 @@ router.post("/api/auth/register", async (req, res) => {
   }
 });
 
+router.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "Credenciais inválidas." });
+    }
+
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Credenciais inválidas." });
+    }
+
+    res.status(200).json({
+      message: "Login realizado com sucesso.",
+      user: user.toJSON(),
+    });
+  } catch (error) {
+    console.error("Erro em /api/auth/login:", error);
+    res.status(500).json({ message: "Erro no login.", error: error.message });
+  }
+});
+
 // 2. Clients
 router.get("/api/clients", async (req, res) => {
   try {
@@ -256,12 +282,10 @@ router.get("/api/projects/:id", async (req, res) => {
     res.json({ project, timeline, financials });
   } catch (error) {
     console.error("Erro em GET /api/projects/:id:", error);
-    res
-      .status(500)
-      .json({
-        message: "Erro ao buscar detalhes do projeto.",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Erro ao buscar detalhes do projeto.",
+      error: error.message,
+    });
   }
 });
 
@@ -299,12 +323,10 @@ router.get("/api/portal/projects", async (req, res) => {
     res.json(projects);
   } catch (error) {
     console.error("Erro em /api/portal/projects:", error);
-    res
-      .status(500)
-      .json({
-        message: "Erro ao buscar projetos do portal.",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Erro ao buscar projetos do portal.",
+      error: error.message,
+    });
   }
 });
 
