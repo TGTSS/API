@@ -12,31 +12,34 @@ const StepSchema = new mongoose.Schema({
   completedAt: Date,
 });
 
-const projectSchema = new mongoose.Schema({
-  _id: { type: String, default: uuidv4 },
-  name: { type: String, required: true },
-  description: { type: String, required: true },
-  serviceType: { type: String, required: true },
-  status: {
-    type: String,
-    enum: ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELED"],
-    default: "PENDING",
+const projectSchema = new mongoose.Schema(
+  {
+    _id: { type: String, default: uuidv4 },
+    name: { type: String, required: true },
+    description: { type: String, required: true },
+    serviceType: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELED"],
+      default: "PENDING",
+    },
+    location: { type: String, required: true },
+    latitude: { type: Number },
+    longitude: { type: Number },
+    startDate: { type: Date },
+    deadline: { type: Date },
+    budget: { type: Number, required: true },
+    technicalLead: { type: String, required: true },
+    clientId: { type: String, ref: "ValeClient", required: true },
+    timeline: [StepSchema],
+    registry: { type: String },
+    hasDeed: { type: String, enum: ["yes", "no"], default: "no" },
+    area: { type: String },
+    perimeter: { type: String },
+    code: { type: String, unique: true },
   },
-  location: { type: String, required: true },
-  latitude: { type: Number },
-  longitude: { type: Number },
-  startDate: { type: Date },
-  deadline: { type: Date },
-  budget: { type: Number, required: true },
-  technicalLead: { type: String, required: true },
-  clientId: { type: String, ref: "ValeClient", required: true },
-  timeline: [StepSchema],
-  // New fields from UI
-  registry: { type: String },
-  hasDeed: { type: String, enum: ["yes", "no"], default: "no" },
-  area: { type: String },
-  perimeter: { type: String },
-});
+  { timestamps: true }
+);
 
 const Project = mongoose.model("ValeProject", projectSchema);
 export default Project;

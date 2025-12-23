@@ -249,7 +249,22 @@ router.get("/api/projects", async (req, res) => {
 
 router.post("/api/projects", async (req, res) => {
   try {
-    const project = new Project(req.body);
+    // Generate sequential code
+    const lastProject = await Project.findOne().sort({ createdAt: -1 });
+    let nextCode = "PROJ-01";
+
+    if (lastProject && lastProject.code) {
+      const parts = lastProject.code.split("-");
+      if (parts.length === 2) {
+        const lastNumber = parseInt(parts[1], 10);
+        if (!isNaN(lastNumber)) {
+          const nextNumber = lastNumber + 1;
+          nextCode = `PROJ-${nextNumber.toString().padStart(2, "0")}`;
+        }
+      }
+    }
+
+    const project = new Project({ ...req.body, code: nextCode });
     await project.save();
 
     await Client.findByIdAndUpdate(project.clientId, {
