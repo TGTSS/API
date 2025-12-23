@@ -5,8 +5,9 @@ const teamMemberSchema = new mongoose.Schema(
   {
     _id: { type: String, default: uuidv4 },
     name: { type: String, required: true },
-    role: { type: String, required: true }, // Job title, e.g. "Topógrafo"
+    role: { type: String, required: true },
     email: { type: String, required: true, unique: true },
+    userId: { type: String, ref: "ValeUser", required: true },
     phone: { type: String, required: true },
     type: {
       type: String,

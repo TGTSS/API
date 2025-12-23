@@ -115,6 +115,19 @@ router.post("/api/auth/login", async (req, res) => {
   }
 });
 
+router.get("/api/users", async (req, res) => {
+  try {
+    // Return all users, likely for a dropdown
+    const users = await User.find().select("name email _id");
+    res.json(users);
+  } catch (error) {
+    console.error("Erro em GET /api/users:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao listar usuários.", error: error.message });
+  }
+});
+
 // 2. Clients
 router.get("/api/clients", async (req, res) => {
   try {
@@ -325,13 +338,13 @@ router.put("/api/projects/:id", async (req, res) => {
 router.post("/api/projects/:id/timeline", async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, date, status } = req.body;
+    const { title, date, status, assignedTo } = req.body;
 
     const project = await Project.findById(id);
     if (!project)
       return res.status(404).json({ message: "Projeto não encontrado" });
 
-    project.timeline.push({ title, date, status });
+    project.timeline.push({ title, date, status, assignedTo });
     await project.save();
 
     res.json(project);
@@ -346,7 +359,7 @@ router.post("/api/projects/:id/timeline", async (req, res) => {
 router.put("/api/projects/:id/timeline/:stageId", async (req, res) => {
   try {
     const { id, stageId } = req.params;
-    const { title, date, status } = req.body;
+    const { title, date, status, assignedTo } = req.body;
 
     const project = await Project.findById(id);
     if (!project)
@@ -357,6 +370,7 @@ router.put("/api/projects/:id/timeline/:stageId", async (req, res) => {
 
     if (title) step.title = title;
     if (date) step.date = date;
+    if (assignedTo !== undefined) step.assignedTo = assignedTo;
     if (status) {
       step.status = status;
       if (status === "completed") {

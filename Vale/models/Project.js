@@ -9,6 +9,7 @@ const StepSchema = new mongoose.Schema({
     enum: ["pending", "in_progress", "completed"],
     default: "pending",
   },
+  assignedTo: { type: String, ref: "ValeTeamMember" },
   completedAt: Date,
 });
 
