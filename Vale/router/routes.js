@@ -117,7 +117,6 @@ router.post("/api/auth/login", async (req, res) => {
 
 router.get("/api/users", async (req, res) => {
   try {
-    // Return all users, likely for a dropdown
     const users = await User.find().select("name email _id");
     res.json(users);
   } catch (error) {
@@ -128,7 +127,6 @@ router.get("/api/users", async (req, res) => {
   }
 });
 
-// 2. Clients
 router.get("/api/clients", async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;

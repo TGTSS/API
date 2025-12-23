@@ -75,6 +75,8 @@ const allowedOrigins = [
   "https://i9systemas.com.br",
 
   "https://api-urh2.onrender.com",
+
+  "https://valegnss.com.br",
 ];
 
 const server = http.createServer(app);
