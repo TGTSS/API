@@ -305,6 +305,79 @@ router.put("/api/projects/:id", async (req, res) => {
   }
 });
 
+// Timeline Routes
+router.post("/api/projects/:id/timeline", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, date, status } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project)
+      return res.status(404).json({ message: "Projeto não encontrado" });
+
+    project.timeline.push({ title, date, status });
+    await project.save();
+
+    res.json(project);
+  } catch (error) {
+    console.error("Erro em POST /api/projects/:id/timeline:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao adicionar etapa.", error: error.message });
+  }
+});
+
+router.put("/api/projects/:id/timeline/:stageId", async (req, res) => {
+  try {
+    const { id, stageId } = req.params;
+    const { title, date, status } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project)
+      return res.status(404).json({ message: "Projeto não encontrado" });
+
+    const step = project.timeline.id(stageId);
+    if (!step) return res.status(404).json({ message: "Etapa não encontrada" });
+
+    if (title) step.title = title;
+    if (date) step.date = date;
+    if (status) {
+      step.status = status;
+      if (status === "completed") {
+        step.completedAt = new Date();
+      }
+    }
+
+    await project.save();
+    res.json(project);
+  } catch (error) {
+    console.error("Erro em PUT /api/projects/:id/timeline/:stageId:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao atualizar etapa.", error: error.message });
+  }
+});
+
+router.delete("/api/projects/:id/timeline/:stageId", async (req, res) => {
+  try {
+    const { id, stageId } = req.params;
+
+    const project = await Project.findById(id);
+    if (!project)
+      return res.status(404).json({ message: "Projeto não encontrado" });
+
+    project.timeline.pull(stageId);
+    await project.save();
+
+    res.json(project);
+  } catch (error) {
+    console.error("Erro em DELETE /api/projects/:id/timeline/:stageId:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao remover etapa.", error: error.message });
+  }
+});
+
 router.get("/api/portal/projects", async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
