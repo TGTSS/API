@@ -251,7 +251,9 @@ router.get("/api/projects", async (req, res) => {
     if (status) query.status = status;
     if (clientId) query.clientId = clientId;
 
-    const projects = await Project.find(query).populate("clientId", "name");
+    const projects = await Project.find(query)
+      .populate("clientId", "name")
+      .populate("technicalLead", "name");
     res.json(projects);
   } catch (error) {
     console.error("Erro em GET /api/projects:", error);
@@ -297,7 +299,9 @@ router.post("/api/projects", async (req, res) => {
 router.get("/api/projects/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const project = await Project.findById(id).populate("clientId");
+    const project = await Project.findById(id)
+      .populate("clientId")
+      .populate("technicalLead");
     if (!project)
       return res.status(404).json({ message: "Projeto não encontrado" });
 
@@ -331,6 +335,20 @@ router.put("/api/projects/:id", async (req, res) => {
     res
       .status(500)
       .json({ message: "Erro ao atualizar projeto.", error: error.message });
+  }
+});
+
+router.delete("/api/projects/:id", async (req, res) => {
+  try {
+    const project = await Project.findByIdAndDelete(req.params.id);
+    if (!project)
+      return res.status(404).json({ message: "Projeto não encontrado" });
+    res.json(project);
+  } catch (error) {
+    console.error("Erro em DELETE /api/projects/:id:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao excluir projeto.", error: error.message });
   }
 });
 

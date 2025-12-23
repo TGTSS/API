@@ -30,7 +30,7 @@ const projectSchema = new mongoose.Schema(
     startDate: { type: Date },
     deadline: { type: Date },
     budget: { type: Number, required: true },
-    technicalLead: { type: String, required: true },
+    technicalLead: { type: String, ref: "ValeTeamMember", required: true },
     clientId: { type: String, ref: "ValeClient", required: true },
     timeline: [StepSchema],
     registry: { type: String },
