@@ -8,6 +8,7 @@ import Project from "../models/Project.js";
 import ProjectEvent from "../models/ProjectEvent.js";
 import FinancialTransaction from "../models/FinancialTransaction.js";
 import Invite from "../models/Invite.js";
+import TeamMember from "../models/TeamMember.js";
 
 const router = express.Router();
 
@@ -467,6 +468,87 @@ router.post("/api/portal/activate", async (req, res) => {
     res
       .status(500)
       .json({ message: "Erro na ativação.", error: error.message });
+  }
+});
+
+// 4. Team Management
+router.get("/api/team", async (req, res) => {
+  try {
+    const team = await TeamMember.find().sort({ name: 1 });
+    // Optional: Calculate active projects count if connected
+    // For now returning basic data
+    const teamWithStats = await Promise.all(
+      team.map(async (member) => {
+        // Example: count projects where this member is technical lead (by name)
+        const projectCount = await Project.countDocuments({
+          technicalLead: member.name,
+        });
+        return {
+          ...member.toObject(),
+          projects: projectCount,
+        };
+      })
+    );
+
+    res.json(teamWithStats);
+  } catch (error) {
+    console.error("Erro em GET /api/team:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao listar equipe.", error: error.message });
+  }
+});
+
+router.post("/api/team", async (req, res) => {
+  try {
+    const existing = await TeamMember.findOne({ email: req.body.email });
+    if (existing) {
+      return res
+        .status(400)
+        .json({ message: "Email já cadastrado na equipe." });
+    }
+
+    const member = new TeamMember({
+      ...req.body,
+      avatar: req.body.name.charAt(0).toUpperCase(),
+    });
+    await member.save();
+    res.status(201).json(member);
+  } catch (error) {
+    console.error("Erro em POST /api/team:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao adicionar membro.", error: error.message });
+  }
+});
+
+router.put("/api/team/:id", async (req, res) => {
+  try {
+    const member = await TeamMember.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    if (!member)
+      return res.status(404).json({ message: "Membro não encontrado" });
+    res.json(member);
+  } catch (error) {
+    console.error("Erro em PUT /api/team/:id:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao atualizar membro.", error: error.message });
+  }
+});
+
+router.delete("/api/team/:id", async (req, res) => {
+  try {
+    const member = await TeamMember.findByIdAndDelete(req.params.id);
+    if (!member)
+      return res.status(404).json({ message: "Membro não encontrado" });
+    res.json({ message: "Membro removido com sucesso." });
+  } catch (error) {
+    console.error("Erro em DELETE /api/team/:id:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao remover membro.", error: error.message });
   }
 });
 
