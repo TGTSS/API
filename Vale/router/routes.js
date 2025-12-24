@@ -338,9 +338,18 @@ router.put("/api/projects/:id", async (req, res) => {
 
 router.delete("/api/projects/:id", async (req, res) => {
   try {
-    const project = await Project.findByIdAndDelete(req.params.id);
+    const project = await Project.findById(req.params.id);
     if (!project)
       return res.status(404).json({ message: "Projeto não encontrado" });
+
+    // Remove o projeto do array projects do cliente
+    await Client.findByIdAndUpdate(project.clientId, {
+      $pull: { projects: project._id },
+    });
+
+    // Deleta o projeto
+    await Project.findByIdAndDelete(req.params.id);
+
     res.json(project);
   } catch (error) {
     console.error("Erro em DELETE /api/projects/:id:", error);
