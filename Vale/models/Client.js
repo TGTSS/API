@@ -4,17 +4,17 @@ import { v4 as uuidv4 } from "uuid";
 const clientSchema = new mongoose.Schema({
   _id: { type: String, default: uuidv4 },
   name: { type: String, required: true },
-  document: { type: String, required: true }, // CPF/CNPJ
-  email: { type: String, required: true },
+  document: { type: String, required: true },
+  email: { type: String },
   phone: { type: String, required: true },
-  address: { type: String, required: true },
+  address: { type: String },
 
   // New fields from UI
   contactName: { type: String },
   notes: { type: String },
 
-  userId: { type: String, ref: "ValeUser" }, // Link to User if they have access
-  projects: [{ type: String, ref: "ValeProject" }], // Relationship
+  userId: { type: String, ref: "ValeUser" },
+  projects: [{ type: String, ref: "ValeProject" }],
 });
 
 const Client = mongoose.model("ValeClient", clientSchema);
