@@ -209,6 +209,31 @@ router.put("/api/clients/:id", async (req, res) => {
   }
 });
 
+router.delete("/api/clients/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = await Client.findById(id);
+
+    if (!client) {
+      return res.status(404).json({ message: "Cliente não encontrado" });
+    }
+
+    // Se o cliente tiver um usuário vinculado, remove o usuário também
+    if (client.userId) {
+      await User.findByIdAndDelete(client.userId);
+    }
+
+    await Client.findByIdAndDelete(id);
+
+    res.json({ message: "Cliente e usuário removidos com sucesso." });
+  } catch (error) {
+    console.error("Erro em DELETE /api/clients/:id:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao excluir cliente.", error: error.message });
+  }
+});
+
 router.post("/api/clients/:id/invite", async (req, res) => {
   try {
     const { id } = req.params;
