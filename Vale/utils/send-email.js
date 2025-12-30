@@ -37,7 +37,6 @@ const sendEmail = async (data) => {
     );
   }
 
-  // Prioriza o e-mail de suporte para evitar bloqueios de "auto-envio"
   const emailFrom = process.env.VALE_EMAIL_USER
     ? process.env.VALE_EMAIL_USER.trim()
     : "suporte@valegnss.com.br";
@@ -51,7 +50,7 @@ const sendEmail = async (data) => {
   const mailOptions = {
     from: `Vale GNSS <${emailFrom}>`,
     to: recipient,
-    reply_to: email, // Email do cliente para resposta direta
+    reply_to: email,
     subject: `Nova Solicitação de Cotação - ${name}`,
     html: `
       <!DOCTYPE html>
@@ -106,17 +105,88 @@ const sendEmail = async (data) => {
 
   try {
     const { data: resData, error } = await resend.emails.send(mailOptions);
-
-    if (error) {
-      console.error("Erro ao enviar email via Resend:", error);
-      throw new Error(`Falha ao enviar email via Resend: ${error.message}`);
-    }
-
-    console.log("Email enviado com sucesso via Resend:", resData.id);
+    if (error) throw new Error(error.message);
     return { success: true, messageId: resData.id };
   } catch (error) {
-    console.error("Erro inesperado ao enviar email:", error);
-    throw new Error(`Erro inesperado ao enviar email: ${error.message}`);
+    console.error("Erro ao enviar email:", error);
+    throw error;
+  }
+};
+
+/**
+ * Envia e-mail de convite para o cliente criar acesso ao portal
+ */
+export const sendInviteEmail = async (client, inviteCode) => {
+  if (!resend) {
+    throw new Error("Serviço de email não configurado.");
+  }
+
+  const emailFrom = process.env.VALE_EMAIL_USER
+    ? process.env.VALE_EMAIL_USER.trim()
+    : "suporte@valegnss.com.br";
+
+  const inviteLink = `https://valegnss.com.br/portal/activate?code=${inviteCode}`;
+
+  const mailOptions = {
+    from: `Vale GNSS <${emailFrom}>`,
+    to: client.email,
+    subject: "Convite: Acesso ao Portal do Cliente - Vale GNSS",
+    html: `
+      <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f0f2f5; }
+    .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+    .header { background-color: #12243F; color: #ffffff; padding: 40px 20px; text-align: center; border-bottom: 5px solid #1447E6; }
+    .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+    .content { padding: 40px; text-align: center; }
+    .content p { font-size: 16px; margin-bottom: 25px; color: #4a5568; }
+    .btn-container { margin: 35px 0; }
+    .btn { background-color: #1447E6; color: #ffffff !important; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 18px; display: inline-block; transition: background-color 0.3s; }
+    .code-box { background-color: #f7fafc; border: 2px dashed #cbd5e0; padding: 15px; margin: 25px 0; border-radius: 8px; }
+    .code { font-family: monospace; font-size: 24px; font-weight: bold; color: #12243F; letter-spacing: 4px; }
+    .footer { background-color: #f8fafc; padding: 25px; text-align: center; font-size: 13px; color: #718096; border-top: 1px solid #edf2f7; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Seja bem-vindo à Vale GNSS</h1>
+    </div>
+    <div class="content">
+      <p>Olá, <strong>${client.name}</strong>!</p>
+      <p>Você foi convidado a acessar o nosso Portal do Cliente, onde poderá acompanhar o progresso de seus projetos, visualizar medições e documentos em tempo real.</p>
+      
+      <div class="btn-container">
+        <a href="${inviteLink}" class="btn">Ativar Meu Acesso</a>
+      </div>
+
+      <p>Se preferir, utilize o código de ativação abaixo no portal:</p>
+      <div class="code-box">
+        <span class="code">${inviteCode}</span>
+      </div>
+
+      <p style="font-size: 14px; color: #a0aec0;">Este convite expira em 7 dias.</p>
+    </div>
+    <div class="footer">
+      <p>Este é um e-mail automático, por favor não responda.</p>
+      <p>© ${new Date().getFullYear()} Vale GNSS - Tecnologia e Precisão em Agrimensura.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+  };
+
+  try {
+    const { data: resData, error } = await resend.emails.send(mailOptions);
+    if (error) throw new Error(error.message);
+    return { success: true, messageId: resData.id };
+  } catch (error) {
+    console.error("Erro ao enviar convite por e-mail:", error);
+    throw error;
   }
 };
 

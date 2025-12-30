@@ -1,7 +1,7 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import sendEmail from "../utils/send-email.js";
+import sendEmail, { sendInviteEmail } from "../utils/send-email.js";
 import User from "../models/User.js";
 import Client from "../models/Client.js";
 import Project from "../models/Project.js";
@@ -229,8 +229,16 @@ router.post("/api/clients/:id/invite", async (req, res) => {
     });
     await invite.save();
 
+    // Enviar e-mail de convite
+    await sendInviteEmail(client, code);
+
+    // Opcional: Atualizar status do cliente para 'invited' se houver esse campo
+    // Se não houver, ignore ou adicione ao schema se necessário.
+    client.status = "invited";
+    await client.save();
+
     res.json({
-      message: "Convite gerado",
+      message: "Convite enviado com sucesso por e-mail",
       link: `/portal/activate?code=${code}`,
       code,
     });
@@ -238,7 +246,7 @@ router.post("/api/clients/:id/invite", async (req, res) => {
     console.error("Erro em POST /api/clients/:id/invite:", error);
     res
       .status(500)
-      .json({ message: "Erro ao gerar convite.", error: error.message });
+      .json({ message: "Erro ao enviar convite.", error: error.message });
   }
 });
 

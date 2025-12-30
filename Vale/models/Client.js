@@ -15,6 +15,11 @@ const clientSchema = new mongoose.Schema({
 
   userId: { type: String, ref: "ValeUser" },
   projects: [{ type: String, ref: "ValeProject" }],
+  status: {
+    type: String,
+    default: "active",
+    enum: ["active", "invited", "blocked"],
+  },
 });
 
 const Client = mongoose.model("ValeClient", clientSchema);
