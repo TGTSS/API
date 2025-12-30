@@ -548,6 +548,22 @@ router.post("/api/portal/activate", async (req, res) => {
   }
 });
 
+// 5. Financials
+router.get("/api/transactions", async (req, res) => {
+  try {
+    const transactions = await FinancialTransaction.find()
+      .populate("projectId", "name code")
+      .sort({ date: -1 });
+    res.json(transactions);
+  } catch (error) {
+    console.error("Erro em GET /api/transactions:", error);
+    res.status(500).json({
+      message: "Erro ao listar transações.",
+      error: error.message,
+    });
+  }
+});
+
 // 4. Team Management
 router.get("/api/team", async (req, res) => {
   try {
