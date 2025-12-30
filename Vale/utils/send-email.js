@@ -41,9 +41,12 @@ const sendEmail = async (data) => {
     ? process.env.VALE_EMAIL_USER.trim()
     : "orcamento@valegnss.com.br";
 
+  const recipient = process.env.VALE_EMAIL_TO || emailUser;
+  console.log(`Enviando e-mail de cotação para: ${recipient}`);
+
   const mailOptions = {
     from: `Vale GNSS <${emailUser}>`,
-    to: process.env.VALE_EMAIL_TO || emailUser,
+    to: recipient,
     reply_to: email,
     subject: `Nova Solicitação de Cotação - ${name}`,
     html: `
