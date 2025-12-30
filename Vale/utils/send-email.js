@@ -37,17 +37,21 @@ const sendEmail = async (data) => {
     );
   }
 
-  const emailUser = process.env.VALE_EMAIL_USER
+  // Prioriza o e-mail de suporte para evitar bloqueios de "auto-envio"
+  const emailFrom = process.env.VALE_EMAIL_USER
     ? process.env.VALE_EMAIL_USER.trim()
+    : "suporte@valegnss.com.br";
+
+  const recipient = process.env.VALE_EMAIL_TO
+    ? process.env.VALE_EMAIL_TO.trim()
     : "orcamento@valegnss.com.br";
 
-  const recipient = process.env.VALE_EMAIL_TO || emailUser;
-  console.log(`Enviando e-mail de cotação para: ${recipient}`);
+  console.log(`[Email Debug] De: ${emailFrom} | Para: ${recipient}`);
 
   const mailOptions = {
-    from: `Vale GNSS <${emailUser}>`,
+    from: `Vale GNSS <${emailFrom}>`,
     to: recipient,
-    reply_to: email,
+    reply_to: email, // Email do cliente para resposta direta
     subject: `Nova Solicitação de Cotação - ${name}`,
     html: `
       <!DOCTYPE html>
