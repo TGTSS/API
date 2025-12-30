@@ -239,7 +239,9 @@ router.post("/api/clients/:id/invite", async (req, res) => {
 
     res.json({
       message: "Convite enviado com sucesso por e-mail",
-      link: `/portal/activate?code=${code}`,
+      link: `/auth/cliente/cadastro?code=${code}&email=${encodeURIComponent(
+        client.email
+      )}`,
       code,
     });
   } catch (error) {

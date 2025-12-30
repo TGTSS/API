@@ -125,7 +125,9 @@ export const sendInviteEmail = async (client, inviteCode) => {
     ? process.env.VALE_EMAIL_USER.trim()
     : "suporte@valegnss.com.br";
 
-  const inviteLink = `https://valegnss.com.br/portal/activate?code=${inviteCode}`;
+  const inviteLink = `https://valegnss.com.br/auth/cliente/cadastro?code=${inviteCode}&email=${encodeURIComponent(
+    client.email
+  )}`;
 
   const mailOptions = {
     from: `Vale GNSS <${emailFrom}>`,
