@@ -493,6 +493,52 @@ router.get("/api/portal/projects", async (req, res) => {
   }
 });
 
+router.get("/api/portal/projects/:id", async (req, res) => {
+  try {
+    const userId = req.headers["x-user-id"];
+    if (!userId) return res.status(401).json({ message: "Não autenticado" });
+
+    const client = await Client.findOne({ userId });
+    if (!client) return res.status(403).json({ message: "Acesso negado" });
+
+    const project = await Project.findOne({
+      _id: req.params.id,
+      clientId: client._id,
+    }).populate("technicalLead", "name email phone");
+
+    if (!project)
+      return res.status(404).json({ message: "Projeto não encontrado" });
+
+    res.json(project);
+  } catch (error) {
+    console.error("Erro em /api/portal/projects/:id:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao buscar projeto", error: error.message });
+  }
+});
+
+router.get("/api/portal/profile", async (req, res) => {
+  try {
+    const userId = req.headers["x-user-id"];
+    if (!userId) return res.status(401).json({ message: "Não autenticado" });
+
+    const client = await Client.findOne({ userId }).populate(
+      "userId",
+      "name email role"
+    );
+    if (!client)
+      return res.status(404).json({ message: "Perfil não encontrado" });
+
+    res.json(client);
+  } catch (error) {
+    console.error("Erro em /api/portal/profile:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao buscar perfil", error: error.message });
+  }
+});
+
 router.post("/api/portal/activate", async (req, res) => {
   try {
     const { code, name, email, password } = req.body;
