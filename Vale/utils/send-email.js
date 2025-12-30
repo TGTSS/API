@@ -11,7 +11,15 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 dotenv.config();
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend lazily or handle missing key to prevent crash at startup
+let resend;
+try {
+  if (process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+} catch (err) {
+  console.error("Erro ao inicializar Resend:", err.message);
+}
 
 const sendEmail = async (data) => {
   const { name, email, phone, message } = data;
@@ -19,6 +27,13 @@ const sendEmail = async (data) => {
   if (!name || !email || !phone || !message) {
     throw new Error(
       "Todos os campos (name, email, phone, message) são obrigatórios."
+    );
+  }
+
+  if (!resend) {
+    console.error("Tentativa de enviar email sem RESEND_API_KEY configurada.");
+    throw new Error(
+      "Serviço de email não configurado corretamente (chave ausente)."
     );
   }
 
