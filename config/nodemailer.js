@@ -14,17 +14,15 @@ if (missingVars.length > 0) {
   console.error(
     "Please create a .env file with the required variables. See env.example for reference."
   );
-  process.exit(1);
+  // process.exit(1); // Modificado para não derrubar o servidor se faltar config de email
+} else {
+  console.log("✅ Email configuration loaded successfully");
 }
-
-console.log("✅ Email configuration loaded successfully");
-console.log("USER:", process.env.EMAIL_USER);
-console.log("FROM:", process.env.EMAIL_FROM);
 
 const transporter = nodemailer.createTransport({
   host: "smtp.hostinger.com",
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -39,22 +37,5 @@ transporter.verify(function (error, success) {
     console.log("✅ SMTP server is ready to send emails");
   }
 });
-
-transporter.sendMail(
-  {
-    from: process.env.EMAIL_FROM,
-    to: "modernaedificacoes@gmail.com",
-    subject: "Teste SMTP Hostinger - " + new Date().toLocaleString(),
-    text: "Este é um teste de envio para outro destinatário.",
-    html: "<p>Este é um teste de envio para outro destinatário.</p>",
-  },
-  (err, info) => {
-    if (err) {
-      console.error("Erro:", err);
-    } else {
-      console.log("Enviado:", info);
-    }
-  }
-);
 
 export default transporter;

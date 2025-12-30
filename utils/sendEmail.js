@@ -12,8 +12,8 @@ let transporter = null;
 if (hasEmailConfig) {
   transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.hostinger.com",
-    port: process.env.SMTP_PORT || 465,
-    secure: true,
+    port: process.env.SMTP_PORT || 587,
+    secure: false,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,

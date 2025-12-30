@@ -1,6 +1,5 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import dotenv from "dotenv";
-
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -8,10 +7,11 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Try to load .env from project root (2 levels up: Vale/utils -> Vale -> API)
+// Try to load .env from project root
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-// Fallback/standard load
 dotenv.config();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (data) => {
   const { name, email, phone, message } = data;
@@ -22,41 +22,14 @@ const sendEmail = async (data) => {
     );
   }
 
-  // Tenta pegar do .env, se não existir, usa as credenciais fixas (fallback)
   const emailUser = process.env.VALE_EMAIL_USER
     ? process.env.VALE_EMAIL_USER.trim()
     : "orcamento@valegnss.com.br";
 
-  const emailPass = process.env.VALE_EMAIL_PASS
-    ? process.env.VALE_EMAIL_PASS.trim()
-    : "Vale021618";
-
-  if (!emailUser || !emailPass) {
-    throw new Error(
-      "Credenciais de email não puderam ser recuperadas nem do .env nem do fallback."
-    );
-  }
-
-  const transporter = nodemailer.createTransport({
-    host: "smtp.hostinger.com",
-    port: 465,
-    secure: true, // SSL
-    auth: {
-      user: emailUser,
-      pass: emailPass,
-    },
-    // Increase timeouts for cloud environments
-    connectionTimeout: 20000, // 20 seconds
-    greetingTimeout: 20000, // 20 seconds
-    socketTimeout: 20000, // 20 seconds
-    logger: true, // Enable logging
-    debug: true, // Show debug output
-  });
-
   const mailOptions = {
-    from: `"Formulário Site" <${emailUser}>`, // Remetente deve ser o email autenticado
-    to: process.env.VALE_EMAIL_TO || emailUser, // Para quem vai o email (geralmente você mesmo)
-    replyTo: email, // O email do cliente vai no reply-to
+    from: `Vale GNSS <${emailUser}>`,
+    to: process.env.VALE_EMAIL_TO || emailUser,
+    reply_to: email,
     subject: `Nova Solicitação de Cotação - ${name}`,
     html: `
       <!DOCTYPE html>
@@ -110,13 +83,18 @@ const sendEmail = async (data) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email enviado com sucesso: %s", info.messageId);
-    return { success: true, messageId: info.messageId };
+    const { data: resData, error } = await resend.emails.send(mailOptions);
+
+    if (error) {
+      console.error("Erro ao enviar email via Resend:", error);
+      throw new Error(`Falha ao enviar email via Resend: ${error.message}`);
+    }
+
+    console.log("Email enviado com sucesso via Resend:", resData.id);
+    return { success: true, messageId: resData.id };
   } catch (error) {
-    console.error("Erro ao enviar email via SMTP:", error);
-    // Include the actual error message for debugging
-    throw new Error(`Falha ao enviar email via SMTP: ${error.message}`);
+    console.error("Erro inesperado ao enviar email:", error);
+    throw new Error(`Erro inesperado ao enviar email: ${error.message}`);
   }
 };
 
