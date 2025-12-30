@@ -96,7 +96,7 @@ app.use(
 
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-user-id"],
   })
 );
 
@@ -122,7 +122,10 @@ app.use((req, res, next) => {
     "GET, POST, PUT, DELETE, PATCH"
   );
 
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, x-user-id"
+  );
 
   next();
 });
