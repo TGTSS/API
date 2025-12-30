@@ -529,7 +529,10 @@ router.post("/api/portal/activate", async (req, res) => {
     });
     await newUser.save();
 
-    await Client.findByIdAndUpdate(invite.clientId, { userId: newUser._id });
+    await Client.findByIdAndUpdate(invite.clientId, {
+      userId: newUser._id,
+      status: "active",
+    });
 
     invite.used = true;
     await invite.save();
