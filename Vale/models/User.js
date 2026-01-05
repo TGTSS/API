@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
     default: "ENGINEER",
   },
   avatar: { type: String },
+  avatarPublicId: { type: String },
   phone: { type: String },
   createdAt: { type: Date, default: Date.now },
 });

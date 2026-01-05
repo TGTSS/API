@@ -38,6 +38,18 @@ const projectSchema = new mongoose.Schema(
     area: { type: String },
     perimeter: { type: String },
     code: { type: String, unique: true },
+    imagem: { type: String },
+    imagemPublicId: { type: String },
+    documents: [
+      {
+        name: String,
+        url: String,
+        publicId: String,
+        type: String,
+        size: Number,
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );

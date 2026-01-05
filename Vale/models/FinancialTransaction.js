@@ -12,6 +12,16 @@ const financialTransactionSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   description: { type: String, required: true },
   date: { type: Date, default: Date.now },
+  attachments: [
+    {
+      name: String,
+      url: String,
+      publicId: String,
+      type: String,
+      size: Number,
+      uploadedAt: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 const FinancialTransaction = mongoose.model(

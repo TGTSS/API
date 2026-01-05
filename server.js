@@ -100,12 +100,9 @@ app.use(
   })
 );
 
-app.use(bodyParser.json({ limit: "50mb" })); // Aumentado para 50MB
+app.use(bodyParser.json({ limit: "50mb" }));
 
-app.use(express.json({ limit: "50mb" })); // Aumentado para 50MB
-
-// Rotas de arquivos estáticos removidas. Agora os arquivos são salvos em base64 no banco de dados.
-// Para obter arquivos, utilize as rotas de API que retornam os dados em base64.
+app.use(express.json({ limit: "50mb" }));
 
 app.use((req, res, next) => {
   res.setHeader("Content-Type", "application/json");

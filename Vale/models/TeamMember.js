@@ -20,6 +20,7 @@ const teamMemberSchema = new mongoose.Schema(
       default: "active",
     },
     avatar: { type: String },
+    avatarPublicId: { type: String },
   },
   { timestamps: true }
 );

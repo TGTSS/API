@@ -9,6 +9,7 @@ import ProjectEvent from "../models/ProjectEvent.js";
 import FinancialTransaction from "../models/FinancialTransaction.js";
 import Invite from "../models/Invite.js";
 import TeamMember from "../models/TeamMember.js";
+import cloudinary, { uploadImagem, uploadDocumento } from "../../cloudinary.js";
 
 const router = express.Router();
 
@@ -53,41 +54,53 @@ router.get("/test", async (req, res) => {
 // --- New Routes ---
 
 // 1. Auth
-router.post("/api/auth/register", async (req, res) => {
-  try {
-    const { name, email, password, role, phone, avatar } = req.body;
+router.post(
+  "/api/auth/register",
+  uploadImagem.single("avatar"),
+  async (req, res) => {
+    try {
+      const { name, email, password, role, phone } = req.body;
+      let avatar = req.body.avatar;
+      let avatarPublicId = null;
 
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email já cadastrado." });
+      if (req.file) {
+        avatar = req.file.path;
+        avatarPublicId = req.file.public_id;
+      }
+
+      // Check if user exists
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email já cadastrado." });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const user = new User({
+        name,
+        email,
+        password: hashedPassword,
+        role: role || "ENGINEER",
+        phone,
+        avatar,
+        avatarPublicId,
+      });
+
+      await user.save();
+
+      res.status(201).json({
+        message: "Usuário criado com sucesso.",
+        user: user.toJSON(),
+      });
+    } catch (error) {
+      console.error("Erro em /api/auth/register:", error);
+      res
+        .status(500)
+        .json({ message: "Erro ao criar usuário.", error: error.message });
     }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      name,
-      email,
-      password: hashedPassword,
-      role: role || "ENGINEER",
-      phone,
-      avatar,
-    });
-
-    await user.save();
-
-    res.status(201).json({
-      message: "Usuário criado com sucesso.",
-      user: user.toJSON(),
-    });
-  } catch (error) {
-    console.error("Erro em /api/auth/register:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao criar usuário.", error: error.message });
   }
-});
+);
 
 router.post("/api/auth/login", async (req, res) => {
   try {
@@ -296,38 +309,64 @@ router.get("/api/projects", async (req, res) => {
   }
 });
 
-router.post("/api/projects", async (req, res) => {
-  try {
-    // Generate sequential code
-    const lastProject = await Project.findOne().sort({ createdAt: -1 });
-    let nextCode = "PROJ-01";
+router.post(
+  "/api/projects",
+  uploadImagem.single("imagem"),
+  async (req, res) => {
+    try {
+      let imagem = null;
+      let imagemPublicId = null;
 
-    if (lastProject && lastProject.code) {
-      const parts = lastProject.code.split("-");
-      if (parts.length === 2) {
-        const lastNumber = parseInt(parts[1], 10);
-        if (!isNaN(lastNumber)) {
-          const nextNumber = lastNumber + 1;
-          nextCode = `PROJ-${nextNumber.toString().padStart(2, "0")}`;
+      if (req.file) {
+        imagem = req.file.path;
+        imagemPublicId = req.file.public_id;
+      }
+
+      // Parse req.body fields if they are strings (FormData)
+      const body = { ...req.body };
+      if (typeof body.budget === "string")
+        body.budget = parseFloat(body.budget);
+      if (typeof body.latitude === "string")
+        body.latitude = parseFloat(body.latitude);
+      if (typeof body.longitude === "string")
+        body.longitude = parseFloat(body.longitude);
+
+      // Generate sequential code
+      const lastProject = await Project.findOne().sort({ createdAt: -1 });
+      let nextCode = "PROJ-01";
+
+      if (lastProject && lastProject.code) {
+        const parts = lastProject.code.split("-");
+        if (parts.length === 2) {
+          const lastNumber = parseInt(parts[1], 10);
+          if (!isNaN(lastNumber)) {
+            const nextNumber = lastNumber + 1;
+            nextCode = `PROJ-${nextNumber.toString().padStart(2, "0")}`;
+          }
         }
       }
+
+      const project = new Project({
+        ...body,
+        code: nextCode,
+        imagem,
+        imagemPublicId,
+      });
+      await project.save();
+
+      await Client.findByIdAndUpdate(project.clientId, {
+        $push: { projects: project._id },
+      });
+
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Erro em POST /api/projects:", error);
+      res
+        .status(500)
+        .json({ message: "Erro ao criar projeto.", error: error.message });
     }
-
-    const project = new Project({ ...req.body, code: nextCode });
-    await project.save();
-
-    await Client.findByIdAndUpdate(project.clientId, {
-      $push: { projects: project._id },
-    });
-
-    res.status(201).json(project);
-  } catch (error) {
-    console.error("Erro em POST /api/projects:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao criar projeto.", error: error.message });
   }
-});
+);
 
 router.get("/api/projects/:id", async (req, res) => {
   try {
@@ -355,21 +394,44 @@ router.get("/api/projects/:id", async (req, res) => {
   }
 });
 
-router.put("/api/projects/:id", async (req, res) => {
-  try {
-    const project = await Project.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    if (!project)
-      return res.status(404).json({ message: "Projeto não encontrado" });
-    res.json(project);
-  } catch (error) {
-    console.error("Erro em PUT /api/projects/:id:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao atualizar projeto.", error: error.message });
+router.put(
+  "/api/projects/:id",
+  uploadImagem.single("imagem"),
+  async (req, res) => {
+    try {
+      const existingProject = await Project.findById(req.params.id);
+      if (!existingProject)
+        return res.status(404).json({ message: "Projeto não encontrado" });
+
+      const updateData = { ...req.body };
+
+      if (req.file) {
+        // Delete old image if it exists
+        if (existingProject.imagemPublicId) {
+          await cloudinary.uploader.destroy(existingProject.imagemPublicId);
+        }
+        updateData.imagem = req.file.path;
+        updateData.imagemPublicId = req.file.public_id;
+      }
+
+      const project = await Project.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        {
+          new: true,
+        }
+      );
+      if (!project)
+        return res.status(404).json({ message: "Projeto não encontrado" });
+      res.json(project);
+    } catch (error) {
+      console.error("Erro em PUT /api/projects/:id:", error);
+      res
+        .status(500)
+        .json({ message: "Erro ao atualizar projeto.", error: error.message });
+    }
   }
-});
+);
 
 router.delete("/api/projects/:id", async (req, res) => {
   try {
@@ -381,6 +443,11 @@ router.delete("/api/projects/:id", async (req, res) => {
     await Client.findByIdAndUpdate(project.clientId, {
       $pull: { projects: project._id },
     });
+
+    // Deleta a imagem do Cloudinary se existir
+    if (project.imagemPublicId) {
+      await cloudinary.uploader.destroy(project.imagemPublicId);
+    }
 
     // Deleta o projeto
     await Project.findByIdAndDelete(req.params.id);
@@ -638,7 +705,7 @@ router.get("/api/team", async (req, res) => {
   }
 });
 
-router.post("/api/team", async (req, res) => {
+router.post("/api/team", uploadImagem.single("avatar"), async (req, res) => {
   try {
     const existing = await TeamMember.findOne({ email: req.body.email });
     if (existing) {
@@ -647,9 +714,18 @@ router.post("/api/team", async (req, res) => {
         .json({ message: "Email já cadastrado na equipe." });
     }
 
+    let avatar = req.body.name.charAt(0).toUpperCase();
+    let avatarPublicId = null;
+
+    if (req.file) {
+      avatar = req.file.path;
+      avatarPublicId = req.file.public_id;
+    }
+
     const member = new TeamMember({
       ...req.body,
-      avatar: req.body.name.charAt(0).toUpperCase(),
+      avatar,
+      avatarPublicId,
     });
     await member.save();
     res.status(201).json(member);
@@ -661,11 +737,30 @@ router.post("/api/team", async (req, res) => {
   }
 });
 
-router.put("/api/team/:id", async (req, res) => {
+router.put("/api/team/:id", uploadImagem.single("avatar"), async (req, res) => {
   try {
-    const member = await TeamMember.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
+    const existingMember = await TeamMember.findById(req.params.id);
+    if (!existingMember)
+      return res.status(404).json({ message: "Membro não encontrado" });
+
+    const updateData = { ...req.body };
+
+    if (req.file) {
+      // Delete old avatar if it exists
+      if (existingMember.avatarPublicId) {
+        await cloudinary.uploader.destroy(existingMember.avatarPublicId);
+      }
+      updateData.avatar = req.file.path;
+      updateData.avatarPublicId = req.file.public_id;
+    }
+
+    const member = await TeamMember.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      {
+        new: true,
+      }
+    );
     if (!member)
       return res.status(404).json({ message: "Membro não encontrado" });
     res.json(member);
@@ -682,6 +777,12 @@ router.delete("/api/team/:id", async (req, res) => {
     const member = await TeamMember.findByIdAndDelete(req.params.id);
     if (!member)
       return res.status(404).json({ message: "Membro não encontrado" });
+
+    // Delete avatar from Cloudinary if it exists
+    if (member.avatarPublicId) {
+      await cloudinary.uploader.destroy(member.avatarPublicId);
+    }
+
     res.json({ message: "Membro removido com sucesso." });
   } catch (error) {
     console.error("Erro em DELETE /api/team/:id:", error);
@@ -690,5 +791,134 @@ router.delete("/api/team/:id", async (req, res) => {
       .json({ message: "Erro ao remover membro.", error: error.message });
   }
 });
+
+// --- Document Management ---
+
+// 6. Project Documents
+router.post(
+  "/api/projects/:id/documents",
+  uploadDocumento.array("files"),
+  async (req, res) => {
+    try {
+      const project = await Project.findById(req.params.id);
+      if (!project)
+        return res.status(404).json({ message: "Projeto não encontrado" });
+
+      const newDocuments = req.files.map((file) => ({
+        name: file.originalname,
+        url: file.path,
+        publicId: file.public_id,
+        type: file.mimetype,
+        size: file.size,
+        uploadedAt: new Date(),
+      }));
+
+      project.documents.push(...newDocuments);
+      await project.save();
+
+      res.status(200).json(project.documents);
+    } catch (error) {
+      console.error("Erro ao fazer upload de documentos:", error);
+      res
+        .status(500)
+        .json({
+          message: "Erro ao fazer upload de documentos",
+          error: error.message,
+        });
+    }
+  }
+);
+
+router.delete("/api/projects/:id/documents/:docId", async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project)
+      return res.status(404).json({ message: "Projeto não encontrado" });
+
+    const doc = project.documents.id(req.params.docId);
+    if (!doc)
+      return res.status(404).json({ message: "Documento não encontrado" });
+
+    // Delete from Cloudinary
+    if (doc.publicId) {
+      await cloudinary.uploader.destroy(doc.publicId);
+    }
+
+    project.documents.pull(req.params.docId);
+    await project.save();
+
+    res.json({ message: "Documento removido com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover documento:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao remover documento", error: error.message });
+  }
+});
+
+// 7. Transaction Attachments
+router.post(
+  "/api/transactions/:id/attachments",
+  uploadDocumento.array("files"),
+  async (req, res) => {
+    try {
+      const transaction = await FinancialTransaction.findById(req.params.id);
+      if (!transaction)
+        return res.status(404).json({ message: "Transação não encontrada" });
+
+      const newAttachments = req.files.map((file) => ({
+        name: file.originalname,
+        url: file.path,
+        publicId: file.public_id,
+        type: file.mimetype,
+        size: file.size,
+        uploadedAt: new Date(),
+      }));
+
+      transaction.attachments.push(...newAttachments);
+      await transaction.save();
+
+      res.status(200).json(transaction.attachments);
+    } catch (error) {
+      console.error("Erro ao fazer upload de anexos:", error);
+      res
+        .status(500)
+        .json({
+          message: "Erro ao fazer upload de anexos",
+          error: error.message,
+        });
+    }
+  }
+);
+
+router.delete(
+  "/api/transactions/:id/attachments/:attachmentId",
+  async (req, res) => {
+    try {
+      const transaction = await FinancialTransaction.findById(req.params.id);
+      if (!transaction)
+        return res.status(404).json({ message: "Transação não encontrada" });
+
+      const attachment = transaction.attachments.id(req.params.attachmentId);
+      if (!attachment)
+        return res.status(404).json({ message: "Anexo não encontrado" });
+
+      // Delete from Cloudinary
+      if (attachment.publicId) {
+        await cloudinary.uploader.destroy(attachment.publicId);
+      }
+
+      transaction.attachments.pull(req.params.attachmentId);
+      await transaction.save();
+
+      res.json({ message: "Anexo removido com sucesso" });
+    } catch (error) {
+      console.error("Erro ao remover anexo:", error);
+      res
+        .status(500)
+        .json({ message: "Erro ao remover anexo", error: error.message });
+    }
+  }
+);
 
 export default router;
