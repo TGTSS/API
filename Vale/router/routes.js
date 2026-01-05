@@ -236,6 +236,15 @@ router.delete("/api/clients/:id", async (req, res) => {
       await User.findByIdAndDelete(client.userId);
     }
 
+    // Delete documents from Cloudinary
+    if (client.documents && client.documents.length > 0) {
+      for (const doc of client.documents) {
+        if (doc.publicId) {
+          await cloudinary.uploader.destroy(doc.publicId);
+        }
+      }
+    }
+
     await Client.findByIdAndDelete(id);
 
     res.json({ message: "Cliente e usuário removidos com sucesso." });
@@ -819,12 +828,10 @@ router.post(
       res.status(200).json(project.documents);
     } catch (error) {
       console.error("Erro ao fazer upload de documentos:", error);
-      res
-        .status(500)
-        .json({
-          message: "Erro ao fazer upload de documentos",
-          error: error.message,
-        });
+      res.status(500).json({
+        message: "Erro ao fazer upload de documentos",
+        error: error.message,
+      });
     }
   }
 );
@@ -881,12 +888,10 @@ router.post(
       res.status(200).json(transaction.attachments);
     } catch (error) {
       console.error("Erro ao fazer upload de anexos:", error);
-      res
-        .status(500)
-        .json({
-          message: "Erro ao fazer upload de anexos",
-          error: error.message,
-        });
+      res.status(500).json({
+        message: "Erro ao fazer upload de anexos",
+        error: error.message,
+      });
     }
   }
 );
@@ -920,5 +925,65 @@ router.delete(
     }
   }
 );
+
+// 8. Client Documents
+router.post(
+  "/api/clients/:id/documents",
+  uploadDocumento.array("files"),
+  async (req, res) => {
+    try {
+      const client = await Client.findById(req.params.id);
+      if (!client)
+        return res.status(404).json({ message: "Cliente não encontrado" });
+
+      const newDocuments = req.files.map((file) => ({
+        name: file.originalname,
+        url: file.path,
+        publicId: file.public_id,
+        type: file.mimetype,
+        size: file.size,
+        uploadedAt: new Date(),
+      }));
+
+      client.documents.push(...newDocuments);
+      await client.save();
+
+      res.status(200).json(client.documents);
+    } catch (error) {
+      console.error("Erro ao fazer upload de documentos do cliente:", error);
+      res.status(500).json({
+        message: "Erro ao fazer upload de documentos",
+        error: error.message,
+      });
+    }
+  }
+);
+
+router.delete("/api/clients/:id/documents/:docId", async (req, res) => {
+  try {
+    const client = await Client.findById(req.params.id);
+    if (!client)
+      return res.status(404).json({ message: "Cliente não encontrado" });
+
+    const doc = client.documents.id(req.params.docId);
+    if (!doc)
+      return res.status(404).json({ message: "Documento não encontrado" });
+
+    // Delete from Cloudinary
+    if (doc.publicId) {
+      await cloudinary.uploader.destroy(doc.publicId);
+    }
+
+    client.documents.pull(req.params.docId);
+    await client.save();
+
+    res.json({ message: "Documento removido com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover documento do cliente:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao remover documento", error: error.message });
+  }
+});
 
 export default router;

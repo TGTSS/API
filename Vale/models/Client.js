@@ -20,6 +20,16 @@ const clientSchema = new mongoose.Schema({
     default: "active",
     enum: ["active", "invited", "blocked"],
   },
+  documents: [
+    {
+      name: String,
+      url: String,
+      publicId: String,
+      type: String,
+      size: Number,
+      uploadedAt: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 const Client = mongoose.model("ValeClient", clientSchema);
