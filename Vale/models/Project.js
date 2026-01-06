@@ -30,7 +30,7 @@ const projectSchema = new mongoose.Schema(
       enum: ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELED"],
       default: "PENDING",
     },
-    location: { type: String, required: [true, "A localização é obrigatória"] },
+    location: { type: String },
     latitude: { type: Number },
     longitude: { type: Number },
     startDate: { type: Date },
