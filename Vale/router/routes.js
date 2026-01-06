@@ -87,6 +87,10 @@ router.post(
   "/api/projects/:id/technical-leads",
   ProjectController.addTechnicalLeads
 );
+router.delete(
+  "/api/projects/:id/technical-leads/:leadId",
+  ProjectController.removeTechnicalLead
+);
 
 // Timeline Routes
 router.post("/api/projects/:id/timeline", ProjectController.addTimelineStep);

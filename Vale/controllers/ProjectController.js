@@ -425,3 +425,38 @@ export const addTechnicalLeads = async (req, res) => {
     res.status(formatted.status).json(formatted);
   }
 };
+
+export const removeTechnicalLead = async (req, res) => {
+  try {
+    const { id, leadId } = req.params;
+
+    const project = await Project.findById(id).lean();
+    if (!project) {
+      return res.status(404).json({ message: "Projeto não encontrado." });
+    }
+
+    // Se o documento no banco ainda for string, precisamos garantir a conversão antes de remover
+    let currentLeads = Array.isArray(project.technicalLead)
+      ? project.technicalLead
+      : project.technicalLead
+      ? [project.technicalLead]
+      : [];
+
+    const updatedLeads = currentLeads.filter((id) => id !== leadId);
+
+    await Project.updateOne(
+      { _id: id },
+      { $set: { technicalLead: updatedLeads } }
+    );
+
+    const populatedProject = await Project.findById(id).populate(
+      "technicalLead",
+      "name email"
+    );
+
+    res.json(populatedProject);
+  } catch (error) {
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
+  }
+};
