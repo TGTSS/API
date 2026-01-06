@@ -8,6 +8,7 @@ import * as AuthController from "../controllers/AuthController.js";
 import * as ClientController from "../controllers/ClientController.js";
 import * as TeamController from "../controllers/TeamController.js";
 import * as FinancialController from "../controllers/FinancialController.js";
+import * as CalendarController from "../controllers/CalendarController.js";
 
 const router = express.Router();
 
@@ -52,7 +53,11 @@ router.get("/test", async (req, res) => {
 // --- New Routes ---
 
 // 1. Auth
-router.post("/api/auth/register", uploadImagem.single("avatar"), AuthController.register);
+router.post(
+  "/api/auth/register",
+  uploadImagem.single("avatar"),
+  AuthController.register
+);
 router.post("/api/auth/login", AuthController.login);
 router.get("/api/users", AuthController.getUsers);
 
@@ -66,15 +71,29 @@ router.post("/api/clients/:id/invite", ClientController.inviteClient);
 
 // 3. Projects
 router.get("/api/projects", ProjectController.getProjects);
-router.post("/api/projects", uploadImagem.single("imagem"), ProjectController.createProject);
+router.post(
+  "/api/projects",
+  uploadImagem.single("imagem"),
+  ProjectController.createProject
+);
 router.get("/api/projects/:id", ProjectController.getProjectById);
-router.put("/api/projects/:id", uploadImagem.single("imagem"), ProjectController.updateProject);
+router.put(
+  "/api/projects/:id",
+  uploadImagem.single("imagem"),
+  ProjectController.updateProject
+);
 router.delete("/api/projects/:id", ProjectController.deleteProject);
 
 // Timeline Routes
 router.post("/api/projects/:id/timeline", ProjectController.addTimelineStep);
-router.put("/api/projects/:id/timeline/:stageId", ProjectController.updateTimelineStep);
-router.delete("/api/projects/:id/timeline/:stageId", ProjectController.deleteTimelineStep);
+router.put(
+  "/api/projects/:id/timeline/:stageId",
+  ProjectController.updateTimelineStep
+);
+router.delete(
+  "/api/projects/:id/timeline/:stageId",
+  ProjectController.deleteTimelineStep
+);
 
 // 4. Portal
 router.get("/api/portal/projects", ProjectController.getPortalProjects);
@@ -87,22 +106,57 @@ router.get("/api/transactions", FinancialController.getTransactions);
 
 // 6. Team Management
 router.get("/api/team", TeamController.getTeam);
-router.post("/api/team", uploadImagem.single("avatar"), TeamController.createTeamMember);
-router.put("/api/team/:id", uploadImagem.single("avatar"), TeamController.updateTeamMember);
+router.post(
+  "/api/team",
+  uploadImagem.single("avatar"),
+  TeamController.createTeamMember
+);
+router.put(
+  "/api/team/:id",
+  uploadImagem.single("avatar"),
+  TeamController.updateTeamMember
+);
 router.delete("/api/team/:id", TeamController.deleteTeamMember);
+
+// 7. Calendar
+router.get("/api/calendar", CalendarController.getEvents);
+router.post("/api/calendar", CalendarController.createEvent);
+router.put("/api/calendar/:id", CalendarController.updateEvent);
+router.delete("/api/calendar/:id", CalendarController.deleteEvent);
 
 // --- Document Management ---
 
 // 7. Project Documents
-router.post("/api/projects/:id/documents", uploadDocumento.array("files"), ProjectController.uploadDocuments);
-router.delete("/api/projects/:id/documents/:docId", ProjectController.deleteDocument);
+router.post(
+  "/api/projects/:id/documents",
+  uploadDocumento.array("files"),
+  ProjectController.uploadDocuments
+);
+router.delete(
+  "/api/projects/:id/documents/:docId",
+  ProjectController.deleteDocument
+);
 
 // 8. Transaction Attachments
-router.post("/api/transactions/:id/attachments", uploadDocumento.array("files"), FinancialController.uploadAttachments);
-router.delete("/api/transactions/:id/attachments/:attachmentId", FinancialController.deleteAttachment);
+router.post(
+  "/api/transactions/:id/attachments",
+  uploadDocumento.array("files"),
+  FinancialController.uploadAttachments
+);
+router.delete(
+  "/api/transactions/:id/attachments/:attachmentId",
+  FinancialController.deleteAttachment
+);
 
 // 9. Client Documents
-router.post("/api/clients/:id/documents", uploadDocumento.array("files"), ClientController.uploadDocuments);
-router.delete("/api/clients/:id/documents/:docId", ClientController.deleteDocument);
+router.post(
+  "/api/clients/:id/documents",
+  uploadDocumento.array("files"),
+  ClientController.uploadDocuments
+);
+router.delete(
+  "/api/clients/:id/documents/:docId",
+  ClientController.deleteDocument
+);
 
 export default router;
