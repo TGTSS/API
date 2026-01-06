@@ -7,7 +7,7 @@ const projectEventSchema = new mongoose.Schema({
   title: { type: String, required: true },
   date: { type: Date, required: true },
   completed: { type: Boolean, default: false },
-  t ime: { type: String },
+  time: { type: String },
   location: { type: String },
   type: {
     type: String,
