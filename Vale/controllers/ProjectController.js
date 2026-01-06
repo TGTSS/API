@@ -4,6 +4,7 @@ import ProjectEvent from "../models/ProjectEvent.js";
 import FinancialTransaction from "../models/FinancialTransaction.js";
 import { SERVICE_STAGES } from "../constants/serviceTypes.js";
 import cloudinary from "../../cloudinary.js";
+import { formatError } from "../utils/error-handler.js";
 
 export const getProjects = async (req, res) => {
   try {
@@ -17,10 +18,8 @@ export const getProjects = async (req, res) => {
       .populate("technicalLead", "name");
     res.json(projects);
   } catch (error) {
-    console.error("Erro em getProjects:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao listar projetos.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -41,6 +40,16 @@ export const createProject = async (req, res) => {
       body.latitude = parseFloat(body.latitude);
     if (typeof body.longitude === "string")
       body.longitude = parseFloat(body.longitude);
+
+    // Ajustar o parsing do technicalLead (pode vir como string ou array de strings)
+    if (typeof body.technicalLead === "string") {
+      try {
+        body.technicalLead = JSON.parse(body.technicalLead);
+      } catch (e) {
+        // Se não for JSON, trata como um ID único
+        body.technicalLead = [body.technicalLead];
+      }
+    }
 
     // Ajustar o parsing do timeline customizado (JSON)
     if (typeof body.timeline === "string" && body.timeline.trim() !== "") {
@@ -98,10 +107,8 @@ export const createProject = async (req, res) => {
 
     res.status(201).json(project);
   } catch (error) {
-    console.error("Erro em createProject:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao criar projeto.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -123,11 +130,8 @@ export const getProjectById = async (req, res) => {
 
     res.json({ project, timeline, financials });
   } catch (error) {
-    console.error("Erro em getProjectById:", error);
-    res.status(500).json({
-      message: "Erro ao buscar detalhes do projeto.",
-      error: error.message,
-    });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -138,6 +142,14 @@ export const updateProject = async (req, res) => {
       return res.status(404).json({ message: "Projeto não encontrado" });
 
     const updateData = { ...req.body };
+
+    if (typeof updateData.technicalLead === "string") {
+      try {
+        updateData.technicalLead = JSON.parse(updateData.technicalLead);
+      } catch (e) {
+        updateData.technicalLead = [updateData.technicalLead];
+      }
+    }
 
     if (req.file) {
       // Delete old image if it exists
@@ -155,10 +167,8 @@ export const updateProject = async (req, res) => {
       return res.status(404).json({ message: "Projeto não encontrado" });
     res.json(project);
   } catch (error) {
-    console.error("Erro em updateProject:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao atualizar projeto.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -183,10 +193,8 @@ export const deleteProject = async (req, res) => {
 
     res.json(project);
   } catch (error) {
-    console.error("Erro em deleteProject:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao excluir projeto.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -204,10 +212,8 @@ export const addTimelineStep = async (req, res) => {
 
     res.json(project);
   } catch (error) {
-    console.error("Erro em addTimelineStep:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao adicionar etapa.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -236,10 +242,8 @@ export const updateTimelineStep = async (req, res) => {
     await project.save();
     res.json(project);
   } catch (error) {
-    console.error("Erro em updateTimelineStep:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao atualizar etapa.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -256,10 +260,8 @@ export const deleteTimelineStep = async (req, res) => {
 
     res.json(project);
   } catch (error) {
-    console.error("Erro em deleteTimelineStep:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao remover etapa.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -280,11 +282,8 @@ export const getPortalProjects = async (req, res) => {
     const projects = await Project.find({ clientId: client._id });
     res.json(projects);
   } catch (error) {
-    console.error("Erro em getPortalProjects:", error);
-    res.status(500).json({
-      message: "Erro ao buscar projetos do portal.",
-      error: error.message,
-    });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -306,10 +305,8 @@ export const getPortalProjectById = async (req, res) => {
 
     res.json(project);
   } catch (error) {
-    console.error("Erro em getPortalProjectById:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao buscar projeto", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -333,11 +330,8 @@ export const uploadDocuments = async (req, res) => {
 
     res.status(200).json(project.documents);
   } catch (error) {
-    console.error("Erro ao fazer upload de documentos:", error);
-    res.status(500).json({
-      message: "Erro ao fazer upload de documentos",
-      error: error.message,
-    });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -361,9 +355,43 @@ export const deleteDocument = async (req, res) => {
 
     res.json({ message: "Documento removido com sucesso" });
   } catch (error) {
-    console.error("Erro ao remover documento:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao remover documento", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
+  }
+};
+
+export const addTechnicalLeads = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { technicalLeads } = req.body; // Expecting an array of IDs
+
+    if (!Array.isArray(technicalLeads)) {
+      return res
+        .status(400)
+        .json({ message: "technicalLeads deve ser um array." });
+    }
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ message: "Projeto não encontrado." });
+    }
+
+    // Add unique leads only
+    technicalLeads.forEach((leadId) => {
+      if (!project.technicalLead.includes(leadId)) {
+        project.technicalLead.push(leadId);
+      }
+    });
+
+    await project.save();
+    const populatedProject = await Project.findById(id).populate(
+      "technicalLead",
+      "name email"
+    );
+
+    res.json(populatedProject);
+  } catch (error) {
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };

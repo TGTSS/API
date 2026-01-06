@@ -1,4 +1,5 @@
 import CalendarEvent from "../models/CalendarEvent.js";
+import { formatError } from "../utils/error-handler.js";
 
 export const getEvents = async (req, res) => {
   try {
@@ -18,10 +19,8 @@ export const getEvents = async (req, res) => {
 
     res.json(events);
   } catch (error) {
-    console.error("Erro em getEvents:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao listar eventos.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -31,10 +30,8 @@ export const createEvent = async (req, res) => {
     await event.save();
     res.status(201).json(event);
   } catch (error) {
-    console.error("Erro em createEvent:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao criar evento.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -51,10 +48,8 @@ export const updateEvent = async (req, res) => {
       return res.status(404).json({ message: "Evento não encontrado" });
     res.json(event);
   } catch (error) {
-    console.error("Erro em updateEvent:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao atualizar evento.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -65,9 +60,7 @@ export const deleteEvent = async (req, res) => {
       return res.status(404).json({ message: "Evento não encontrado" });
     res.json({ message: "Evento removido com sucesso." });
   } catch (error) {
-    console.error("Erro em deleteEvent:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao excluir evento.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };

@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import User from "../models/User.js";
+import { formatError } from "../utils/error-handler.js";
 
 export const register = async (req, res) => {
   try {
@@ -38,10 +39,8 @@ export const register = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Erro em register:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao criar usuário.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -66,8 +65,8 @@ export const login = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Erro em login:", error);
-    res.status(500).json({ message: "Erro no login.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -76,9 +75,7 @@ export const getUsers = async (req, res) => {
     const users = await User.find().select("name email _id");
     res.json(users);
   } catch (error) {
-    console.error("Erro em getUsers:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao listar usuários.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };

@@ -83,6 +83,10 @@ router.put(
   ProjectController.updateProject
 );
 router.delete("/api/projects/:id", ProjectController.deleteProject);
+router.post(
+  "/api/projects/:id/technical-leads",
+  ProjectController.addTechnicalLeads
+);
 
 // Timeline Routes
 router.post("/api/projects/:id/timeline", ProjectController.addTimelineStep);

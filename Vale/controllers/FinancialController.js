@@ -1,5 +1,6 @@
 import FinancialTransaction from "../models/FinancialTransaction.js";
 import cloudinary from "../../cloudinary.js";
+import { formatError } from "../utils/error-handler.js";
 
 export const getTransactions = async (req, res) => {
   try {
@@ -8,11 +9,8 @@ export const getTransactions = async (req, res) => {
       .sort({ date: -1 });
     res.json(transactions);
   } catch (error) {
-    console.error("Erro em getTransactions:", error);
-    res.status(500).json({
-      message: "Erro ao listar transações.",
-      error: error.message,
-    });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -36,11 +34,8 @@ export const uploadAttachments = async (req, res) => {
 
     res.status(200).json(transaction.attachments);
   } catch (error) {
-    console.error("Erro ao fazer upload de anexos:", error);
-    res.status(500).json({
-      message: "Erro ao fazer upload de anexos",
-      error: error.message,
-    });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -64,9 +59,7 @@ export const deleteAttachment = async (req, res) => {
 
     res.json({ message: "Anexo removido com sucesso" });
   } catch (error) {
-    console.error("Erro ao remover anexo:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao remover anexo", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };

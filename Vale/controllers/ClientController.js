@@ -6,6 +6,7 @@ import Invite from "../models/Invite.js";
 import User from "../models/User.js";
 import { sendInviteEmail } from "../utils/send-email.js";
 import cloudinary from "../../cloudinary.js";
+import { formatError } from "../utils/error-handler.js";
 
 export const getClients = async (req, res) => {
   try {
@@ -33,10 +34,8 @@ export const getClients = async (req, res) => {
       totalClients: count,
     });
   } catch (error) {
-    console.error("Erro em getClients:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao listar clientes.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -46,10 +45,8 @@ export const createClient = async (req, res) => {
     await client.save();
     res.status(201).json(client);
   } catch (error) {
-    console.error("Erro em createClient:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao criar cliente.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -65,10 +62,8 @@ export const getClientById = async (req, res) => {
 
     res.json({ client, recentProjects });
   } catch (error) {
-    console.error("Erro em getClientById:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao buscar cliente.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -81,10 +76,8 @@ export const updateClient = async (req, res) => {
       return res.status(404).json({ message: "Cliente não encontrado" });
     res.json(client);
   } catch (error) {
-    console.error("Erro em updateClient:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao atualizar cliente.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -113,10 +106,8 @@ export const deleteClient = async (req, res) => {
 
     res.json({ message: "Cliente e usuário removidos com sucesso." });
   } catch (error) {
-    console.error("Erro em deleteClient:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao excluir cliente.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -152,10 +143,8 @@ export const inviteClient = async (req, res) => {
       code,
     });
   } catch (error) {
-    console.error("Erro em inviteClient:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao enviar convite.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -173,10 +162,8 @@ export const getPortalProfile = async (req, res) => {
 
     res.json(client);
   } catch (error) {
-    console.error("Erro em getPortalProfile:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao buscar perfil", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -228,10 +215,8 @@ export const activatePortalAccount = async (req, res) => {
       .status(200)
       .json({ message: "Conta ativada com sucesso!", user: newUser.toJSON() });
   } catch (error) {
-    console.error("Erro em activatePortalAccount:", error);
-    res
-      .status(500)
-      .json({ message: "Erro na ativação.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -255,11 +240,8 @@ export const uploadDocuments = async (req, res) => {
 
     res.status(200).json(client.documents);
   } catch (error) {
-    console.error("Erro ao fazer upload de documentos do cliente:", error);
-    res.status(500).json({
-      message: "Erro ao fazer upload de documentos",
-      error: error.message,
-    });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -283,9 +265,7 @@ export const deleteDocument = async (req, res) => {
 
     res.json({ message: "Documento removido com sucesso" });
   } catch (error) {
-    console.error("Erro ao remover documento do cliente:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao remover documento", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };

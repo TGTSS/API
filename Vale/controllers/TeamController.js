@@ -1,6 +1,7 @@
 import TeamMember from "../models/TeamMember.js";
 import Project from "../models/Project.js";
 import cloudinary from "../../cloudinary.js";
+import { formatError } from "../utils/error-handler.js";
 
 export const getTeam = async (req, res) => {
   try {
@@ -19,10 +20,8 @@ export const getTeam = async (req, res) => {
 
     res.json(teamWithStats);
   } catch (error) {
-    console.error("Erro em getTeam:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao listar equipe.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -51,10 +50,8 @@ export const createTeamMember = async (req, res) => {
     await member.save();
     res.status(201).json(member);
   } catch (error) {
-    console.error("Erro em createTeamMember:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao adicionar membro.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -85,10 +82,8 @@ export const updateTeamMember = async (req, res) => {
       return res.status(404).json({ message: "Membro não encontrado" });
     res.json(member);
   } catch (error) {
-    console.error("Erro em updateTeamMember:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao atualizar membro.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
 
@@ -104,9 +99,7 @@ export const deleteTeamMember = async (req, res) => {
 
     res.json({ message: "Membro removido com sucesso." });
   } catch (error) {
-    console.error("Erro em deleteTeamMember:", error);
-    res
-      .status(500)
-      .json({ message: "Erro ao remover membro.", error: error.message });
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
   }
 };
