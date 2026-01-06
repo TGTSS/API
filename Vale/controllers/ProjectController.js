@@ -117,9 +117,16 @@ export const getProjectById = async (req, res) => {
     const { id } = req.params;
     const project = await Project.findById(id)
       .populate("clientId")
-      .populate("technicalLead");
+      .populate("technicalLead")
+      .lean();
+
     if (!project)
       return res.status(404).json({ message: "Projeto não encontrado" });
+
+    // Garantir que technicalLead venha como array no retorno mesmo se houver erro de populate ou dados antigos
+    if (project.technicalLead && !Array.isArray(project.technicalLead)) {
+      project.technicalLead = [project.technicalLead];
+    }
 
     const timeline = await ProjectEvent.find({ projectId: id }).sort({
       date: 1,
@@ -137,7 +144,7 @@ export const getProjectById = async (req, res) => {
 
 export const updateProject = async (req, res) => {
   try {
-    const existingProject = await Project.findById(req.params.id);
+    const existingProject = await Project.findById(req.params.id).lean();
     if (!existingProject)
       return res.status(404).json({ message: "Projeto não encontrado" });
 
@@ -160,6 +167,17 @@ export const updateProject = async (req, res) => {
       updateData.imagemPublicId = req.file.public_id;
     }
 
+    // Se o documento no banco ainda for string, precisamos garantir a conversão
+    if (!Array.isArray(existingProject.technicalLead)) {
+      await Project.findByIdAndUpdate(req.params.id, {
+        $set: {
+          technicalLead: existingProject.technicalLead
+            ? [existingProject.technicalLead]
+            : [],
+        },
+      });
+    }
+
     const project = await Project.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
     });
@@ -174,7 +192,7 @@ export const updateProject = async (req, res) => {
 
 export const deleteProject = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findById(req.params.id).lean();
     if (!project)
       return res.status(404).json({ message: "Projeto não encontrado" });
 
@@ -371,19 +389,31 @@ export const addTechnicalLeads = async (req, res) => {
         .json({ message: "technicalLeads deve ser um array." });
     }
 
-    const project = await Project.findById(id);
+    const project = await Project.findById(id).lean();
     if (!project) {
       return res.status(404).json({ message: "Projeto não encontrado." });
     }
 
-    // Add unique leads only
+    // Preparar os leads atuais, garantindo que seja um array
+    let currentLeads = Array.isArray(project.technicalLead)
+      ? project.technicalLead
+      : project.technicalLead
+      ? [project.technicalLead]
+      : [];
+
+    // Adicionar apenas os que não existem
     technicalLeads.forEach((leadId) => {
-      if (!project.technicalLead.includes(leadId)) {
-        project.technicalLead.push(leadId);
+      if (!currentLeads.includes(leadId)) {
+        currentLeads.push(leadId);
       }
     });
 
-    await project.save();
+    // Atualizar usando o MongoDB diretamente para garantir que o tipo mude no banco
+    await Project.updateOne(
+      { _id: id },
+      { $set: { technicalLead: currentLeads } }
+    );
+
     const populatedProject = await Project.findById(id).populate(
       "technicalLead",
       "name email"
