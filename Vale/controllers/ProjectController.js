@@ -142,6 +142,40 @@ export const getProjectById = async (req, res) => {
   }
 };
 
+export const getProjectByCode = async (req, res) => {
+  try {
+    const { code } = req.params;
+    const project = await Project.findOne({ code })
+      .populate("clientId")
+      .populate("technicalLead")
+      .lean();
+
+    if (!project)
+      return res
+        .status(404)
+        .json({ message: "Projeto não encontrado com este código." });
+
+    // Garantir que technicalLead venha como array
+    if (project.technicalLead && !Array.isArray(project.technicalLead)) {
+      project.technicalLead = [project.technicalLead];
+    }
+
+    const timeline = await ProjectEvent.find({ projectId: project._id }).sort({
+      date: 1,
+    });
+    const financials = await FinancialTransaction.find({
+      projectId: project._id,
+    }).sort({
+      date: -1,
+    });
+
+    res.json({ project, timeline, financials });
+  } catch (error) {
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
+  }
+};
+
 export const updateProject = async (req, res) => {
   try {
     const existingProject = await Project.findById(req.params.id).lean();

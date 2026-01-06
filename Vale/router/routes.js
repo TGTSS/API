@@ -76,6 +76,7 @@ router.post(
   uploadImagem.single("imagem"),
   ProjectController.createProject
 );
+router.get("/api/projects/code/:code", ProjectController.getProjectByCode);
 router.get("/api/projects/:id", ProjectController.getProjectById);
 router.put(
   "/api/projects/:id",
