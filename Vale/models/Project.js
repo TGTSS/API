@@ -13,6 +13,15 @@ const StepSchema = new mongoose.Schema({
   completedAt: Date,
 });
 
+const DocumentSchema = new mongoose.Schema({
+  name: { type: String },
+  url: { type: String },
+  publicId: { type: String },
+  type: { type: String },
+  size: { type: Number },
+  uploadedAt: { type: Date, default: Date.now },
+});
+
 const projectSchema = new mongoose.Schema(
   {
     _id: { type: String, default: uuidv4 },
@@ -51,16 +60,7 @@ const projectSchema = new mongoose.Schema(
     code: { type: String, unique: true },
     imagem: { type: String },
     imagemPublicId: { type: String },
-    documents: [
-      {
-        name: String,
-        url: String,
-        publicId: String,
-        type: String,
-        size: Number,
-        uploadedAt: { type: Date, default: Date.now },
-      },
-    ],
+    documents: [DocumentSchema],
   },
   { timestamps: true }
 );
