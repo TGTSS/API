@@ -1,6 +1,15 @@
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 
+const DocumentSchema = new mongoose.Schema({
+  name: { type: String },
+  url: { type: String },
+  publicId: { type: String },
+  type: { type: String },
+  size: { type: Number },
+  uploadedAt: { type: Date, default: Date.now },
+});
+
 const clientSchema = new mongoose.Schema({
   _id: { type: String, default: uuidv4 },
   name: { type: String, required: true },
@@ -20,16 +29,7 @@ const clientSchema = new mongoose.Schema({
     default: "active",
     enum: ["active", "invited", "blocked"],
   },
-  documents: [
-    {
-      name: String,
-      url: String,
-      publicId: String,
-      type: String,
-      size: Number,
-      uploadedAt: { type: Date, default: Date.now },
-    },
-  ],
+  documents: [DocumentSchema],
 });
 
 const Client = mongoose.model("ValeClient", clientSchema);
