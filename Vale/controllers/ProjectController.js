@@ -364,9 +364,18 @@ export const getPortalProjectById = async (req, res) => {
 
 export const uploadDocuments = async (req, res) => {
   try {
+    console.log("📁 Upload request for project:", req.params.id);
+    console.log("📁 Files received:", req.files?.length || 0);
+
     const project = await Project.findById(req.params.id);
     if (!project)
       return res.status(404).json({ message: "Projeto não encontrado" });
+
+    console.log("📁 Current documents count:", project.documents?.length || 0);
+    console.log(
+      "📁 Current documents:",
+      JSON.stringify(project.documents, null, 2)
+    );
 
     const newDocuments = req.files.map((file) => ({
       name: file.originalname,
@@ -377,11 +386,23 @@ export const uploadDocuments = async (req, res) => {
       uploadedAt: new Date(),
     }));
 
+    console.log(
+      "📁 New documents to add:",
+      JSON.stringify(newDocuments, null, 2)
+    );
+
     project.documents.push(...newDocuments);
+
+    console.log("📁 Attempting to save project...");
     await project.save();
+    console.log("📁 Project saved successfully!");
 
     res.status(200).json(project.documents);
   } catch (error) {
+    console.error("📁 Upload error details:", error);
+    console.error("📁 Error name:", error.name);
+    console.error("📁 Error path:", error.path);
+    console.error("📁 Error kind:", error.kind);
     const formatted = formatError(error);
     res.status(formatted.status).json(formatted);
   }

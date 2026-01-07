@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 
 const StepSchema = new mongoose.Schema({
-  _id: { type: String, default: uuidv4 },
   title: { type: String, required: true },
   date: { type: Date, default: Date.now },
   status: {
@@ -54,7 +53,6 @@ const projectSchema = new mongoose.Schema(
     imagemPublicId: { type: String },
     documents: [
       {
-        _id: { type: String, default: uuidv4 },
         name: String,
         url: String,
         publicId: String,
