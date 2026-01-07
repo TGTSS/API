@@ -53,6 +53,7 @@ const projectSchema = new mongoose.Schema(
     imagemPublicId: { type: String },
     documents: [
       {
+        _id: { type: String, default: uuidv4 },
         name: String,
         url: String,
         publicId: String,

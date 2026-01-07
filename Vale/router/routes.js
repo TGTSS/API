@@ -9,6 +9,7 @@ import * as ClientController from "../controllers/ClientController.js";
 import * as TeamController from "../controllers/TeamController.js";
 import * as FinancialController from "../controllers/FinancialController.js";
 import * as CalendarController from "../controllers/CalendarController.js";
+import * as BudgetController from "../controllers/BudgetController.js";
 
 const router = express.Router();
 
@@ -167,5 +168,39 @@ router.delete(
   "/api/clients/:id/documents/:docId",
   ClientController.deleteDocument
 );
+
+// --- Budget Management ---
+
+router.get("/api/budgets", BudgetController.getBudgets);
+router.get(
+  "/api/projects/:projectId/budget",
+  BudgetController.getBudgetByProject
+);
+router.put("/api/projects/:projectId/budget", BudgetController.upsertBudget);
+router.delete("/api/projects/:projectId/budget", BudgetController.deleteBudget);
+
+router.post(
+  "/api/projects/:projectId/budget/items",
+  BudgetController.addBudgetItem
+);
+router.delete(
+  "/api/projects/:projectId/budget/items/:itemId",
+  BudgetController.removeBudgetItem
+);
+
+router.post(
+  "/api/projects/:projectId/budget/send-approval",
+  BudgetController.sendForApproval
+);
+router.post(
+  "/api/projects/:projectId/budget/approve",
+  BudgetController.approveBudget
+);
+router.post(
+  "/api/projects/:projectId/budget/reject",
+  BudgetController.rejectBudget
+);
+
+router.get("/api/orcamento/:projectId", BudgetController.getPublicBudget);
 
 export default router;
