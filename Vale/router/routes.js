@@ -187,6 +187,14 @@ router.get(
 );
 router.put("/api/projects/:projectId/budget", BudgetController.upsertBudget);
 router.delete("/api/projects/:projectId/budget", BudgetController.deleteBudget);
+router.patch(
+  "/api/projects/:projectId/budget/cost-item/:itemKey",
+  BudgetController.updateCostItem
+);
+router.get(
+  "/api/projects/:projectId/budget/totals",
+  BudgetController.getBudgetTotals
+);
 
 router.post(
   "/api/projects/:projectId/budget/items",

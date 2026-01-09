@@ -74,7 +74,7 @@ export const upsertBudget = async (req, res) => {
 
     const budgetData = { ...req.body, projectId };
 
-    // Remove campos que não devem ser atualizados diretamente
+    // Remove campos que não devem ser atualizados diretamente (calculados automaticamente)
     delete budgetData._id;
     delete budgetData.subtotalOperational;
     delete budgetData.subtotalEquipment;
@@ -85,7 +85,47 @@ export const upsertBudget = async (req, res) => {
 
     if (budget) {
       // Atualizar orçamento existente
-      Object.assign(budget, budgetData);
+      // Atualiza campos de custo individualmente para preservar estrutura
+      const costFields = [
+        "tecnico",
+        "auxiliar",
+        "ajudante",
+        "alimentacao",
+        "marco",
+        "placa",
+        "gasolina",
+        "lavagem",
+        "art",
+        "rtk",
+        "droneMatrice",
+        "droneMini",
+        "estacaoTotal",
+        "projetoTecnico",
+        "memorialDescritivo",
+      ];
+
+      costFields.forEach((field) => {
+        if (budgetData[field]) {
+          budget[field] = {
+            ...(budget[field]?.toObject?.() || budget[field] || {}),
+            ...budgetData[field],
+          };
+        }
+      });
+
+      // Atualiza arrays dinâmicos
+      if (budgetData.outrosEquipamentos !== undefined) {
+        budget.outrosEquipamentos = budgetData.outrosEquipamentos;
+      }
+      if (budgetData.outrosIndiretos !== undefined) {
+        budget.outrosIndiretos = budgetData.outrosIndiretos;
+      }
+
+      // Atualiza outros campos
+      if (budgetData.status) budget.status = budgetData.status;
+      if (budgetData.clientNotes !== undefined)
+        budget.clientNotes = budgetData.clientNotes;
+
       await budget.save();
     } else {
       // Criar novo orçamento
@@ -93,6 +133,58 @@ export const upsertBudget = async (req, res) => {
       await budget.save();
     }
 
+    res.json(budget);
+  } catch (error) {
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
+  }
+};
+
+/**
+ * Atualizar um item de custo específico
+ * PATCH /api/projects/:projectId/budget/cost-item/:itemKey
+ */
+export const updateCostItem = async (req, res) => {
+  try {
+    const { projectId, itemKey } = req.params;
+    const itemData = req.body;
+
+    const validItems = [
+      "tecnico",
+      "auxiliar",
+      "ajudante",
+      "alimentacao",
+      "marco",
+      "placa",
+      "gasolina",
+      "lavagem",
+      "art",
+      "rtk",
+      "droneMatrice",
+      "droneMini",
+      "estacaoTotal",
+      "projetoTecnico",
+      "memorialDescritivo",
+    ];
+
+    if (!validItems.includes(itemKey)) {
+      return res.status(400).json({
+        message: `Item inválido. Itens válidos: ${validItems.join(", ")}`,
+      });
+    }
+
+    let budget = await Budget.findOne({ projectId });
+    if (!budget) {
+      budget = new Budget({ projectId });
+    }
+
+    // Atualiza o item específico mantendo valores existentes
+    budget[itemKey] = {
+      ...(budget[itemKey]?.toObject?.() || budget[itemKey] || {}),
+      ...itemData,
+    };
+
+    await budget.save();
     res.json(budget);
   } catch (error) {
     const formatted = formatError(error);
@@ -300,6 +392,36 @@ export const getPublicBudget = async (req, res) => {
     }
 
     res.json(budget);
+  } catch (error) {
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
+  }
+};
+
+/**
+ * Obter resumo dos totais do orçamento
+ * GET /api/projects/:projectId/budget/totals
+ */
+export const getBudgetTotals = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    const budget = await Budget.findOne({ projectId });
+    if (!budget) {
+      return res.json({
+        operational: 0,
+        equipment: 0,
+        indirect: 0,
+        total: 0,
+      });
+    }
+
+    res.json({
+      operational: budget.subtotalOperational,
+      equipment: budget.subtotalEquipment,
+      indirect: budget.subtotalIndirect,
+      total: budget.total,
+    });
   } catch (error) {
     const formatted = formatError(error);
     res.status(formatted.status).json(formatted);
