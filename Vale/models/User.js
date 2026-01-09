@@ -8,9 +8,10 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: {
     type: String,
-    enum: ["ADMIN", "ENGINEER", "CLIENT"],
+    enum: ["ADMIN", "ENGINEER", "CLIENT", "CARTORIO"],
     default: "ENGINEER",
   },
+  clients: [{ type: String, ref: "ValeClient" }],
   avatar: { type: String },
   avatarPublicId: { type: String },
   phone: { type: String },

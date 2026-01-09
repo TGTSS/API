@@ -5,6 +5,7 @@ import sendEmail from "../utils/send-email.js";
 // Controllers
 import * as ProjectController from "../controllers/ProjectController.js";
 import * as AuthController from "../controllers/AuthController.js";
+import * as UserController from "../controllers/UserController.js";
 import * as ClientController from "../controllers/ClientController.js";
 import * as TeamController from "../controllers/TeamController.js";
 import * as FinancialController from "../controllers/FinancialController.js";
@@ -61,6 +62,14 @@ router.post(
 );
 router.post("/api/auth/login", AuthController.login);
 router.get("/api/users", AuthController.getUsers);
+
+// 1.1 User Client Management (Cartorio)
+router.get("/api/users/:userId/clients", UserController.getUserClients);
+router.post("/api/users/:userId/clients", UserController.addUserClient);
+router.delete(
+  "/api/users/:userId/clients/:clientId",
+  UserController.removeUserClient
+);
 
 // 2. Clients
 router.get("/api/clients", ClientController.getClients);
