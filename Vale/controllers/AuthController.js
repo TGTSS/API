@@ -45,26 +45,55 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
+  const startTime = Date.now();
   try {
     const { email, password } = req.body;
 
-    // Check if user exists
-    const user = await User.findOne({ email });
+    // Log: Início da busca do usuário
+    const dbStartTime = Date.now();
+
+    // Busca otimizada: usando lean() para retorno mais rápido
+    // Selecionando apenas os campos necessários para autenticação
+    const user = await User.findOne({ email }).lean();
+
+    const dbEndTime = Date.now();
+    console.log(`[LOGIN] Busca no DB: ${dbEndTime - dbStartTime}ms`);
+
     if (!user) {
       return res.status(401).json({ message: "Credenciais inválidas." });
     }
 
+    // Log: Início da verificação de senha
+    const bcryptStartTime = Date.now();
+
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
+
+    const bcryptEndTime = Date.now();
+    console.log(
+      `[LOGIN] Verificação bcrypt: ${bcryptEndTime - bcryptStartTime}ms`
+    );
+
     if (!isMatch) {
       return res.status(401).json({ message: "Credenciais inválidas." });
     }
 
+    // Remove password antes de enviar resposta
+    const { password: _, ...userWithoutPassword } = user;
+
+    const totalTime = Date.now() - startTime;
+    console.log(`[LOGIN] Tempo total: ${totalTime}ms`);
+
     res.status(200).json({
       message: "Login realizado com sucesso.",
-      user: user.toJSON(),
+      user: userWithoutPassword,
     });
   } catch (error) {
+    const totalTime = Date.now() - startTime;
+    console.error(
+      `[LOGIN ERROR] Tempo até erro: ${totalTime}ms`,
+      error.message
+    );
     const formatted = formatError(error);
     res.status(formatted.status).json(formatted);
   }

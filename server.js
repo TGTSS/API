@@ -177,7 +177,7 @@ const inserirEtapasPadrao = async (obraId) => {
   }
 };
 
-// Conexão ao MongoDB
+// Conexão ao MongoDB com opções otimizadas
 
 mongoose
 
@@ -188,11 +188,20 @@ mongoose
       useNewUrlParser: true,
 
       useUnifiedTopology: true,
+
+      // Opções de otimização de performance
+      maxPoolSize: 10, // Número máximo de conexões no pool
+      minPoolSize: 2, // Manter conexões mínimas ativas
+      serverSelectionTimeoutMS: 5000, // Timeout de seleção de servidor (5s)
+      socketTimeoutMS: 45000, // Timeout de socket (45s)
+      connectTimeoutMS: 10000, // Timeout de conexão inicial (10s)
+      heartbeatFrequencyMS: 10000, // Frequência de heartbeat (10s)
     }
   )
 
   .then(() => {
     console.log("Conectado ao MongoDB");
+    console.log(`[DB] Pool de conexões: min=2, max=10`);
   })
 
   .catch((err) => console.error("Erro ao conectar ao MongoDB:", err));
