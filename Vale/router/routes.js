@@ -64,6 +64,7 @@ router.post("/api/auth/login", AuthController.login);
 router.get("/api/users", AuthController.getUsers);
 router.get("/api/users/:id", UserController.getUserById);
 router.put("/api/users/:id", UserController.updateUser);
+router.delete("/api/users/:id", UserController.deleteUser);
 
 // 1.1 User Client Management (Cartorio)
 router.get("/api/users/:userId/clients", UserController.getUserClients);
