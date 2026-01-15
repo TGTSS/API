@@ -66,3 +66,44 @@ export const getUserClients = async (req, res) => {
     res.status(formatted.status).json(formatted);
   }
 };
+
+export const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+    res.json(user);
+  } catch (error) {
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, role } = req.body;
+
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
+    if (role) updateData.role = role;
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+    res.json(user);
+  } catch (error) {
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
+  }
+};

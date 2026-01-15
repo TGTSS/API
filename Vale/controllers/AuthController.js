@@ -101,7 +101,9 @@ export const login = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select("name email _id");
+    const users = await User.find().select(
+      "name email _id role phone createdAt"
+    );
     res.json(users);
   } catch (error) {
     const formatted = formatError(error);
