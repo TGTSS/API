@@ -326,34 +326,62 @@ export const reorderTimeline = async (req, res) => {
     const { id } = req.params;
     const { stageIds } = req.body; // Array de IDs na nova ordem
 
+    console.log("📋 Reorder Timeline - Project ID:", id);
+    console.log("📋 Reorder Timeline - Stage IDs recebidos:", stageIds);
+
     if (!Array.isArray(stageIds)) {
       return res.status(400).json({ message: "stageIds deve ser um array" });
     }
 
     const project = await Project.findById(id);
     if (!project) {
+      console.log("📋 Projeto não encontrado com ID:", id);
       return res.status(404).json({ message: "Projeto não encontrado" });
     }
 
+    console.log(
+      "📋 Timeline atual:",
+      project.timeline.map((s) => ({ _id: s._id.toString(), title: s.title }))
+    );
+
     // Reordenar o timeline baseado na ordem dos IDs recebidos
     const reorderedTimeline = stageIds
-      .map((stageId) =>
-        project.timeline.find((stage) => stage._id.toString() === stageId)
-      )
+      .map((stageId) => {
+        const stageIdStr = String(stageId);
+        const found = project.timeline.find(
+          (stage) => stage._id.toString() === stageIdStr
+        );
+        if (!found) {
+          console.log("📋 Stage não encontrado:", stageIdStr);
+        }
+        return found;
+      })
       .filter(Boolean);
+
+    console.log(
+      "📋 Reordered count:",
+      reorderedTimeline.length,
+      "/ Original count:",
+      project.timeline.length
+    );
 
     // Verificar se todos os IDs foram encontrados
     if (reorderedTimeline.length !== project.timeline.length) {
       return res.status(400).json({
         message: "Alguns IDs de etapas não foram encontrados no projeto",
+        received: stageIds.length,
+        found: reorderedTimeline.length,
+        expected: project.timeline.length,
       });
     }
 
     project.timeline = reorderedTimeline;
     await project.save();
 
+    console.log("📋 Timeline reordenado com sucesso!");
     res.json({ project });
   } catch (error) {
+    console.error("📋 Erro ao reordenar timeline:", error);
     const formatted = formatError(error);
     res.status(formatted.status).json(formatted);
   }
