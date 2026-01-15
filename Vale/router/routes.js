@@ -106,16 +106,16 @@ router.delete(
 // Timeline Routes
 router.post("/api/projects/:id/timeline", ProjectController.addTimelineStep);
 router.put(
+  "/api/projects/:id/timeline/reorder",
+  ProjectController.reorderTimeline
+);
+router.put(
   "/api/projects/:id/timeline/:stageId",
   ProjectController.updateTimelineStep
 );
 router.delete(
   "/api/projects/:id/timeline/:stageId",
   ProjectController.deleteTimelineStep
-);
-router.put(
-  "/api/projects/:id/timeline/reorder",
-  ProjectController.reorderTimeline
 );
 
 // 4. Portal
