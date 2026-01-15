@@ -317,6 +317,48 @@ export const deleteTimelineStep = async (req, res) => {
   }
 };
 
+/**
+ * Reordenar etapas do timeline
+ * PUT /api/projects/:id/timeline/reorder
+ */
+export const reorderTimeline = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { stageIds } = req.body; // Array de IDs na nova ordem
+
+    if (!Array.isArray(stageIds)) {
+      return res.status(400).json({ message: "stageIds deve ser um array" });
+    }
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ message: "Projeto não encontrado" });
+    }
+
+    // Reordenar o timeline baseado na ordem dos IDs recebidos
+    const reorderedTimeline = stageIds
+      .map((stageId) =>
+        project.timeline.find((stage) => stage._id.toString() === stageId)
+      )
+      .filter(Boolean);
+
+    // Verificar se todos os IDs foram encontrados
+    if (reorderedTimeline.length !== project.timeline.length) {
+      return res.status(400).json({
+        message: "Alguns IDs de etapas não foram encontrados no projeto",
+      });
+    }
+
+    project.timeline = reorderedTimeline;
+    await project.save();
+
+    res.json({ project });
+  } catch (error) {
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
+  }
+};
+
 export const getPortalProjects = async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];

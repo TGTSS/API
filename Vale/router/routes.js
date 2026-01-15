@@ -113,6 +113,10 @@ router.delete(
   "/api/projects/:id/timeline/:stageId",
   ProjectController.deleteTimelineStep
 );
+router.put(
+  "/api/projects/:id/timeline/reorder",
+  ProjectController.reorderTimeline
+);
 
 // 4. Portal
 router.get("/api/portal/projects", ProjectController.getPortalProjects);
@@ -120,8 +124,16 @@ router.get("/api/portal/projects/:id", ProjectController.getPortalProjectById);
 router.get("/api/portal/profile", ClientController.getPortalProfile);
 router.post("/api/portal/activate", ClientController.activatePortalAccount);
 
-// 5. Financials
+// 5. Financials (Transactions)
 router.get("/api/transactions", FinancialController.getTransactions);
+router.get("/api/transactions/:id", FinancialController.getTransactionById);
+router.post("/api/transactions", FinancialController.createTransaction);
+router.put("/api/transactions/:id", FinancialController.updateTransaction);
+router.delete("/api/transactions/:id", FinancialController.deleteTransaction);
+router.get(
+  "/api/projects/:projectId/financial-summary",
+  FinancialController.getProjectFinancialSummary
+);
 
 // 6. Team Management
 router.get("/api/team", TeamController.getTeam);
