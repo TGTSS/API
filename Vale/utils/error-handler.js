@@ -1,9 +1,5 @@
 export const formatError = (error) => {
   if (error.name === "ValidationError") {
-    console.error(
-      "🔴 Validation Error Details:",
-      JSON.stringify(error.errors, null, 2),
-    );
     const messages = Object.values(error.errors).map((err) => err.message);
     return {
       status: 400,

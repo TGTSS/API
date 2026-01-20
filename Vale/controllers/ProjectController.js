@@ -274,20 +274,12 @@ export const updateTimelineStep = async (req, res) => {
     const { id, stageId } = req.params;
     const { title, date, status, assignedTo } = req.body;
 
-    console.log("📋 updateTimelineStep called with:", {
-      projectId: id,
-      stageId,
-      body: req.body,
-    });
-
     const project = await Project.findById(id);
     if (!project)
       return res.status(404).json({ message: "Projeto não encontrado" });
 
     const step = project.timeline.id(stageId);
     if (!step) return res.status(404).json({ message: "Etapa não encontrada" });
-
-    console.log("📋 Current step before update:", step.toObject());
 
     if (title !== undefined) step.title = title;
     if (date !== undefined) step.date = date;
@@ -311,12 +303,9 @@ export const updateTimelineStep = async (req, res) => {
       }
     }
 
-    console.log("📋 Step after update:", step.toObject());
-
     await project.save();
     res.json(project);
   } catch (error) {
-    console.error("📋 updateTimelineStep error:", error);
     const formatted = formatError(error);
     res.status(formatted.status).json(formatted);
   }
