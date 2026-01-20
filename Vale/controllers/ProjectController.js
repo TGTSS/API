@@ -274,6 +274,12 @@ export const updateTimelineStep = async (req, res) => {
     const { id, stageId } = req.params;
     const { title, date, status, assignedTo } = req.body;
 
+    console.log("📋 updateTimelineStep called with:", {
+      projectId: id,
+      stageId,
+      body: req.body,
+    });
+
     const project = await Project.findById(id);
     if (!project)
       return res.status(404).json({ message: "Projeto não encontrado" });
@@ -281,19 +287,36 @@ export const updateTimelineStep = async (req, res) => {
     const step = project.timeline.id(stageId);
     if (!step) return res.status(404).json({ message: "Etapa não encontrada" });
 
-    if (title) step.title = title;
-    if (date) step.date = date;
-    if (assignedTo !== undefined) step.assignedTo = assignedTo;
-    if (status) {
+    console.log("📋 Current step before update:", step.toObject());
+
+    if (title !== undefined) step.title = title;
+    if (date !== undefined) step.date = date;
+
+    // Handle assignedTo - ensure it's either a valid string ID or null
+    if (assignedTo !== undefined) {
+      if (assignedTo === null || assignedTo === "" || assignedTo === "null") {
+        step.assignedTo = undefined;
+      } else if (typeof assignedTo === "string") {
+        step.assignedTo = assignedTo;
+      } else if (typeof assignedTo === "object" && assignedTo._id) {
+        // If an object was passed (populated), extract the ID
+        step.assignedTo = assignedTo._id;
+      }
+    }
+
+    if (status !== undefined) {
       step.status = status;
       if (status === "completed") {
         step.completedAt = new Date();
       }
     }
 
+    console.log("📋 Step after update:", step.toObject());
+
     await project.save();
     res.json(project);
   } catch (error) {
+    console.error("📋 updateTimelineStep error:", error);
     const formatted = formatError(error);
     res.status(formatted.status).json(formatted);
   }
@@ -340,7 +363,7 @@ export const reorderTimeline = async (req, res) => {
       .map((stageId) => {
         const stageIdStr = String(stageId);
         return project.timeline.find(
-          (stage) => stage._id.toString() === stageIdStr
+          (stage) => stage._id.toString() === stageIdStr,
         );
       })
       .filter(Boolean);
@@ -419,7 +442,7 @@ export const uploadDocuments = async (req, res) => {
     console.log("📁 Current documents count:", project.documents?.length || 0);
     console.log(
       "📁 Current documents:",
-      JSON.stringify(project.documents, null, 2)
+      JSON.stringify(project.documents, null, 2),
     );
 
     const newDocuments = req.files.map((file) => ({
@@ -433,7 +456,7 @@ export const uploadDocuments = async (req, res) => {
 
     console.log(
       "📁 New documents to add:",
-      JSON.stringify(newDocuments, null, 2)
+      JSON.stringify(newDocuments, null, 2),
     );
 
     project.documents.push(...newDocuments);
@@ -498,8 +521,8 @@ export const addTechnicalLeads = async (req, res) => {
     let currentLeads = Array.isArray(project.technicalLead)
       ? project.technicalLead
       : project.technicalLead
-      ? [project.technicalLead]
-      : [];
+        ? [project.technicalLead]
+        : [];
 
     // Adicionar apenas os que não existem
     technicalLeads.forEach((leadId) => {
@@ -511,12 +534,12 @@ export const addTechnicalLeads = async (req, res) => {
     // Atualizar usando o MongoDB diretamente para garantir que o tipo mude no banco
     await Project.updateOne(
       { _id: id },
-      { $set: { technicalLead: currentLeads } }
+      { $set: { technicalLead: currentLeads } },
     );
 
     const populatedProject = await Project.findById(id).populate(
       "technicalLead",
-      "name email"
+      "name email",
     );
 
     res.json(populatedProject);
@@ -539,19 +562,19 @@ export const removeTechnicalLead = async (req, res) => {
     let currentLeads = Array.isArray(project.technicalLead)
       ? project.technicalLead
       : project.technicalLead
-      ? [project.technicalLead]
-      : [];
+        ? [project.technicalLead]
+        : [];
 
     const updatedLeads = currentLeads.filter((id) => id !== leadId);
 
     await Project.updateOne(
       { _id: id },
-      { $set: { technicalLead: updatedLeads } }
+      { $set: { technicalLead: updatedLeads } },
     );
 
     const populatedProject = await Project.findById(id).populate(
       "technicalLead",
-      "name email"
+      "name email",
     );
 
     res.json(populatedProject);
