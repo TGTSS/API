@@ -6,11 +6,13 @@ const StepSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   status: {
     type: String,
-    enum: ["pending", "in_progress", "completed"],
+    enum: ["pending", "in_progress", "completed", "refused"],
     default: "pending",
   },
   assignedTo: { type: String, ref: "ValeTeamMember" },
   completedAt: Date,
+  refusedAt: Date,
+  refusalReason: { type: String },
 });
 
 const DocumentSchema = new mongoose.Schema({
@@ -36,8 +38,19 @@ const projectSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELED"],
-      default: "PENDING",
+      enum: [
+        "PROSPECTING",
+        "NEGOTIATION_APPROVED",
+        "NEGOTIATION_LOST",
+        "FIELD_TEAM",
+        "PROJECT_PRODUCTION",
+        "COMPLETED",
+        // Legacy (kept for migration compatibility)
+        "PENDING",
+        "IN_PROGRESS",
+        "CANCELED",
+      ],
+      default: "PROSPECTING",
     },
     location: { type: String },
     latitude: { type: Number },

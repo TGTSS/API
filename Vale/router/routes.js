@@ -11,6 +11,8 @@ import * as TeamController from "../controllers/TeamController.js";
 import * as FinancialController from "../controllers/FinancialController.js";
 import * as CalendarController from "../controllers/CalendarController.js";
 import * as BudgetController from "../controllers/BudgetController.js";
+import * as DashboardController from "../controllers/DashboardController.js";
+import * as MigrationController from "../controllers/MigrationController.js";
 
 const router = express.Router();
 
@@ -97,6 +99,10 @@ router.put(
   ProjectController.updateProject
 );
 router.delete("/api/projects/:id", ProjectController.deleteProject);
+router.get(
+  "/api/projects/:id/status-history",
+  ProjectController.getProjectStatusHistory
+);
 router.post(
   "/api/projects/:id/technical-leads",
   ProjectController.addTechnicalLeads
@@ -234,5 +240,15 @@ router.post(
 );
 
 router.get("/api/orcamento/:projectId", BudgetController.getPublicBudget);
+
+// --- Dashboard ---
+router.get("/api/dashboard/metrics", DashboardController.getDashboardMetrics);
+
+// --- Admin / Migration ---
+router.post("/api/admin/migrate-statuses", MigrationController.migrateStatuses);
+router.post(
+  "/api/admin/rollback-statuses",
+  MigrationController.rollbackStatuses
+);
 
 export default router;

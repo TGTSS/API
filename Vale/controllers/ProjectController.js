@@ -1,10 +1,15 @@
 import Project from "../models/Project.js";
 import Client from "../models/Client.js";
 import ProjectEvent from "../models/ProjectEvent.js";
+import ProjectStatusLog from "../models/ProjectStatusLog.js";
 import FinancialTransaction from "../models/FinancialTransaction.js";
 import { SERVICE_STAGES } from "../constants/serviceTypes.js";
 import cloudinary from "../../cloudinary.js";
 import { formatError } from "../utils/error-handler.js";
+import {
+  updateProjectStatusFromTimeline,
+  recalculateClientStatus,
+} from "../utils/status-calculator.js";
 
 export const getProjects = async (req, res) => {
   try {
@@ -105,6 +110,9 @@ export const createProject = async (req, res) => {
       $push: { projects: project._id },
     });
 
+    // Recalculate client status after adding a new project
+    await recalculateClientStatus(project.clientId);
+
     res.status(201).json(project);
   } catch (error) {
     const formatted = formatError(error);
@@ -184,6 +192,9 @@ export const updateProject = async (req, res) => {
 
     const updateData = { ...req.body };
 
+    // Prevent manual status override — status is auto-calculated from timeline
+    delete updateData.status;
+
     if (typeof updateData.technicalLead === "string") {
       try {
         updateData.technicalLead = JSON.parse(updateData.technicalLead);
@@ -243,6 +254,9 @@ export const deleteProject = async (req, res) => {
     // Deleta o projeto
     await Project.findByIdAndDelete(req.params.id);
 
+    // Recalculate client status after removing a project
+    await recalculateClientStatus(project.clientId);
+
     res.json(project);
   } catch (error) {
     const formatted = formatError(error);
@@ -272,7 +286,7 @@ export const addTimelineStep = async (req, res) => {
 export const updateTimelineStep = async (req, res) => {
   try {
     const { id, stageId } = req.params;
-    const { title, date, status, assignedTo } = req.body;
+    const { title, date, status, assignedTo, refusalReason } = req.body;
 
     const project = await Project.findById(id);
     if (!project)
@@ -297,13 +311,44 @@ export const updateTimelineStep = async (req, res) => {
     }
 
     if (status !== undefined) {
+      // Validate: "refused" is only valid for contract signing stage
+      if (
+        status === "refused" &&
+        !step.title.toLowerCase().includes("contrato assinado")
+      ) {
+        return res.status(400).json({
+          message:
+            'O status "refused" só é válido para a etapa "Contrato assinado".',
+        });
+      }
+
+      // refusalReason is required when status is "refused"
+      if (status === "refused" && !refusalReason) {
+        return res.status(400).json({
+          message:
+            'O campo "refusalReason" é obrigatório quando o status é "refused".',
+        });
+      }
+
       step.status = status;
       if (status === "completed") {
         step.completedAt = new Date();
       }
+      if (status === "refused") {
+        step.refusedAt = new Date();
+        step.refusalReason = refusalReason;
+      }
     }
 
     await project.save();
+
+    // Auto-calculate project status from timeline and recalculate client status
+    await updateProjectStatusFromTimeline(
+      project,
+      step.title,
+      refusalReason
+    );
+
     res.json(project);
   } catch (error) {
     const formatted = formatError(error);
@@ -532,6 +577,23 @@ export const addTechnicalLeads = async (req, res) => {
     );
 
     res.json(populatedProject);
+  } catch (error) {
+    const formatted = formatError(error);
+    res.status(formatted.status).json(formatted);
+  }
+};
+
+export const getProjectStatusHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+    if (!project)
+      return res.status(404).json({ message: "Projeto não encontrado" });
+
+    const history = await ProjectStatusLog.find({ projectId: id }).sort({
+      changedAt: -1,
+    });
+    res.json(history);
   } catch (error) {
     const formatted = formatError(error);
     res.status(formatted.status).json(formatted);

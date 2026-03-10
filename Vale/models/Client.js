@@ -26,8 +26,19 @@ const clientSchema = new mongoose.Schema({
   projects: [{ type: String, ref: "ValeProject" }],
   status: {
     type: String,
-    default: "inactive",
-    enum: ["active", "invited", "blocked", "inactive"],
+    default: "NEGOTIATING",
+    enum: [
+      "NEGOTIATING",
+      "ACTIVE",
+      "LOST",
+      "PARTIAL",
+      "COMPLETED",
+      // Legacy (kept for migration compatibility)
+      "active",
+      "invited",
+      "blocked",
+      "inactive",
+    ],
   },
   documents: [DocumentSchema],
 });
