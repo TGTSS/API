@@ -31,7 +31,7 @@ export const SERVICE_STAGES = {
     "Entrega ao cliente",
     "Coleta de NPS",
   ],
-  Usucapião: [
+  "Usucapião": [
     "Contato com o cliente",
     "Envio de proposta comercial",
     "Envio de contrato",
@@ -99,7 +99,7 @@ export const SERVICE_STAGES = {
     "Entrega ao cliente",
     "Coleta de NPS",
   ],
-  Aerofotogrametria: [
+  "Aerofotogrametria": [
     "Contato com o cliente",
     "Envio de proposta comercial",
     "Envio de contrato",
@@ -140,6 +140,7 @@ export const SERVICE_STAGES = {
     "Locação de piquetes",
     "Elaboração de memorial de campo",
     "Emissão de ART",
+    "Entrega ao cliente",
     "Coleta de NPS",
   ],
   "Execução de marcação de Lotes": [
@@ -151,6 +152,7 @@ export const SERVICE_STAGES = {
     "Locação de piquetes",
     "Elaboração de memorial de campo",
     "Emissão de ART",
+    "Entrega ao cliente",
     "Coleta de NPS",
   ],
   "Terraplenagem e nivelamento": [
@@ -170,7 +172,7 @@ export const SERVICE_STAGES = {
     "Entrega ao cliente",
     "Coleta de NPS",
   ],
-  Estradas: [
+  "Estradas": [
     "Contato com o cliente",
     "Envio de proposta comercial",
     "Envio de contrato",

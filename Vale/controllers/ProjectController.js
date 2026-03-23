@@ -10,6 +10,7 @@ import {
   updateProjectStatusFromTimeline,
   recalculateClientStatus,
 } from "../utils/status-calculator.js";
+import { addBusinessDays } from "../utils/business-days.js";
 
 export const getProjects = async (req, res) => {
   try {
@@ -40,11 +41,12 @@ export const createProject = async (req, res) => {
 
     // Parse req.body fields if they are strings (FormData)
     const body = { ...req.body };
-    if (typeof body.budget === "string") body.budget = parseFloat(body.budget);
     if (typeof body.latitude === "string")
       body.latitude = parseFloat(body.latitude);
     if (typeof body.longitude === "string")
       body.longitude = parseFloat(body.longitude);
+    if (typeof body.deliveryDays === "string")
+      body.deliveryDays = parseInt(body.deliveryDays, 10);
 
     // Ajustar o parsing do technicalLead (pode vir como string ou array de strings)
     if (typeof body.technicalLead === "string") {
@@ -333,6 +335,15 @@ export const updateTimelineStep = async (req, res) => {
       step.status = status;
       if (status === "completed") {
         step.completedAt = new Date();
+
+        // Calcular deadline quando "Contrato assinado" é concluído
+        if (
+          step.title.toLowerCase().includes("contrato assinado") &&
+          project.deliveryDays
+        ) {
+          project.startDate = new Date();
+          project.deadline = addBusinessDays(new Date(), project.deliveryDays);
+        }
       }
       if (status === "refused") {
         step.refusedAt = new Date();

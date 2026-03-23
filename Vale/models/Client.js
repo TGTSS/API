@@ -20,6 +20,7 @@ const clientSchema = new mongoose.Schema({
 
   // New fields from UI
   contactName: { type: String },
+  origin: { type: String },
   notes: { type: String },
 
   userId: { type: String, ref: "ValeUser" },

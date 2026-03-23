@@ -58,7 +58,7 @@ const projectSchema = new mongoose.Schema(
     startDate: { type: Date },
     deadline: { type: Date },
     deliveryDays: { type: Number },
-    budget: { type: Number, required: [true, "O orçamento é obrigatório"] },
+    budget: { type: Number },
     technicalLead: [{ type: String, ref: "ValeTeamMember" }],
     clientId: {
       type: String,
