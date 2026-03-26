@@ -14,6 +14,7 @@ import * as BudgetController from "../controllers/BudgetController.js";
 import * as DashboardController from "../controllers/DashboardController.js";
 import * as MigrationController from "../controllers/MigrationController.js";
 import * as GeneralTransactionController from "../controllers/GeneralTransactionController.js";
+import * as RefusalReasonController from "../controllers/RefusalReasonController.js";
 
 const router = express.Router();
 
@@ -276,6 +277,12 @@ router.post(
 );
 
 router.get("/api/orcamento/:projectId", BudgetController.getPublicBudget);
+
+// --- Refusal Reasons ---
+router.get("/api/refusal-reasons", RefusalReasonController.getRefusalReasons);
+router.post("/api/refusal-reasons", RefusalReasonController.createRefusalReason);
+router.put("/api/refusal-reasons/:id", RefusalReasonController.updateRefusalReason);
+router.delete("/api/refusal-reasons/:id", RefusalReasonController.deleteRefusalReason);
 
 // --- Dashboard ---
 router.get("/api/dashboard/metrics", DashboardController.getDashboardMetrics);

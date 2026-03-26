@@ -11,6 +11,7 @@ import {
   recalculateClientStatus,
 } from "../utils/status-calculator.js";
 import { addBusinessDays } from "../utils/business-days.js";
+import RefusalReason from "../models/RefusalReason.js";
 
 export const getProjects = async (req, res) => {
   try {
@@ -330,6 +331,20 @@ export const updateTimelineStep = async (req, res) => {
           message:
             'O campo "refusalReason" é obrigatório quando o status é "refused".',
         });
+      }
+
+      // Validate refusalReason exists in predefined options
+      if (status === "refused") {
+        const reasonExists = await RefusalReason.findOne({
+          label: refusalReason,
+          active: true,
+        });
+        if (!reasonExists) {
+          return res.status(400).json({
+            message:
+              "Motivo de recusa inválido. Selecione um motivo predefinido.",
+          });
+        }
       }
 
       step.status = status;

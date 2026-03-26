@@ -18,6 +18,7 @@
 - [Financeiro (Projeto)](#financeiro-projeto)
 - [Financeiro Geral](#financeiro-geral)
 - [Orçamentos (Budget)](#orçamentos-budget)
+- [Motivos de Recusa](#motivos-de-recusa)
 - [Equipe](#equipe)
 - [Calendário](#calendário)
 - [E-mail / Orçamento](#e-mail--orçamento)
@@ -927,6 +928,66 @@ Visualização pública do orçamento (sem autenticação).
 
 ---
 
+## Motivos de Recusa
+
+> Opções predefinidas para o motivo de recusa ao recusar a etapa "Contrato assinado" de um projeto.
+
+### `GET /api/refusal-reasons`
+
+Lista motivos de recusa.
+
+**Query Params:**
+
+| Param    | Tipo    | Descrição                       |
+| -------- | ------- | ------------------------------- |
+| `active` | boolean | Filtrar por ativos (`true`/`false`) |
+
+**Response `200`:** Array de motivos ordenados por label (A-Z).
+
+---
+
+### `POST /api/refusal-reasons`
+
+Cria um novo motivo de recusa.
+
+| Campo   | Tipo   | Obrigatório | Descrição           |
+| ------- | ------ | ----------- | ------------------- |
+| `label` | string | Sim         | Texto do motivo     |
+
+**Response `201`:** Motivo criado.
+
+**Errors:** `400` label vazio | `400` motivo já existe
+
+---
+
+### `PUT /api/refusal-reasons/:id`
+
+Atualiza um motivo de recusa.
+
+| Campo    | Tipo    | Obrigatório | Descrição                 |
+| -------- | ------- | ----------- | ------------------------- |
+| `label`  | string  | Não         | Novo texto do motivo      |
+| `active` | boolean | Não         | Ativar/desativar motivo   |
+
+**Response `200`:** Motivo atualizado.
+
+**Errors:** `404` não encontrado | `400` motivo duplicado
+
+---
+
+### `DELETE /api/refusal-reasons/:id`
+
+Deleta um motivo de recusa.
+
+**Response `200`:**
+```json
+{ "message": "Motivo de recusa removido com sucesso" }
+```
+
+> **Nota:** Ao recusar um contrato (`PUT /api/projects/:id/timeline/:stageId` com `status: "refused"`), o campo `refusalReason` deve conter exatamente o `label` de um motivo ativo. Motivos inativos ou inexistentes serão rejeitados com `400`.
+
+---
+
 ## Equipe
 
 ### `GET /api/team`
@@ -1489,6 +1550,18 @@ c:\Users\tiago\OneDrive\Documentos\Programacao\Projetos\Vale GNSS\web-vue\docs\p
   subtotalIndirect: number;
   total: number;
 
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### RefusalReason
+
+```typescript
+interface RefusalReason {
+  _id: string;           // UUID v4
+  label: string;         // texto do motivo (único)
+  active: boolean;       // default: true
   createdAt: Date;
   updatedAt: Date;
 }
