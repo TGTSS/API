@@ -13,6 +13,7 @@ import * as CalendarController from "../controllers/CalendarController.js";
 import * as BudgetController from "../controllers/BudgetController.js";
 import * as DashboardController from "../controllers/DashboardController.js";
 import * as MigrationController from "../controllers/MigrationController.js";
+import * as GeneralTransactionController from "../controllers/GeneralTransactionController.js";
 
 const router = express.Router();
 
@@ -142,6 +143,41 @@ router.delete("/api/transactions/:id", FinancialController.deleteTransaction);
 router.get(
   "/api/projects/:projectId/financial-summary",
   FinancialController.getProjectFinancialSummary
+);
+
+// 5.1 General Financials (fora de projetos)
+router.get(
+  "/api/general-transactions/summary",
+  GeneralTransactionController.getFinancialSummary
+);
+router.get(
+  "/api/general-transactions",
+  GeneralTransactionController.getTransactions
+);
+router.get(
+  "/api/general-transactions/:id",
+  GeneralTransactionController.getTransactionById
+);
+router.post(
+  "/api/general-transactions",
+  GeneralTransactionController.createTransaction
+);
+router.put(
+  "/api/general-transactions/:id",
+  GeneralTransactionController.updateTransaction
+);
+router.delete(
+  "/api/general-transactions/:id",
+  GeneralTransactionController.deleteTransaction
+);
+router.post(
+  "/api/general-transactions/:id/attachments",
+  uploadDocumento.array("files"),
+  GeneralTransactionController.uploadAttachments
+);
+router.delete(
+  "/api/general-transactions/:id/attachments/:attachmentId",
+  GeneralTransactionController.deleteAttachment
 );
 
 // 6. Team Management

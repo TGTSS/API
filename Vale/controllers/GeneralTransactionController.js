@@ -1,24 +1,21 @@
-import FinancialTransaction from "../models/FinancialTransaction.js";
-import Project from "../models/Project.js";
+import GeneralTransaction from "../models/GeneralTransaction.js";
 import cloudinary from "../../cloudinary.js";
 import { formatError } from "../utils/error-handler.js";
 
 /**
- * Buscar transações financeiras
- * GET /api/transactions
- * Query params: projectId, type (INCOME/EXPENSE)
+ * Buscar lançamentos gerais (fora de projetos)
+ * GET /api/general-transactions
  */
 export const getTransactions = async (req, res) => {
   try {
-    const { projectId, type } = req.query;
+    const { type } = req.query;
     const query = {};
 
-    if (projectId) query.projectId = projectId;
     if (type && ["INCOME", "EXPENSE"].includes(type)) query.type = type;
 
-    const transactions = await FinancialTransaction.find(query)
-      .populate("projectId", "name code")
-      .sort({ date: -1 });
+    const transactions = await GeneralTransaction.find(query).sort({
+      date: -1,
+    });
     res.json(transactions);
   } catch (error) {
     const formatted = formatError(error);
@@ -27,17 +24,15 @@ export const getTransactions = async (req, res) => {
 };
 
 /**
- * Buscar transação por ID
- * GET /api/transactions/:id
+ * Buscar lançamento geral por ID
+ * GET /api/general-transactions/:id
  */
 export const getTransactionById = async (req, res) => {
   try {
-    const transaction = await FinancialTransaction.findById(
-      req.params.id
-    ).populate("projectId", "name code");
+    const transaction = await GeneralTransaction.findById(req.params.id);
 
     if (!transaction) {
-      return res.status(404).json({ message: "Transação não encontrada" });
+      return res.status(404).json({ message: "Lançamento não encontrado" });
     }
 
     res.json(transaction);
@@ -48,33 +43,29 @@ export const getTransactionById = async (req, res) => {
 };
 
 /**
- * Criar nova transação financeira
- * POST /api/transactions
+ * Criar novo lançamento geral (fora de projetos)
+ * POST /api/general-transactions
  */
 export const createTransaction = async (req, res) => {
   try {
-    const {
-      projectId,
-      type,
-      category,
-      amount,
-      description,
-      date,
-      dueDate,
-      status,
-    } = req.body;
-
-    // Validar se o projeto existe
-    const project = await Project.findById(projectId);
-    if (!project) {
-      return res.status(404).json({ message: "Projeto não encontrado" });
-    }
+    const { type, category, amount, description, date, dueDate, status } =
+      req.body;
 
     // Validar tipo
     if (!["INCOME", "EXPENSE"].includes(type)) {
       return res
         .status(400)
         .json({ message: "Tipo inválido. Use 'INCOME' ou 'EXPENSE'" });
+    }
+
+    // Validar categoria
+    if (!category || !category.trim()) {
+      return res.status(400).json({ message: "A categoria é obrigatória" });
+    }
+
+    // Validar descrição
+    if (!description || !description.trim()) {
+      return res.status(400).json({ message: "A descrição é obrigatória" });
     }
 
     // Validar valor
@@ -84,8 +75,7 @@ export const createTransaction = async (req, res) => {
         .json({ message: "O valor deve ser maior que zero" });
     }
 
-    const transaction = new FinancialTransaction({
-      projectId,
+    const transaction = new GeneralTransaction({
       type,
       category,
       amount: Number(amount),
@@ -97,9 +87,6 @@ export const createTransaction = async (req, res) => {
 
     await transaction.save();
 
-    // Popula o projeto para retornar dados completos
-    await transaction.populate("projectId", "name code");
-
     res.status(201).json(transaction);
   } catch (error) {
     const formatted = formatError(error);
@@ -108,17 +95,17 @@ export const createTransaction = async (req, res) => {
 };
 
 /**
- * Atualizar transação financeira
- * PUT /api/transactions/:id
+ * Atualizar lançamento geral
+ * PUT /api/general-transactions/:id
  */
 export const updateTransaction = async (req, res) => {
   try {
     const { type, category, amount, description, date, dueDate, status } =
       req.body;
 
-    const transaction = await FinancialTransaction.findById(req.params.id);
+    const transaction = await GeneralTransaction.findById(req.params.id);
     if (!transaction) {
-      return res.status(404).json({ message: "Transação não encontrada" });
+      return res.status(404).json({ message: "Lançamento não encontrado" });
     }
 
     // Validar tipo se fornecido
@@ -146,7 +133,6 @@ export const updateTransaction = async (req, res) => {
       transaction.status = status;
 
     await transaction.save();
-    await transaction.populate("projectId", "name code");
 
     res.json(transaction);
   } catch (error) {
@@ -156,14 +142,14 @@ export const updateTransaction = async (req, res) => {
 };
 
 /**
- * Deletar transação financeira
- * DELETE /api/transactions/:id
+ * Deletar lançamento geral
+ * DELETE /api/general-transactions/:id
  */
 export const deleteTransaction = async (req, res) => {
   try {
-    const transaction = await FinancialTransaction.findById(req.params.id);
+    const transaction = await GeneralTransaction.findById(req.params.id);
     if (!transaction) {
-      return res.status(404).json({ message: "Transação não encontrada" });
+      return res.status(404).json({ message: "Lançamento não encontrado" });
     }
 
     // Deletar anexos do Cloudinary se existirem
@@ -175,9 +161,9 @@ export const deleteTransaction = async (req, res) => {
       }
     }
 
-    await FinancialTransaction.findByIdAndDelete(req.params.id);
+    await GeneralTransaction.findByIdAndDelete(req.params.id);
 
-    res.json({ message: "Transação excluída com sucesso" });
+    res.json({ message: "Lançamento excluído com sucesso" });
   } catch (error) {
     const formatted = formatError(error);
     res.status(formatted.status).json(formatted);
@@ -185,20 +171,12 @@ export const deleteTransaction = async (req, res) => {
 };
 
 /**
- * Obter resumo financeiro do projeto
- * GET /api/projects/:projectId/financial-summary
+ * Resumo financeiro geral (fora de projetos)
+ * GET /api/general-transactions/summary
  */
-export const getProjectFinancialSummary = async (req, res) => {
+export const getFinancialSummary = async (req, res) => {
   try {
-    const { projectId } = req.params;
-
-    // Verificar se o projeto existe
-    const project = await Project.findById(projectId);
-    if (!project) {
-      return res.status(404).json({ message: "Projeto não encontrado" });
-    }
-
-    const transactions = await FinancialTransaction.find({ projectId });
+    const transactions = await GeneralTransaction.find();
 
     const income = transactions
       .filter((t) => t.type === "INCOME")
@@ -231,11 +209,15 @@ export const getProjectFinancialSummary = async (req, res) => {
   }
 };
 
+/**
+ * Upload de anexos
+ * POST /api/general-transactions/:id/attachments
+ */
 export const uploadAttachments = async (req, res) => {
   try {
-    const transaction = await FinancialTransaction.findById(req.params.id);
+    const transaction = await GeneralTransaction.findById(req.params.id);
     if (!transaction)
-      return res.status(404).json({ message: "Transação não encontrada" });
+      return res.status(404).json({ message: "Lançamento não encontrado" });
 
     const newAttachments = req.files.map((file) => ({
       name: file.originalname,
@@ -256,17 +238,20 @@ export const uploadAttachments = async (req, res) => {
   }
 };
 
+/**
+ * Deletar anexo
+ * DELETE /api/general-transactions/:id/attachments/:attachmentId
+ */
 export const deleteAttachment = async (req, res) => {
   try {
-    const transaction = await FinancialTransaction.findById(req.params.id);
+    const transaction = await GeneralTransaction.findById(req.params.id);
     if (!transaction)
-      return res.status(404).json({ message: "Transação não encontrada" });
+      return res.status(404).json({ message: "Lançamento não encontrado" });
 
     const attachment = transaction.attachments.id(req.params.attachmentId);
     if (!attachment)
       return res.status(404).json({ message: "Anexo não encontrado" });
 
-    // Delete from Cloudinary
     if (attachment.publicId) {
       await cloudinary.uploader.destroy(attachment.publicId);
     }

@@ -229,7 +229,7 @@ export const uploadDocuments = async (req, res) => {
     const newDocuments = req.files.map((file) => ({
       name: file.originalname,
       url: file.path,
-      publicId: file.public_id,
+      publicId: file.filename,
       type: file.mimetype,
       size: file.size,
       uploadedAt: new Date(),

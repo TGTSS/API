@@ -15,7 +15,8 @@
 - [Timeline do Projeto](#timeline-do-projeto)
 - [Responsáveis Técnicos](#responsáveis-técnicos)
 - [Documentos do Projeto](#documentos-do-projeto)
-- [Financeiro](#financeiro)
+- [Financeiro (Projeto)](#financeiro-projeto)
+- [Financeiro Geral](#financeiro-geral)
 - [Orçamentos (Budget)](#orçamentos-budget)
 - [Equipe](#equipe)
 - [Calendário](#calendário)
@@ -554,7 +555,7 @@ Remove um responsável técnico.
 
 ---
 
-## Financeiro
+## Financeiro (Projeto)
 
 ### `GET /api/transactions`
 
@@ -652,6 +653,116 @@ Resumo financeiro de um projeto.
 ```
 
 #### `DELETE /api/transactions/:id/attachments/:attachmentId`
+
+**Response `200`:**
+```json
+{ "message": "Anexo removido com sucesso" }
+```
+
+---
+
+## Financeiro Geral
+
+> Lançamentos financeiros **não vinculados a projetos** (despesas administrativas, receitas avulsas, etc).
+
+### `GET /api/general-transactions`
+
+Lista lançamentos gerais.
+
+**Query Params:**
+
+| Param  | Tipo   | Descrição               |
+| ------ | ------ | ----------------------- |
+| `type` | string | `INCOME` \| `EXPENSE`  |
+
+**Response `200`:** Array de lançamentos ordenados por data (DESC).
+
+---
+
+### `POST /api/general-transactions`
+
+Cria um lançamento financeiro geral (fora de projetos).
+
+| Campo         | Tipo   | Obrigatório | Descrição                        |
+| ------------- | ------ | ----------- | -------------------------------- |
+| `type`        | string | Sim         | `INCOME` \| `EXPENSE`           |
+| `category`    | string | Sim         | Categoria                        |
+| `amount`      | number | Sim         | Valor (> 0)                      |
+| `description` | string | Sim         | Descrição                        |
+| `date`        | date   | Não         | Default: now                     |
+| `dueDate`     | date   | Não         | Data de vencimento               |
+| `status`      | string | Não         | `paid` \| `pending` (default: `pending`) |
+
+**Response `201`:** Lançamento criado.
+
+**Errors:** `400` tipo inválido | `400` categoria obrigatória | `400` descrição obrigatória | `400` valor <= 0
+
+---
+
+### `GET /api/general-transactions/:id`
+
+**Response `200`:** Objeto do lançamento geral.
+
+**Errors:** `404` lançamento não encontrado
+
+---
+
+### `PUT /api/general-transactions/:id`
+
+Atualiza um lançamento geral. Aceita os mesmos campos do POST.
+
+**Response `200`:** Lançamento atualizado.
+
+**Errors:** `404` lançamento não encontrado | `400` tipo inválido | `400` valor <= 0
+
+---
+
+### `DELETE /api/general-transactions/:id`
+
+Deleta lançamento e seus anexos do Cloudinary.
+
+**Response `200`:**
+```json
+{ "message": "Lançamento excluído com sucesso" }
+```
+
+---
+
+### `GET /api/general-transactions/summary`
+
+Resumo financeiro dos lançamentos gerais.
+
+**Response `200`:**
+```json
+{
+  "totalIncome": 10000,
+  "totalExpense": 3000,
+  "balance": 7000,
+  "paidIncome": 8000,
+  "paidExpense": 2000,
+  "paidBalance": 6000,
+  "transactionCount": 12
+}
+```
+
+---
+
+### Anexos de Lançamento Geral
+
+#### `POST /api/general-transactions/:id/attachments`
+
+**Content-Type:** `multipart/form-data`
+
+| Campo   | Tipo   | Obrigatório |
+| ------- | ------ | ----------- |
+| `files` | file[] | Sim         |
+
+**Response `200`:**
+```json
+[{ "name", "url", "publicId", "type", "size", "uploadedAt" }]
+```
+
+#### `DELETE /api/general-transactions/:id/attachments/:attachmentId`
 
 **Response `200`:**
 ```json
@@ -1252,6 +1363,24 @@ interface TeamMember {
 interface FinancialTransaction {
   _id: string;            // UUID v4
   projectId: string;      // ref ValeProject
+  type: "INCOME" | "EXPENSE";
+  category: string;
+  amount: number;         // min: 0
+  description: string;
+  date: Date;
+  dueDate?: Date;
+  status: "paid" | "pending" | "overdue";
+  attachments: Document[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### GeneralTransaction
+
+```typescript
+interface GeneralTransaction {
+  _id: string;            // UUID v4
   type: "INCOME" | "EXPENSE";
   category: string;
   amount: number;         // min: 0

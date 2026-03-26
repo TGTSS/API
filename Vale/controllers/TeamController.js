@@ -39,7 +39,7 @@ export const createTeamMember = async (req, res) => {
 
     if (req.file) {
       avatar = req.file.path;
-      avatarPublicId = req.file.public_id;
+      avatarPublicId = req.file.filename;
     }
 
     const member = new TeamMember({
@@ -68,7 +68,7 @@ export const updateTeamMember = async (req, res) => {
         await cloudinary.uploader.destroy(existingMember.avatarPublicId);
       }
       updateData.avatar = req.file.path;
-      updateData.avatarPublicId = req.file.public_id;
+      updateData.avatarPublicId = req.file.filename;
     }
 
     const member = await TeamMember.findByIdAndUpdate(

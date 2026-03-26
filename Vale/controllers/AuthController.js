@@ -10,7 +10,7 @@ export const register = async (req, res) => {
 
     if (req.file) {
       avatar = req.file.path;
-      avatarPublicId = req.file.public_id;
+      avatarPublicId = req.file.filename;
     }
 
     // Check if user exists

@@ -36,7 +36,7 @@ export const createProject = async (req, res) => {
 
     if (req.file) {
       imagem = req.file.path;
-      imagemPublicId = req.file.public_id;
+      imagemPublicId = req.file.filename;
     }
 
     // Parse req.body fields if they are strings (FormData)
@@ -211,7 +211,7 @@ export const updateProject = async (req, res) => {
         await cloudinary.uploader.destroy(existingProject.imagemPublicId);
       }
       updateData.imagem = req.file.path;
-      updateData.imagemPublicId = req.file.public_id;
+      updateData.imagemPublicId = req.file.filename;
     }
 
     // Se o documento no banco ainda for string, precisamos garantir a conversão
@@ -493,7 +493,7 @@ export const uploadDocuments = async (req, res) => {
     const newDocuments = req.files.map((file) => ({
       name: file.originalname,
       url: file.path,
-      publicId: file.public_id,
+      publicId: file.filename,
       type: file.mimetype,
       size: file.size,
       uploadedAt: new Date(),
